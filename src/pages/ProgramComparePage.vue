@@ -7,6 +7,7 @@ import { comparePrograms } from "../domain/programCompare";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import EmptyState from "../components/EmptyState.vue";
+import ProgramSources from "../components/ProgramSources.vue";
 const left = useFilter("left"),
   right = useFilter("right"),
   q = useFilter("q");
@@ -17,12 +18,12 @@ const options = computed(() =>
   ),
 );
 const before = useQuery(
-  (signal, force) => catalog.program(left.value, { signal, force }),
+  (signal, force) => catalog.expandedProgram(left.value, { signal, force }),
   left,
   () => !!left.value,
 );
 const after = useQuery(
-  (signal, force) => catalog.program(right.value, { signal, force }),
+  (signal, force) => catalog.expandedProgram(right.value, { signal, force }),
   right,
   () => !!right.value,
 );
@@ -82,7 +83,20 @@ const comparison = computed(() =>
     title="选择两个计划开始比较"
     message="比较链接会保留两个计划的 ID，方便复制分享。"
   /><template v-if="comparison"
-    ><div class="notice">
+    ><ProgramSources
+      :program="before.data.value!"
+      @refresh="before.reload"
+    /><ProgramSources :program="after.data.value!" @refresh="after.reload" />
+    <div
+      class="notice"
+      v-if="
+        before.data.value?.referenceIssues?.length ||
+        after.data.value?.referenceIssues?.length
+      "
+    >
+      本次对比仅覆盖成功读取的课程，未读取模块可能影响新增、移除或字段变化结果。
+    </div>
+    <div class="notice">
       计划总要求学分：{{ before.data.value?.requiredCredits ?? "未提供" }} →
       {{
         after.data.value?.requiredCredits ?? "未提供"

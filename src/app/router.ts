@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from "vue-router";
+import { restoredFilters, saveFilters } from "../features/filterPreferences";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -72,6 +73,18 @@ export const router = createRouter({
   scrollBehavior: (to, from, saved) =>
     saved ?? (to.path === from.path ? false : { top: 0 }),
 });
-router.afterEach((to) => {
+router.beforeEach((to, from) => {
+  // An explicit query is a complete shared filter snapshot. Same-page resets stay empty.
+  if (
+    !Object.keys(to.query).length &&
+    (to.path !== from.path || !from.matched.length)
+  ) {
+    const query = restoredFilters(to.path);
+    if (query) return { path: to.path, query, hash: to.hash, replace: true };
+  }
+});
+router.afterEach((to, _from, failure) => {
+  if (failure) return;
+  saveFilters(to.path, to.query);
   document.title = `${String(to.meta.title ?? "公共查询")} · 科大目录`;
 });

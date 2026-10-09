@@ -1794,6 +1794,75 @@ tr:last-child td {
   width: 100%;
   z-index: 20;
 }
+.reference-sources {
+  margin: 16px 0;
+  font-size: 12px;
+}
+.reference-sources > summary,
+.course-relations details > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 550;
+}
+.reference-sources > summary::before,
+.course-relations details > summary::before {
+  content: "+";
+  margin-right: 8px;
+  font-family: monospace;
+}
+.reference-sources[open] > summary::before,
+.course-relations details[open] > summary::before {
+  content: "−";
+}
+.reference-sources > div {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.course-relations {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.course-relations > details {
+  border-bottom: 1px solid var(--border);
+}
+.course-relations > details > summary {
+  min-height: 60px;
+  font-size: 16px;
+}
+.relation-content {
+  padding: 0 0 20px;
+}
+.relation-content > p,
+.relation-match p {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.relation-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.relation-controls .filter-field {
+  flex: 1;
+  min-width: 140px;
+  margin: 0;
+}
+.relation-match {
+  border-bottom: 1px solid var(--border);
+  padding: 20px 0;
+}
+.relation-match a strong {
+  font-size: 15px;
+  color: var(--primary);
+}
+.course-name {
+  min-height: 44px;
+}
 .search-container.compact {
   width: 380px;
   max-width: 100%;

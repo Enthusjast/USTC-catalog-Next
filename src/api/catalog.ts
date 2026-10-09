@@ -1,7 +1,8 @@
 import { query, TTL } from "./client";
 import * as schema from "./schemas";
 import * as adapt from "../adapters/catalog";
-import type { QueryResult } from "../domain/models";
+import type { QueryResult, Program } from "../domain/models";
+import { resolveProgramReferences } from "../domain/programReferences";
 type Options = { signal?: AbortSignal; force?: boolean };
 async function map<T, U>(
   promise: Promise<QueryResult<T>>,
@@ -11,7 +12,20 @@ async function map<T, U>(
   return { data: convert(result.data), meta: result.meta };
 }
 const e = encodeURIComponent;
+async function expandedProgram(
+  id: string,
+  options?: Options,
+): Promise<QueryResult<Program>> {
+  const result = await catalog.program(id, options);
+  const data = await resolveProgramReferences(
+    result.data,
+    (referenceId) => catalog.module(referenceId, options),
+    options?.signal,
+  );
+  return { ...result, data };
+}
 export const catalog = {
+  expandedProgram,
   semesters: (options?: Options) =>
     map(
       query("/teach/semester/list", schema.semesterSchema, {

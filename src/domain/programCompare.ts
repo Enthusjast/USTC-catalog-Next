@@ -81,9 +81,7 @@ export function comparePrograms(left: Program, right: Program) {
     rows
       .filter(
         (row) =>
-          row.module.publicId &&
-          !row.module.children.length &&
-          !row.module.courses.length,
+          row.module.publicId && row.module.referenceState !== "resolved",
       )
       .map((row) => `${row.path} (#${row.module.publicId})`);
   return {

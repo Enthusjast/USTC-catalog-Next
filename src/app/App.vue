@@ -13,6 +13,7 @@ import {
 } from "@lucide/vue";
 import { usePreferences } from "../features/usePreferences";
 import CatalogSearch from "../components/CatalogSearch.vue";
+import { filterStorageError } from "../features/filterPreferences";
 
 const route = useRoute(),
   router = useRouter(),
@@ -105,6 +106,9 @@ onErrorCaptured(() => {
     </nav>
   </header>
   <main id="main" class="main-container" tabindex="-1">
+    <p v-if="filterStorageError" class="notice warning" role="status">
+      {{ filterStorageError }}
+    </p>
     <CatalogSearch
       v-if="route.path !== '/' && route.path !== '/search'"
       id="global-q"

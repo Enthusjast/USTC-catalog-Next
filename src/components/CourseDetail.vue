@@ -7,6 +7,7 @@ import { useFavorites } from "../features/useFavorites";
 import type { Course } from "../domain/models";
 import DisclosureDialog from "./DisclosureDialog.vue";
 import QueryState from "./QueryState.vue";
+import CourseRelations from "./CourseRelations.vue";
 const props = defineProps<{ code: string; initial?: Course }>();
 defineEmits<{ close: [] }>();
 const { favorites, toggle, storageError } = useFavorites();
@@ -23,8 +24,7 @@ const course = computed(() => data.value?.[0] ?? props.initial);
       :loading="loading"
       :meta="meta"
       :error="error"
-      @retry="reload"
-    />
+      @retry="reload" />
     <div class="detail-title">
       <span class="mono muted">{{ code }}</span>
       <h3>{{ course?.name ?? code }}</h3>
@@ -105,6 +105,7 @@ const course = computed(() => data.value?.[0] ?? props.initial);
     </div>
     <p class="muted" style="font-size: 12px; margin-top: 20px">
       课程目录中的有效状态不表示每学期均开课。
-    </p></DisclosureDialog
-  >
+    </p>
+    <CourseRelations v-if="code" :code="code" :department="course?.department"
+  /></DisclosureDialog>
 </template>

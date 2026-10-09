@@ -83,6 +83,7 @@ export interface ProgramModule {
   publicId?: string;
   courses: ProgramCourse[];
   children: ProgramModule[];
+  referenceState?: "resolved" | "incomplete";
 }
 export interface Program {
   grade: string;
@@ -92,6 +93,14 @@ export interface Program {
   requiredCredits?: number;
   beginSemester?: string;
   modules: ProgramModule[];
+  referenceIssues?: {
+    moduleId: string;
+    name: string;
+    publicId: string;
+    message: string;
+    source?: string;
+  }[];
+  referenceSources?: QueryMeta[];
 }
 export interface Exam {
   id: string;

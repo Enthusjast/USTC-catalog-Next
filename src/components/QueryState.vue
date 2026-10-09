@@ -33,6 +33,9 @@ function age(value: string) {
           : "数据暂时无法读取"
       }}</strong>
       <p>{{ error.message }}</p>
+      <p v-if="error instanceof ApiError">
+        本次查询失败时间 {{ timestamp(error.attemptedAt) }}
+      </p>
       <p v-if="error instanceof ApiError && error.source" class="source-url">
         {{ error.source }}
       </p>

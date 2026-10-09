@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { QueryResult } from "../domain/models";
 import { readCache, writeCache } from "./cache";
 import { restrictedSchema } from "./schemas";
+import { createLimiter } from "../domain/concurrency";
 
 export const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.catalog.enthusjast.cc"
@@ -15,6 +16,7 @@ export const TTL = {
 export type ApiErrorKind =
   "network" | "http" | "content" | "json" | "schema" | "restricted";
 export class ApiError extends Error {
+  readonly attemptedAt = new Date().toISOString();
   constructor(
     public kind: ApiErrorKind,
     message: string,
@@ -36,6 +38,7 @@ interface Flight {
   consumers: number;
 }
 const flights = new Map<string, Flight>();
+const acquire = createLimiter(3);
 export function mirrorPath(path: string) {
   return `/${path.replace(/^\/?api\//, "").replace(/^\//, "")}`;
 }
@@ -46,6 +49,7 @@ async function fetchPayload(
   signal: AbortSignal,
 ): Promise<unknown> {
   for (let attempt = 0; attempt < 2; attempt++) {
+    const release = await acquire(signal);
     const timeout = new AbortController(),
       timer = setTimeout(() => timeout.abort(), 15_000);
     const abort = () => timeout.abort();
@@ -97,6 +101,7 @@ async function fetchPayload(
           url,
         );
     } finally {
+      release();
       clearTimeout(timer);
       signal.removeEventListener("abort", abort);
     }

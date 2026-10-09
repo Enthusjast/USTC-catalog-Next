@@ -10,13 +10,14 @@ import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import ProgramModule from "../components/ProgramModule.vue";
 import CourseDetail from "../components/CourseDetail.vue";
+import ProgramSources from "../components/ProgramSources.vue";
 const route = useRoute(),
   expandedParam = useFilter("expanded"),
   code = useFilter("course"),
   copied = ref("");
 const id = computed(() => String(route.params.id)),
   { data, meta, loading, error, reload } = useQuery(
-    (signal, force) => catalog.program(id.value, { signal, force }),
+    (signal, force) => catalog.expandedProgram(id.value, { signal, force }),
     id,
   );
 const expanded = computed(() =>
@@ -67,7 +68,8 @@ async function share() {
     :error="error"
     :meta="meta"
     @retry="reload"
-  /><template v-if="data"
+  /><ProgramSources v-if="data" :program="data" @refresh="reload" /><template
+    v-if="data"
     ><div class="program-overview panel">
       <div>
         <span class="muted">计划要求学分</span

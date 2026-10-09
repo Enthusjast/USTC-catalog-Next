@@ -15,6 +15,7 @@ const reference = useQuery(
   () => props.module.publicId,
   () =>
     open.value &&
+    !props.module.referenceState &&
     !!props.module.publicId &&
     !props.module.courses.length &&
     !props.module.children.length,
