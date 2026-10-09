@@ -64,6 +64,7 @@ function focusOut(event: FocusEvent) {
 </script>
 <template>
   <div class="search-container" :class="{ compact }" @focusout="focusOut">
+    <label :for="id" class="search-label">全站搜索</label>
     <form
       :class="compact ? 'global-search' : 'hero-search'"
       @submit.prevent="submit"

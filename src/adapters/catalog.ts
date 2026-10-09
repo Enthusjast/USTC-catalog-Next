@@ -189,11 +189,11 @@ export const exams = (data: z.infer<typeof schemas.examSchema>): Exam[] =>
     courseCode: e.lesson?.course.code ?? e.courseCode ?? "",
     courseName: e.lesson?.course.cn ?? e.courseName ?? e.courseCode ?? "未提供",
     lessonCode: e.lesson?.code ?? undefined,
-    date: e.examDate ?? undefined,
+    date: e.examDate?.match(/^\d{4}-\d{2}-\d{2}/)?.[0],
     start: clockMinutes(e.startTime),
     end: clockMinutes(e.endTime),
-    rooms: (e.examRooms ?? []).map((r) => r.room),
-    department: e.lesson?.openDepartment?.cn ?? undefined,
+    rooms: e.examRooms?.map((r) => r.room) ?? (e.room ? [e.room] : []),
+    department: e.lesson?.openDepartment?.cn ?? e.dept ?? undefined,
     remark: e.examMode ?? undefined,
   }));
 export const roomUsage = (

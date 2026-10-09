@@ -179,6 +179,8 @@ export const examSchema = z.array(
         .optional(),
       courseCode: text,
       courseName: text,
+      room: text,
+      dept: text,
       lesson: z
         .object({
           code: text,

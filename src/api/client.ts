@@ -224,5 +224,8 @@ export async function query<T>(
       "数据源当前限制公开查询，请访问综合教务系统或稍后重试。",
       restriction.meta.source,
     );
-  return request(path, schema, options);
+  const result = await request(path, schema, options);
+  if (restriction.meta.state === "stale" && result.meta.state !== "online")
+    result.meta.state = "stale";
+  return result;
 }

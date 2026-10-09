@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from "vue";
+import { ref, watch, onBeforeUnmount, nextTick } from "vue";
 import { SlidersHorizontal, X } from "@lucide/vue";
 const open = ref(false),
   panel = ref<HTMLElement>(),
@@ -9,7 +9,7 @@ watch(open, async (value) => {
   if (value) {
     previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    await Promise.resolve();
+    await nextTick();
     panel.value?.querySelector<HTMLElement>("button,input,select")?.focus();
   } else {
     document.body.style.overflow = previousOverflow;

@@ -142,8 +142,56 @@ const comparison = computed(() =>
       </p>
     </section>
     <section class="panel compare-section">
+      <h2>
+        模块要求变化
+        <span class="muted">{{ comparison.requirements.length }}</span>
+      </h2>
+      <article
+        v-for="change in comparison.requirements"
+        :key="change.path"
+        class="compare-row"
+      >
+        <strong>{{ change.path }}</strong>
+        <div
+          v-for="(module, index) in [change.before, change.after]"
+          :key="index"
+        >
+          <span class="tag">{{ index ? "目标计划" : "原计划" }}</span>
+          <p>
+            要求 {{ module.requiredCredits ?? "未提供" }} 学分 /
+            {{ module.requiredCourses ?? "未提供" }} 门课程
+          </p>
+          <p>{{ module.requirement ?? "要求说明未提供" }}</p>
+          <p v-if="module.publicId">公共模块引用 #{{ module.publicId }}</p>
+        </div>
+      </article>
+      <p v-if="!comparison.requirements.length" class="muted">
+        已唯一匹配的模块没有要求变化。
+      </p>
+    </section>
+    <section
+      v-if="
+        comparison.unresolved.before.length ||
+        comparison.unresolved.after.length
+      "
+      class="panel compare-section"
+    >
+      <h2>尚未展开的公共模块引用</h2>
+      <p class="muted">
+        本次课程比较仅覆盖计划详情直接提供的条目。以下引用的课程未计入比较，可在计划详情展开核对。
+      </p>
+      <p v-for="path in comparison.unresolved.before" :key="`a${path}`">
+        原计划：{{ path }}
+      </p>
+      <p v-for="path in comparison.unresolved.after" :key="`b${path}`">
+        目标计划：{{ path }}
+      </p>
+    </section>
+    <section class="panel compare-section">
       <h2>无法按名称路径匹配的模块</h2>
-      <p class="muted">模块结构或名称发生变化时，列出双方路径供人工核对。</p>
+      <p class="muted">
+        模块结构、名称变化或名称路径重复时，列出双方路径供人工核对。
+      </p>
       <p v-for="path in comparison.unmatchedModules.before" :key="`a${path}`">
         原计划：{{ path }}
       </p>

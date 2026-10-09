@@ -1,5 +1,11 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import {
+  useRoute,
+  useRouter,
+  type LocationQueryRaw,
+  type Router,
+} from "vue-router";
+const pending = new WeakMap<Router, LocationQueryRaw>();
 export function useFilter(name: string, fallback = "") {
   const route = useRoute(),
     router = useRouter();
@@ -9,13 +15,18 @@ export function useFilter(name: string, fallback = "") {
         ? (route.query[name] as string)
         : fallback,
     set: (value) => {
-      void router.replace({
-        query: {
-          ...route.query,
-          [name]: value && value !== fallback ? value : undefined,
-          page: name === "page" ? value : undefined,
-        },
+      const first = !pending.has(router);
+      pending.set(router, {
+        ...(pending.get(router) ?? route.query),
+        [name]: value && value !== fallback ? value : undefined,
+        page: name === "page" ? value : undefined,
       });
+      if (first)
+        queueMicrotask(() => {
+          const query = pending.get(router);
+          pending.delete(router);
+          void router.replace({ query });
+        });
     },
   });
 }

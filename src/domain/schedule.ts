@@ -4,7 +4,7 @@ import type { Lesson, Schedule } from "./models";
 export function parseWeeks(text: string): number[] | undefined {
   let value = text
     .trim()
-    .replaceAll("，", ",")
+    .replace(/[，、]/g, ",")
     .replace(/[~～—–]/g, "-")
     .replace(/周/g, "");
   const odd = /单/.test(value),
@@ -14,7 +14,7 @@ export function parseWeeks(text: string): number[] | undefined {
   const excluded: number[] = [];
   const exception = value.match(/^(.*?)(?:除|去掉)(.+?)(?:外)?$/);
   if (exception) {
-    value = exception[1]!;
+    value = exception[1]!.replace(/,$/, "");
     const parsed = parseWeeks(exception[2]!.replace(/外$/, ""));
     if (!parsed) return undefined;
     excluded.push(...parsed);
@@ -61,11 +61,26 @@ export function parseSchedule(text: string): Schedule {
       unknown = true;
       continue;
     }
+    const location = match[2]!.trim(),
+      day = Number(match[3]);
+    const existing = slots.find(
+      (slot) =>
+        slot.day === day &&
+        slot.location === location &&
+        slot.periods.join(",") === periods.join(","),
+    );
+    if (existing) {
+      existing.weeks = [...new Set([...existing.weeks, ...weeks])].sort(
+        (a, b) => a - b,
+      );
+      continue;
+    }
+    if (/[:：]\s*[1-7]\s*\(/.test(line.slice(match[0].length))) unknown = true;
     slots.push({
-      day: Number(match[3]),
+      day,
       periods,
       weeks,
-      location: match[2]!.trim(),
+      location,
     });
   }
   return { slots, unknown, text };

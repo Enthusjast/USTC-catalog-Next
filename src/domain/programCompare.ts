@@ -47,20 +47,67 @@ export function comparePrograms(left: Program, right: Program) {
     if (signature(rows) !== signature(target))
       changed.push({ code, before: rows, after: target });
   }
-  const modulePaths = (modules: ProgramModule[], prefix = ""): string[] =>
+  const moduleRows = (
+    modules: ProgramModule[],
+    prefix = "",
+  ): { path: string; module: ProgramModule }[] =>
     modules.flatMap((m) => {
       const path = prefix ? `${prefix} / ${m.name}` : m.name;
-      return [path, ...modulePaths(m.children, path)];
+      return [{ path, module: m }, ...moduleRows(m.children, path)];
     });
-  const oldPaths = modulePaths(left.modules),
-    newPaths = modulePaths(right.modules);
+  const oldModules = moduleRows(left.modules),
+    newModules = moduleRows(right.modules);
+  const oldPaths = oldModules.map((row) => row.path),
+    newPaths = newModules.map((row) => row.path);
+  const requirements = oldModules.flatMap((row) => {
+    const matched = newModules.filter((next) => next.path === row.path);
+    if (
+      matched.length !== 1 ||
+      oldPaths.filter((path) => path === row.path).length !== 1
+    )
+      return [];
+    const signature = (m: ProgramModule) =>
+      JSON.stringify([
+        m.requiredCredits,
+        m.requiredCourses,
+        m.requirement,
+        m.publicId,
+      ]);
+    return signature(row.module) !== signature(matched[0]!.module)
+      ? [{ path: row.path, before: row.module, after: matched[0]!.module }]
+      : [];
+  });
+  const unresolved = (rows: typeof oldModules) =>
+    rows
+      .filter(
+        (row) =>
+          row.module.publicId &&
+          !row.module.children.length &&
+          !row.module.courses.length,
+      )
+      .map((row) => `${row.path} (#${row.module.publicId})`);
   return {
     added,
     removed,
     changed,
+    requirements,
+    unresolved: {
+      before: unresolved(oldModules),
+      after: unresolved(newModules),
+    },
     unmatchedModules: {
-      before: oldPaths.filter((path) => !newPaths.includes(path)),
-      after: newPaths.filter((path) => !oldPaths.includes(path)),
+      before: oldPaths.filter(
+        (path) =>
+          !newPaths.includes(path) ||
+          oldPaths.filter((p) => p === path).length > 1 ||
+          newPaths.filter((p) => p === path).length > 1,
+      ),
+      after: newPaths.filter(
+        (path) =>
+          !oldPaths.includes(path) ||
+          newPaths.filter((p) => p === path).length > 1 ||
+          oldPaths.filter((p) => p === path).length > 1,
+      ),
     },
   };
 }

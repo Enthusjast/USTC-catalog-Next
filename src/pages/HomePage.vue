@@ -117,7 +117,8 @@ const tasks = [
         <h2>公开数据，清楚的来源</h2>
         <p>
           当前学期：{{
-            data?.find((s) => s.current)?.name ?? "读取中"
+            data?.find((s) => s.current)?.name ??
+            (loading ? "读取中" : "暂不可用")
           }}。查询时间表示浏览器读取接口的时间。
         </p>
       </div>
