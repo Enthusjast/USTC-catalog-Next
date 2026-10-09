@@ -8,7 +8,8 @@
     "typecheck": "vue-tsc --noEmit",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "format": "prettier --write src index.html vite.config.ts tsconfig.json package.json README.md docs .github"
+    "format": "prettier --write src scripts index.html vite.config.ts tsconfig.json package.json README.md docs .github",
+    "archives:sync": "node scripts/sync-archives.mjs"
   },
   "dependencies": {
     "@lucide/vue": "^1.54.0",
@@ -20,6 +21,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.4",
     "@vitejs/plugin-vue": "^6.0.9",
+    "linkedom": "^0.18.13",
     "prettier": "^3.9.9",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.3",

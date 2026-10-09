@@ -403,9 +403,7 @@ function startLessons() {
             <QueryState :meta="match.meta" @retry="planResults.reload" />
           </article>
           <p v-if="incomplete.length" class="notice warning">
-            {{
-              incomplete.length
-            }}
+            {{ incomplete.length }}
             份计划或公共模块读取不完整；未匹配不能解释为不包含本课程。
           </p>
           <details v-if="incomplete.length" class="reference-sources">

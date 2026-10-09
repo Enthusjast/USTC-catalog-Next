@@ -1,13 +1,61 @@
 <script setup lang="ts">
-import { ArrowUpRight, Archive } from "@lucide/vue";
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+import { ArrowUpRight, Archive, ArrowRight } from "@lucide/vue";
+import { archives } from "../api/archives";
+import { useQuery } from "../features/useQuery";
+import { useFilter } from "../features/useFilters";
+import { usePagination } from "../features/usePagination";
 import PageHeading from "../components/PageHeading.vue";
+import FilterPanel from "../components/FilterPanel.vue";
+import QueryState from "../components/QueryState.vue";
+import EmptyState from "../components/EmptyState.vue";
+import Pagination from "../components/Pagination.vue";
+const router = useRouter(),
+  q = useFilter("q"),
+  type = useFilter("type"),
+  department = useFilter("department");
+const { data, meta, loading, error, reload } = useQuery((signal, force) =>
+  archives.index({ signal, force }),
+);
+const types = computed(() => [
+  ...new Set(data.value?.documents.map((document) => document.kind)),
+]);
+const departments = computed(() => [
+  ...new Set(
+    (data.value?.documents ?? [])
+      .map((document) => document.department)
+      .filter((name): name is string => !!name),
+  ),
+]);
+const filtered = computed(() =>
+  (data.value?.documents ?? []).filter(
+    (document) =>
+      (!q.value ||
+        `${document.title} ${document.code} ${document.department ?? ""}`.includes(
+          q.value,
+        )) &&
+      (!type.value || document.kind === type.value) &&
+      (!department.value || document.department === department.value),
+  ),
+);
+const { page, visible, change } = usePagination(filtered, 12);
+function reset() {
+  void router.replace({ path: "/archives", query: {} });
+}
 </script>
 <template>
   <PageHeading
     title="历史培养方案归档"
-    description="历史资料与 API 执行计划分开呈现。请按入学年级与专业核对适用范围。"
+    description="浏览 2013 级静态方案的正文与课程表，查阅历年官方 PDF 附件。历史资料的版本不代表当前安排。"
     eyebrow="ARCHIVES / 历史资料"
-  />
+    ><a
+      class="button secondary"
+      href="https://www.teach.ustc.edu.cn/education/241.html"
+      target="_blank"
+      rel="noopener noreferrer"
+      >官方历史归档<ArrowUpRight :size="16" /></a
+  ></PageHeading>
   <nav class="tabs" aria-label="资料集合">
     <RouterLink to="/programs">API 执行计划</RouterLink
     ><RouterLink class="active" to="/archives"
@@ -17,42 +65,129 @@ import PageHeading from "../components/PageHeading.vue";
   <div class="notice">
     <Archive :size="19" />
     <p>
-      历史正文来自官方静态页面或归档文件。其版本不代表当前教学安排；点击来源链接浏览正文、课程表和附件。
+      本页资料依据原站明确标注的 2013
+      级目录归档。课程表保留原表的列、合并单元格与备注；完整正文从官方静态文档阅读区打开。归档采集时间不代表资料更新时间。
     </p>
   </div>
-  <div class="archive-grid">
-    <article class="panel result-card">
-      <div class="card-topline">
-        <span class="tag warning">2013 级</span
-        ><span class="tag">静态资料</span>
+  <QueryState :loading="loading" :error="error" :meta="meta" @retry="reload" />
+  <div class="query-layout">
+    <FilterPanel
+      ><div class="filter-field">
+        <label for="archive-q">文档名称或编号</label
+        ><input
+          id="archive-q"
+          v-model="q"
+          type="search"
+          placeholder="如：数学、001001"
+        />
       </div>
-      <h2>2013 级培养方案目录</h2>
-      <p>按院系、专业、英才班、交叉学科及双学位课程设置浏览官方历史正文。</p>
-      <a
-        class="button secondary"
-        style="margin-top: 24px"
-        href="https://catalog.ustc.edu.cn/program"
-        target="_blank"
-        rel="noopener noreferrer"
-        >浏览官方历史正文<ArrowUpRight :size="16"
-      /></a>
-    </article>
-    <article class="panel result-card">
-      <div class="card-topline">
-        <span class="tag">历年资料</span><span class="tag">官方归档</span>
+      <div class="filter-field">
+        <label for="archive-type">资料类型</label
+        ><select id="archive-type" v-model="type">
+          <option value="">全部类型</option>
+          <option v-for="value in types" :key="value">{{ value }}</option>
+        </select>
       </div>
-      <h2>本科教育培养方案归档</h2>
-      <p>
-        通过本科教育官方归档页查找年级、专业说明及原始附件。文件标注的年级和版本为准。
-      </p>
-      <a
-        class="button secondary"
-        style="margin-top: 24px"
-        href="https://www.teach.ustc.edu.cn/education/241.html"
-        target="_blank"
-        rel="noopener noreferrer"
-        >查看官方归档与附件<ArrowUpRight :size="16"
-      /></a>
-    </article>
+      <div class="filter-field">
+        <label for="archive-department">院系（来源有标注时）</label
+        ><select id="archive-department" v-model="department">
+          <option value="">全部院系</option>
+          <option v-for="value in departments" :key="value">{{ value }}</option>
+        </select>
+      </div>
+      <button class="text-button" @click="reset">清除筛选</button></FilterPanel
+    >
+    <div>
+      <div v-if="data" class="section-heading">
+        <h2>
+          2013 级静态目录
+          <span class="muted" style="font-size: 13px"
+            >{{ filtered.length }} 份</span
+          >
+        </h2>
+      </div>
+      <div class="archive-grid">
+        <article
+          v-for="document in visible"
+          :key="document.code"
+          class="panel result-card"
+        >
+          <div class="card-topline">
+            <span class="tag warning">{{ document.version }} · 静态资料</span
+            ><span class="mono muted">{{ document.code }}</span>
+          </div>
+          <h2>
+            <RouterLink :to="`/archives/${document.code}`">{{
+              document.title
+            }}</RouterLink>
+          </h2>
+          <p>
+            {{ document.kind
+            }}{{ document.department ? ` · ${document.department}` : "" }}
+          </p>
+          <RouterLink
+            class="button secondary"
+            style="margin-top: 20px"
+            :to="`/archives/${document.code}`"
+            >浏览正文与课程表<ArrowRight :size="16"
+          /></RouterLink>
+        </article>
+      </div>
+      <EmptyState
+        v-if="data && !filtered.length"
+        message="尝试专业名称、方案编号，或清除类型与院系筛选。"
+        ><button class="button secondary" @click="reset">
+          清除筛选
+        </button></EmptyState
+      ><Pagination
+        :total="filtered.length"
+        :size="12"
+        :page="page"
+        @change="change"
+      />
+    </div>
   </div>
+  <section v-if="data" class="panel archive-attachments">
+    <div class="section-heading">
+      <h2>历年官方附件</h2>
+      <a
+        :href="data.historySource"
+        class="text-button"
+        target="_blank"
+        rel="noopener noreferrer"
+        >官方归档来源<ArrowUpRight :size="14"
+      /></a>
+    </div>
+    <p class="muted">
+      版本标识来自官方归档表；链接指向原始 PDF 或官方专业设置页。
+    </p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>版本</th>
+            <th>资料</th>
+            <th>格式与来源</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="attachment in data.attachments" :key="attachment.id">
+            <td>
+              <span class="tag">{{ attachment.version }}</span>
+            </td>
+            <td>
+              <a
+                :href="attachment.source"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="course-name"
+                >{{ attachment.title }}<ArrowUpRight :size="14"
+              /></a>
+            </td>
+            <td>{{ attachment.kind }} · 本科教育官方归档</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </template>

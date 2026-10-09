@@ -27,6 +27,7 @@ export class ApiError extends Error {
   }
 }
 interface RequestOptions {
+  base?: string;
   signal?: AbortSignal;
   ttl?: number;
   force?: boolean;
@@ -114,7 +115,7 @@ async function request<T>(
   schema: z.ZodType<T>,
   options: RequestOptions = {},
 ): Promise<QueryResult<T>> {
-  const url = `${API_BASE}${mirrorPath(path)}`,
+  const url = `${options.base ?? API_BASE}${mirrorPath(path)}`,
     key = `${url}:${JSON.stringify(options.body ?? null)}:${!!options.force}`;
   if (options.signal?.aborted)
     throw new DOMException("查询已取消", "AbortError");
@@ -233,4 +234,17 @@ export async function query<T>(
   if (restriction.meta.state === "stale" && result.meta.state !== "online")
     result.meta.state = "stale";
   return result;
+}
+
+/** Static versioned archive assets do not belong to the mirror API namespace. */
+export function readAsset<T>(
+  path: string,
+  schema: z.ZodType<T>,
+  options: RequestOptions = {},
+) {
+  return request(path, schema, {
+    ttl: TTL.reference,
+    ...options,
+    base: location.origin,
+  });
 }

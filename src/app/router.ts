@@ -5,6 +5,11 @@ export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
+      path: "/archives/:code",
+      component: () => import("../pages/ArchiveDetailPage.vue"),
+      meta: { title: "历史方案正文" },
+    },
+    {
       path: "/lessons",
       component: () => import("../pages/LessonsPage.vue"),
       meta: { title: "全校教学班" },

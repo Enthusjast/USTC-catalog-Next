@@ -9,6 +9,18 @@ import type { QueryMeta } from "../domain/models";
 import { ApiError } from "../api/client";
 defineProps<{ loading?: boolean; error?: Error; meta?: QueryMeta }>();
 defineEmits<{ retry: [] }>();
+function stateLabel(meta: QueryMeta) {
+  if (meta.kind === "demo") return "演示数据";
+  if (meta.kind === "archive")
+    return {
+      online: "读取静态归档",
+      cache: "本机静态缓存",
+      stale: "离线 · 静态缓存已过期",
+    }[meta.state];
+  return { online: "在线读取", cache: "本机缓存", stale: "离线 · 缓存已过期" }[
+    meta.state
+  ];
+}
 function timestamp(value: string) {
   return new Date(value).toLocaleString("zh-CN", { hour12: false });
 }
@@ -58,12 +70,10 @@ function age(value: string) {
     role="status"
   >
     <span class="status-label"
-      ><span class="status-dot" />{{
-        { online: "在线读取", cache: "本机缓存", stale: "离线 · 缓存已过期" }[
-          meta.state
-        ]
-      }}</span
+      ><span class="status-dot" />{{ stateLabel(meta) }}</span
     ><span>查询时间 {{ timestamp(meta.retrievedAt) }}</span
+    ><span v-if="meta.snapshotAt"
+      >归档采集时间 {{ timestamp(meta.snapshotAt) }}</span
     ><span v-if="meta.state !== 'online'"
       >缓存年龄 {{ age(meta.retrievedAt) }}</span
     ><a :href="meta.source" target="_blank" rel="noopener noreferrer"

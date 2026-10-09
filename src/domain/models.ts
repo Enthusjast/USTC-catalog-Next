@@ -132,6 +132,8 @@ export interface Substitution {
   remark?: string;
 }
 export interface QueryMeta {
+  kind?: "archive" | "demo";
+  snapshotAt?: string;
   retrievedAt: string;
   source: string;
   state: "online" | "cache" | "stale";
