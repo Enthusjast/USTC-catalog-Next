@@ -248,7 +248,6 @@ function exportICS() {
 <template>
   <PageHeading
     title="全校教学班"
-    description="按教师、时间或院系查找教学班，整理本机候选与周课表。"
     eyebrow="03 / PUBLIC LESSONS"
     ><div class="filter-field lesson-semester-field">
       <label for="lesson-semester">查询学期</label
@@ -265,7 +264,7 @@ function exportICS() {
     @retry="semesterQuery.reload"
   />
   <div class="notice">
-    公开信息可能次日更新，候选清单不表示实际选课。时间重叠仅依据公开安排判断。
+    本页查询结果非实时数据，次日更新；实时数据请登录综合教务系统查看。
   </div>
   <div class="query-layout">
     <FilterPanel
