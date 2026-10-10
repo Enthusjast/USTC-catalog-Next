@@ -44,3 +44,4 @@
 - API 同源及 Origin 头探测的 OPTIONS 返回 204，响应出现 `Access-Control-Allow-Origin: *`；带请求头的检查允许 content-type。未知路径在浏览器中仍返回 `200 + text/html`。这些配置不满足 spec 的精确来源及 JSON 404 门槛。
 - GitHub Pages 最新读取：自定义域正确、`https_enforced=true`、`status=built`，但发布类型为 `legacy`。本轮开发代码没有由本次操作推送或部署，正式站点看到的版本不能代替最新代码验收。
 - `npm run check:api` 当前返回非零：本机 Node HTTP 环境得到 502/HTML，与浏览器读取成功的环境有差异；同时精确 Origin 与未知路径要求未通过。脚本被加入发布任务，失败会生成 Actions 摘要并阻止该次发布。
+- 追加核对修正 deploy job 的 `contents: read`：该 job 自己声明权限后，必须显式保留私有仓库检出所需权限。完整 Actions 发布仍待实际运行验收。
