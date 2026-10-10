@@ -11,11 +11,15 @@ export const roomDirectorySource = {
   url: "https://catalog.ustc.edu.cn/query/classroom",
   bundle: "https://catalog.ustc.edu.cn/assets/index-DeAsVxMB.js",
   verifiedAt: "2026-10-10",
+  groupsVerifiedAt: "2026-10-11",
 };
 export const buildingNames: Record<string, string> = {
   "1": "第一教学楼",
   "2": "第二教学楼",
   "3": "第三教学楼",
+  "3ab": "第三教学楼AB楼",
+  "3c": "第三教学楼C楼",
+  "3unknown": "第三教学楼（区域未确认）",
   "5": "第五教学楼",
   "8": "中校区综合体育馆",
   "9": "中校区艺术教学中心",
@@ -32,6 +36,14 @@ export const buildingNames: Record<string, string> = {
 };
 export function buildingLabel(code?: string) {
   return code ? (buildingNames[code] ?? `楼栋 ${code}`) : "楼栋未提供";
+}
+/** Presentation sections follow the official grouping; API building codes stay intact. */
+export function roomBuildingCode(room: { building?: string; room: string }) {
+  if (room.building !== "3") return room.building;
+  const code = room.room.trim().toUpperCase();
+  if (/^3[AB]\d/.test(code)) return "3ab";
+  if (/^3C\d/.test(code)) return "3c";
+  return "3unknown";
 }
 export const roomDirectory: readonly RoomDirectoryEntry[] = [
   {

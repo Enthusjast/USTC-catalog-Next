@@ -19,6 +19,11 @@ the MIT notice below applies to the referenced CLI materials, not to the officia
 catalogue. Room metadata is a dated factual reference, not a guarantee of access,
 availability or complete usage coverage.
 
+The third teaching building's presentation groups were checked against the same
+official page and bundle on 2026-10-11: rooms prefixed 3A or 3B belong to Section
+A & B, and rooms prefixed 3C belong to Section C. These display groups retain
+the original API building identifier 3 and the directory's explicit floors.
+
 Source: https://github.com/Enthusjast/USTC-catalog-CLI
 
 MIT License

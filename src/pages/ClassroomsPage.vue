@@ -14,7 +14,11 @@ import {
   usageTypes,
   type RoomSummary,
 } from "../domain/roomAvailability";
-import { roomDirectory, buildingLabel } from "../domain/roomDirectory";
+import {
+  roomDirectory,
+  buildingLabel,
+  roomBuildingCode,
+} from "../domain/roomDirectory";
 import {
   classroomDay,
   hasUsageTime,
@@ -40,7 +44,11 @@ const router = useRouter(),
   capacity = useFilter("capacity"),
   campus = useFilter("campus");
 const filterSummary = useFilterSummary({
-  building: { label: "楼宇", model: building },
+  building: {
+    label: "楼宇",
+    model: building,
+    display: () => buildingLabel(building.value),
+  },
   room: { label: "教室", model: room },
   type: {
     label: "使用类型",
@@ -55,16 +63,6 @@ const { data, loading } = useQuery(
   (signal, force) => catalog.rooms(date.value, { signal, force }),
   date,
   validDate,
-);
-const buildings = computed(() =>
-  [
-    ...new Set([
-      ...roomDirectory.map((r) => r.buildingCode),
-      ...(data.value ?? [])
-        .map((r) => r.building)
-        .filter((b): b is string => !!b),
-    ]),
-  ].sort((a, b) => a.localeCompare(b, "zh", { numeric: true })),
 );
 const campuses = computed(() => [
   ...new Set(
@@ -82,11 +80,20 @@ const rooms = computed(() =>
     roomDirectory,
   ),
 );
+const buildings = computed(() =>
+  [
+    ...new Set(
+      rooms.value.map(roomBuildingCode).filter((b): b is string => !!b),
+    ),
+  ].sort((a, b) => a.localeCompare(b, "zh", { numeric: true })),
+);
 const filtered = computed(() =>
   rooms.value.filter(
     (r) =>
       (!room.value || r.room.includes(room.value)) &&
-      (!building.value || r.building === building.value) &&
+      (!building.value ||
+        r.building === building.value ||
+        roomBuildingCode(r) === building.value) &&
       (!capacity.value ||
         (r.capacity !== undefined && r.capacity >= Number(capacity.value))) &&
       (!campus.value || r.campus === campus.value),
@@ -187,6 +194,7 @@ function reset() {
         <label for="room-building">楼宇编号</label
         ><select id="room-building" v-model="building">
           <option value="">全部楼宇</option>
+          <option v-if="building === '3'" value="3">第三教学楼（全部）</option>
           <option v-for="b in buildings" :key="b" :value="b">
             {{ buildingLabel(b) }}
           </option>
@@ -320,7 +328,7 @@ function reset() {
           <span class="muted">完整教学日</span>
         </div>
         <p class="muted room-detail-caption">
-          {{ buildingLabel(selectedRoom.building)
+          {{ buildingLabel(roomBuildingCode(selectedRoom))
           }}<span v-if="selectedRoom.capacity !== undefined">
             · 容量 {{ selectedRoom.capacity }}</span
           ><span v-if="selectedRoom.campus"> · {{ selectedRoom.campus }}</span

@@ -21,7 +21,7 @@ import {
   type CSSProperties,
 } from "vue";
 import { X } from "@lucide/vue";
-import { buildingLabel } from "../domain/roomDirectory";
+import { buildingLabel, roomBuildingCode } from "../domain/roomDirectory";
 import { usageTypes } from "../domain/roomAvailability";
 import { formatClock } from "../domain/schedule";
 import { hasUsageTime, usageCategory } from "../domain/roomTimeline";
@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
           <div>
             <dt>地点</dt>
             <dd>
-              {{ buildingLabel(selection.room.building) }} ·
+              {{ buildingLabel(roomBuildingCode(selection.room)) }} ·
               {{
                 selection.room.floor === undefined
                   ? "楼层未确认"

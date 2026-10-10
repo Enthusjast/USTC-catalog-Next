@@ -1,5 +1,9 @@
 import type { RoomUsage } from "./models";
-import { buildingLabel, type RoomDirectoryEntry } from "./roomDirectory";
+import {
+  buildingLabel,
+  roomBuildingCode,
+  type RoomDirectoryEntry,
+} from "./roomDirectory";
 export interface RoomSummary {
   room: string;
   building?: string;
@@ -133,13 +137,14 @@ export const roomFloorLabel = (floor?: number) =>
 export function groupRoomFloors(rooms: RoomSummary[]): RoomFloorGroup[] {
   const groups = new Map<string, RoomFloorGroup>();
   for (const room of rooms) {
-    const key = JSON.stringify([room.building, room.floor]);
+    const building = roomBuildingCode(room);
+    const key = JSON.stringify([building, room.floor]);
     const group = groups.get(key) ?? {
       key,
-      building: room.building,
+      building,
       floor: room.floor,
       label: roomFloorLabel(room.floor),
-      title: `${buildingLabel(room.building)} / ${roomFloorLabel(room.floor)}`,
+      title: `${buildingLabel(building)} / ${roomFloorLabel(room.floor)}`,
       rooms: [],
     };
     group.rooms.push(room);
