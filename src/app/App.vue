@@ -226,7 +226,7 @@ function skipToMain() {
           target="_blank"
           rel="noopener noreferrer"
           >综合教务系统<ArrowUpRight :size="13" /></a
-        ><RouterLink to="/about/data">数据来源与说明</RouterLink>
+        ><RouterLink to="/about/data">站点说明</RouterLink>
       </nav>
     </div>
     <div class="footer-bottom">

@@ -2,7 +2,6 @@
 import { ref } from "vue";
 import { Trash2 } from "@lucide/vue";
 import { clearCache } from "../api/cache";
-import { API_BASE } from "../api/client";
 import { clearPlanner } from "../features/usePlanner";
 import { useFavorites } from "../features/useFavorites";
 import { usePreferences } from "../features/usePreferences";
@@ -26,27 +25,24 @@ async function clearLocal() {
 </script>
 <template>
   <PageHeading
-    title="数据来源与使用说明"
-    description="了解公开数据来自哪里、查询和缓存时间意味着什么，以及本机规划的适用范围。"
-    eyebrow="ABOUT / 数据说明"
+    title="站点说明"
+    description="了解本站功能和本机数据管理。"
+    eyebrow="ABOUT / 关于本站"
   />
   <article class="panel prose">
     <h2>独立公共查询工具</h2>
     <p>
-      科大目录非中国科学技术大学官方系统。本站查询公开只读资料，提供浏览器内的检索与规划辅助；不要求账号，不读取学生身份、成绩或个人选课关系。
+      USTC-catalog-Next
+      非中国科学技术大学官方系统。本站查询公开只读资料，提供浏览器内的检索与规划辅助；不要求账号，不读取学生身份、成绩或个人选课关系。
     </p>
-    <h2>数据来源</h2>
+    <h2>公开资料</h2>
     <p>
       原始公开资料来自<a
         href="https://catalog.ustc.edu.cn/"
         target="_blank"
         rel="noopener noreferrer"
         >中国科大教务目录</a
-      >。页面通过镜像接口
-      <a :href="API_BASE" target="_blank" rel="noopener noreferrer">{{
-        API_BASE
-      }}</a>
-      读取数据。历史培养方案和官方汇总文件通过明确的来源链接打开。
+      >。历史培养方案和官方汇总文件可通过相应页面打开。
     </p>
     <p>
       公开教学班、考试和替代关系可能次日更新。最终排课、考试与选课结果以<a
@@ -55,27 +51,6 @@ async function clearLocal() {
         rel="noopener noreferrer"
         >综合教务系统</a
       >为准。
-    </p>
-    <h2>查询时间与缓存</h2>
-    <ul>
-      <li><strong>在线读取：</strong>本次成功从 API 读取并校验数据。</li>
-      <li>
-        <strong>本机缓存：</strong
-        >浏览器使用尚未达到重查期限的结果。不同访问者的缓存相互独立。
-      </li>
-      <li>
-        <strong>离线 · 缓存已过期：</strong
-        >网络连接失败后展示通过字段校验的旧结果，保存时间和缓存年龄会同时显示。
-      </li>
-      <li>
-        <strong>查询时间：</strong
-        >本浏览器最近成功读取此接口的时间，不是教务数据更新时间。接口未提供可信更新字段时，本站不推测更新时间。
-      </li>
-    </ul>
-    <p>
-      学期、院系和培养计划缓存 24
-      小时，课程搜索、详情、教学班、考试和替代关系缓存 30 分钟，教室记录缓存 5
-      分钟。可通过“刷新”重新查询。HTTP 错误、HTML 响应或字段变化会显示接口错误。
     </p>
     <h2>课程、计划与时间判断</h2>
     <ul>

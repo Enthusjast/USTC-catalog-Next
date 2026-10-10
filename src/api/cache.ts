@@ -85,6 +85,6 @@ export async function clearCache() {
     transaction.objectStore("queries").clear();
     transaction.oncomplete = () => resolve();
     transaction.onerror = () =>
-      reject(new Error("无法清除本机缓存，请在浏览器设置中清除站点数据。"));
+      reject(new Error("无法清除本机数据，请在浏览器设置中清除站点数据。"));
   });
 }

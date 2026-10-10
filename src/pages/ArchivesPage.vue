@@ -69,7 +69,7 @@ function reset() {
     <Archive :size="19" />
     <p>
       本页资料依据原站明确标注的 2013
-      级目录归档。课程表保留原表的列、合并单元格与备注；完整正文从官方静态文档阅读区打开。归档采集时间不代表资料更新时间。
+      级目录归档。课程表保留原表的列、合并单元格与备注；完整正文从官方静态文档阅读区打开。
     </p>
   </div>
   <QueryState :loading="loading" :error="error" :meta="meta" @retry="reload" />

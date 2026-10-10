@@ -9,36 +9,10 @@ import type { QueryMeta } from "../domain/models";
 import { ApiError } from "../api/client";
 defineProps<{ loading?: boolean; error?: Error; meta?: QueryMeta }>();
 defineEmits<{ retry: [] }>();
-function stateLabel(meta: QueryMeta) {
-  if (meta.kind === "demo") return "演示数据";
-  if (meta.kind === "archive")
-    return {
-      online: "读取静态归档",
-      cache: "本机静态缓存",
-      stale: "离线 · 静态缓存已过期",
-    }[meta.state];
-  return { online: "在线读取", cache: "本机缓存", stale: "离线 · 缓存已过期" }[
-    meta.state
-  ];
-}
-function timestamp(value: string) {
-  return new Date(value).toLocaleString("zh-CN", { hour12: false });
-}
-function shortTimestamp(value: string) {
-  const date = new Date(value);
-  return `${date.getMonth() + 1}/${date.getDate()} ${date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
-}
-function age(value: string) {
-  const minutes = Math.max(
-    0,
-    Math.floor((Date.now() - Date.parse(value)) / 60_000),
-  );
-  return minutes < 60 ? `${minutes} 分钟` : `${Math.floor(minutes / 60)} 小时`;
-}
 </script>
 <template>
-  <div v-if="loading" class="query-loading" role="status">
-    <LoaderCircle class="spin" :size="18" />正在读取公开数据…
+  <div v-if="loading" class="query-loading" role="status" aria-label="正在加载">
+    <LoaderCircle class="spin" :size="18" aria-hidden="true" />
   </div>
   <div v-else-if="error" class="notice error" role="alert">
     <AlertTriangle :size="20" />
@@ -49,12 +23,6 @@ function age(value: string) {
           : "数据暂时无法读取"
       }}</strong>
       <p>{{ error.message }}</p>
-      <p v-if="error instanceof ApiError">
-        本次查询失败时间 {{ timestamp(error.attemptedAt) }}
-      </p>
-      <p v-if="error instanceof ApiError && error.source" class="source-url">
-        {{ error.source }}
-      </p>
       <div class="flex-actions">
         <button class="button small secondary" @click="$emit('retry')">
           <RefreshCw :size="15" />重新查询</button
@@ -66,53 +34,5 @@ function age(value: string) {
         /></a>
       </div>
     </div>
-  </div>
-  <div
-    v-else-if="meta"
-    class="data-status"
-    :class="{ stale: meta.state === 'stale' }"
-    role="status"
-  >
-    <span class="status-label"
-      ><span class="status-dot" />{{ stateLabel(meta) }}</span
-    ><time
-      :datetime="meta.retrievedAt"
-      :title="`查询时间 ${timestamp(meta.retrievedAt)}`"
-      :aria-label="`查询时间 ${timestamp(meta.retrievedAt)}`"
-      ><span class="status-time-full" aria-hidden="true"
-        >查询时间 {{ timestamp(meta.retrievedAt) }}</span
-      ><span class="status-time-short" aria-hidden="true"
-        >查询 {{ shortTimestamp(meta.retrievedAt) }}</span
-      ></time
-    ><span v-if="meta.snapshotAt" class="status-extra"
-      >归档采集时间 {{ timestamp(meta.snapshotAt) }}</span
-    ><span v-if="meta.state !== 'online'" class="status-extra"
-      >缓存年龄 {{ age(meta.retrievedAt) }}</span
-    ><span class="data-status-actions"
-      ><a :href="meta.source" target="_blank" rel="noopener noreferrer"
-        >数据来源<ArrowUpRight :size="13" /></a
-      ><button class="text-button" @click="$emit('retry')">
-        <RefreshCw :size="13" />刷新
-      </button></span
-    >
-    <details v-if="meta.sources?.length" class="query-source-details">
-      <summary>各门类来源与缓存状态（{{ meta.sources.length }}）</summary>
-      <p v-if="meta.message" class="muted">{{ meta.message }}</p>
-      <ul>
-        <li v-for="(source, index) in meta.sources" :key="source.source">
-          <span>{{ stateLabel(source) }}</span
-          ><span>{{ timestamp(source.retrievedAt) }}</span
-          ><a :href="source.source" target="_blank" rel="noopener noreferrer"
-            >来源 {{ index + 1 }}<ArrowUpRight :size="12"
-          /></a>
-        </li>
-      </ul>
-    </details>
-    <p v-if="meta.state === 'stale' && !meta.sources?.length">
-      当前网络不可用，以下为本机保存的旧结果。查询时间不等于教务数据更新时间。
-    </p>
-    <p v-else-if="meta.state === 'stale'">
-      部分门类的网络读取失败，结果含本机保存的过期资料，请展开查看各来源状态。
-    </p>
   </div>
 </template>

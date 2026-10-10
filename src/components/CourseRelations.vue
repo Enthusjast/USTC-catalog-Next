@@ -154,14 +154,6 @@ const matches = computed(
 const incomplete = computed(
   () => planResults.data.value?.filter((result) => result.issues.length) ?? [],
 );
-const outdated = computed(
-  () =>
-    planResults.data.value?.filter(
-      (item) =>
-        item.meta?.state === "stale" ||
-        item.sources.some((meta) => meta.state === "stale"),
-    ) ?? [],
-);
 const rows = computed(
   () =>
     lessonResults.data.value?.flatMap((result) =>
@@ -287,7 +279,8 @@ function startLessons() {
           <Pagination
             :total="rows.length"
             :page="lessonPage"
-            @change="lessonPage = $event" />
+            @change="lessonPage = $event"
+          />
           <p
             v-for="result in lessonResults.data.value.filter(
               (item) => item.error,
@@ -300,21 +293,9 @@ function startLessons() {
           <EmptyState
             v-if="!rows.length"
             title="已成功读取的学期中未找到该课程"
-            message="未读取学期与所选范围外的开课情况未知。" />
-          <details class="reference-sources">
-            <summary>各学期来源与查询时间</summary>
-            <div
-              v-for="result in lessonResults.data.value"
-              :key="result.semester.id"
-            >
-              <strong
-                >{{ result.semester.name }} ·
-                {{
-                  result.meta ? `${result.lessons.length} 个教学班` : "未知"
-                }}</strong
-              ><QueryState :meta="result.meta" @retry="lessonResults.reload" />
-            </div></details
-        ></template>
+            message="未读取学期与所选范围外的开课情况未知。"
+          />
+        </template>
       </div>
     </details>
     <details
@@ -408,20 +389,6 @@ function startLessons() {
               }}
               · {{ occurrence.entry.terms.join("、") || "建议学期未提供" }}
             </p>
-            <QueryState :meta="match.meta" @retry="planResults.reload" />
-            <details
-              v-if="match.sources.length"
-              class="reference-sources"
-              :open="match.sources.some((meta) => meta.state === 'stale')"
-            >
-              <summary>公共模块来源与缓存状态</summary>
-              <QueryState
-                v-for="meta in match.sources"
-                :key="meta.source"
-                :meta="meta"
-                @retry="planResults.reload"
-              />
-            </details>
           </article>
           <p v-if="incomplete.length" class="notice warning">
             {{ incomplete.length }}
@@ -432,25 +399,6 @@ function startLessons() {
             <p v-for="item in incomplete" :key="item.summary.id">
               {{ item.summary.name }}：{{ item.issues.join("；") }}
             </p>
-          </details>
-          <p v-if="outdated.length" class="notice warning">
-            {{ outdated.length }}
-            份计划的匹配结果包含过期计划或公共模块缓存，可能不反映当前关系。
-          </p>
-          <details class="reference-sources">
-            <summary>已检查计划的数据状态（包含未匹配计划）</summary>
-            <div v-for="item in planResults.data.value" :key="item.summary.id">
-              <strong>{{ item.summary.name }}</strong
-              ><QueryState
-                :meta="item.meta"
-                @retry="planResults.reload"
-              /><QueryState
-                v-for="meta in item.sources"
-                :key="meta.source"
-                :meta="meta"
-                @retry="planResults.reload"
-              />
-            </div>
           </details>
           <EmptyState
             v-if="!matches.length"

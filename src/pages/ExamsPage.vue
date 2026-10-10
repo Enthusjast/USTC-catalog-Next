@@ -136,7 +136,7 @@ function exportICS() {
     </div></PageHeading
   >
   <div class="notice warning">
-    公开考试安排可能次日更新，实际安排以综合教务系统为准。查询时间不代表考试数据更新时间。
+    公开考试安排可能次日更新，实际安排以综合教务系统为准。
   </div>
   <QueryState
     :loading="semesterQuery.loading.value"

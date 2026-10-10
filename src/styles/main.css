@@ -628,12 +628,6 @@ input[type="checkbox"] {
 .semester-links a:hover {
   background: var(--surface-soft);
 }
-.semester-card .data-status {
-  border-top: 1px solid var(--border);
-  padding-bottom: 0;
-  font-size: 11px;
-  gap: 6px 12px;
-}
 .semester-card .query-loading {
   padding: 14px 0 0;
   font-size: 12px;
@@ -772,78 +766,6 @@ input[type="checkbox"] {
   white-space: nowrap;
   color: var(--primary);
 }
-.data-status {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  padding: 9px 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-.data-status-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-}
-.data-status-actions > a {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 44px;
-}
-.status-time-short {
-  display: none;
-}
-.status-label {
-  color: var(--success);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.status-dot {
-  width: 6px;
-  height: 6px;
-  background: currentColor;
-  border-radius: 50%;
-}
-.data-status.stale .status-label {
-  color: var(--warning);
-}
-.data-status > p {
-  width: 100%;
-  color: var(--warning);
-}
-.query-source-details {
-  width: 100%;
-  border-top: 1px solid var(--border);
-  padding-top: 4px;
-}
-.query-source-details summary {
-  cursor: pointer;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-.query-source-details ul {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-.query-source-details li {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-}
-.query-source-details li a {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--primary);
-}
 .query-loading {
   display: flex;
   align-items: center;
@@ -887,10 +809,6 @@ input[type="checkbox"] {
 }
 .notice .flex-actions {
   margin-top: 12px;
-}
-.source-url {
-  font-size: 12px;
-  word-break: break-all;
 }
 .empty-state {
   padding: 56px 24px;
@@ -1739,9 +1657,6 @@ tbody tr:hover {
     min-height: 44px;
     padding: 6px 0;
   }
-  .semester-card .data-status {
-    font-size: 11px;
-  }
   .hero-topline {
     gap: 8px;
     flex-wrap: wrap;
@@ -2016,28 +1931,6 @@ tbody tr:hover {
     font-size: 11px;
     gap: 8px;
     flex-wrap: wrap;
-  }
-  .data-status {
-    font-size: 12px;
-    gap: 4px 8px;
-  }
-  .status-time-full {
-    display: none;
-  }
-  .status-time-short {
-    display: inline;
-  }
-  .data-status-actions {
-    margin-left: auto;
-    gap: 8px;
-  }
-  .data-status .status-extra {
-    order: 1;
-    width: 100%;
-  }
-  .data-status > .query-source-details,
-  .data-status > p {
-    order: 2;
   }
   .filter-field input:not([type="checkbox"]),
   .filter-field select,
@@ -2367,9 +2260,6 @@ tbody tr:hover {
   padding: 10px 12px;
   margin-bottom: 12px;
   font-size: 13px;
-}
-.compact-query-page > .data-status {
-  padding: 0 0 6px;
 }
 .classroom-page .page-heading p:empty {
   display: none;

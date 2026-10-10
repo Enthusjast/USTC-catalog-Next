@@ -37,7 +37,7 @@ export const router = createRouter({
     {
       path: "/about/data",
       component: () => import("../pages/DataPage.vue"),
-      meta: { title: "数据说明" },
+      meta: { title: "站点说明" },
     },
     {
       path: "/:pathMatch(.*)*",

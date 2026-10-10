@@ -95,8 +95,7 @@ export const catalog = {
           ? "demo"
           : undefined,
         sources,
-        message:
-          "此结果合并多个门类。查询时间按最早读取的来源计算，各来源的缓存状态可展开查看。",
+        message: "此结果合并多个门类。",
       },
     };
   },
