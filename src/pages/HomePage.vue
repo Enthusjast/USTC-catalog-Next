@@ -33,28 +33,24 @@ const tasks = [
     icon: BookOpen,
     index: "01",
     title: "课程目录",
-    name: "课程目录",
   },
   {
     path: "/programs",
     icon: Layers,
     index: "02",
     title: "培养计划",
-    name: "培养方案",
   },
   {
     path: "/lessons",
     icon: GraduationCap,
     index: "03",
     title: "全校开课",
-    name: "全校教学班",
   },
   {
     path: "/exams",
     icon: CalendarDays,
     index: "04",
     title: "考试查询",
-    name: "考试查询",
   },
 ];
 </script>
@@ -105,9 +101,8 @@ const tasks = [
         ><div class="task-top">
           <component :is="task.icon" :size="21" /><span>{{ task.index }}</span>
         </div>
-        <h3>{{ task.title }}</h3>
-        <div class="task-link">{{ task.name }}<ArrowRight :size="17" /></div
-      ></RouterLink>
+        <h3>{{ task.title }}</h3></RouterLink
+      >
     </div>
   </section>
   <HomeSemesterCard

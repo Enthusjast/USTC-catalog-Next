@@ -671,14 +671,6 @@ input[type="checkbox"] {
 }
 .task-card h3 {
   font-size: 18px;
-  margin-bottom: 8px;
-}
-.task-link {
-  display: flex;
-  justify-content: space-between;
-  color: var(--primary);
-  font-size: 13px;
-  font-weight: 550;
 }
 .secondary-tasks {
   display: grid;
@@ -1669,9 +1661,6 @@ tbody tr:hover {
   }
   .task-card h3 {
     font-size: 16px;
-  }
-  .task-link {
-    font-size: 12px;
   }
   .secondary-tasks {
     grid-template-columns: 1fr;
