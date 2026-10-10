@@ -69,17 +69,17 @@ export function layoutRoomUsage(
   });
 }
 
-export function roomTimelineTicks(from: number, to: number) {
+export function roomTimelineTicks(from: number, to: number, plotHeight = 240) {
   if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return [];
   const step =
     [15, 30, 60, 120, 180, 240].find((value) => (to - from) / value <= 8) ??
     240;
   const values = [from];
   for (let time = Math.ceil(from / step) * step; time < to; time += step) {
-    // Keep endpoint labels apart from the adjacent tick (24px in a 360px plot).
+    // Keep endpoint labels at least 24px away from an adjacent tick.
     if (
-      (time - from) / (to - from) > 24 / 360 &&
-      (to - time) / (to - from) > 24 / 360
+      (time - from) / (to - from) > 24 / plotHeight &&
+      (to - time) / (to - from) > 24 / plotHeight
     )
       values.push(time);
   }

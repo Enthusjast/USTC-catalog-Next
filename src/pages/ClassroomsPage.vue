@@ -1,19 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import { ChevronDown } from "@lucide/vue";
 import { useRouter } from "vue-router";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useFilter } from "../features/useFilters";
-import { usePagination } from "../features/usePagination";
 import { useFilterSummary } from "../features/useFilterSummary";
 import { clockMinutes, formatClock } from "../domain/schedule";
 import {
   roomAvailability,
+  roomKey,
+  groupRoomFloors,
   roomStateLabels,
   usageTypes,
   type RoomSummary,
 } from "../domain/roomAvailability";
+import {
+  roomDirectory,
+  roomDirectorySource,
+  buildingLabel,
+} from "../domain/roomDirectory";
 import { hasUsageTime, usageCategory } from "../domain/roomTimeline";
 import type { RoomUsage } from "../domain/models";
 import { isISODate } from "../domain/dates";
@@ -24,7 +30,9 @@ import FilterPanel from "../components/FilterPanel.vue";
 import RoomUsageTimeline from "../components/RoomUsageTimeline.vue";
 import DisclosureDialog from "../components/DisclosureDialog.vue";
 import EmptyState from "../components/EmptyState.vue";
-import Pagination from "../components/Pagination.vue";
+import RoomUsagePopover, {
+  type UsageSelection,
+} from "../components/RoomUsagePopover.vue";
 const router = useRouter(),
   today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }),
   date = useFilter("date", today),
@@ -60,9 +68,12 @@ const { data, meta, loading, error, reload } = useQuery(
 );
 const buildings = computed(() =>
   [
-    ...new Set(
-      (data.value ?? []).map((r) => r.building).filter((b): b is string => !!b),
-    ),
+    ...new Set([
+      ...roomDirectory.map((r) => r.buildingCode),
+      ...(data.value ?? [])
+        .map((r) => r.building)
+        .filter((b): b is string => !!b),
+    ]),
   ].sort((a, b) => a.localeCompare(b, "zh", { numeric: true })),
 );
 const campuses = computed(() => [
@@ -84,6 +95,7 @@ const rooms = computed(() =>
     data.value ?? [],
     clockMinutes(from.value),
     clockMinutes(to.value),
+    roomDirectory,
   ),
 );
 const filtered = computed(() =>
@@ -91,24 +103,49 @@ const filtered = computed(() =>
     (r) =>
       (!room.value || r.room.includes(room.value)) &&
       (!building.value || r.building === building.value) &&
-      (!type.value || r.records.some((record) => record.type === type.value)) &&
       (!state.value || r.state === state.value) &&
       (!capacity.value ||
         (r.capacity !== undefined && r.capacity >= Number(capacity.value))) &&
       (!campus.value || r.campus === campus.value),
   ),
 );
-const { page, visible, change } = usePagination(filtered, 12);
+const floors = computed(() => groupRoomFloors(filtered.value));
+const floorElements = new Map<string, HTMLElement>();
+const floorJump = ref("");
+const activeUsage = shallowRef<UsageSelection>();
+function floorRef(key: string, element: unknown) {
+  if (element instanceof HTMLElement) floorElements.set(key, element);
+  else floorElements.delete(key);
+}
+function jumpToFloor() {
+  const target = floorElements.get(floorJump.value);
+  target?.scrollIntoView({ block: "start" });
+  target
+    ?.querySelector<HTMLElement>(".room-floor-title")
+    ?.focus({ preventScroll: true });
+}
+function showUsage(entry: RoomSummary, record: RoomUsage, anchor: HTMLElement) {
+  if (
+    activeUsage.value?.record.id === record.id &&
+    activeUsage.value.anchor === anchor
+  ) {
+    activeUsage.value = undefined;
+    return;
+  }
+  activeUsage.value = { room: entry, record, date: date.value, anchor };
+}
+watch(floors, (value) => {
+  if (!value.some((floor) => floor.key === floorJump.value))
+    floorJump.value = "";
+});
 const unlocated = computed(
-  () => data.value?.filter((r) => !r.room).length ?? 0,
+  () => data.value?.filter((r) => !r.room?.trim()).length ?? 0,
 );
 const advancedCount = computed(
     () => [state.value, capacity.value, campus.value].filter(Boolean).length,
   ),
   advancedOpen = ref(!!advancedCount.value),
   selectedKey = ref("");
-const roomKey = (entry: RoomSummary) =>
-  JSON.stringify([entry.building, entry.room]);
 const selectedRoom = computed(() =>
   rooms.value.find((entry) => roomKey(entry) === selectedKey.value),
 );
@@ -124,23 +161,15 @@ watch(advancedCount, (count) => {
   if (count) advancedOpen.value = true;
 });
 watch(
-  [
-    date,
-    from,
-    to,
-    building,
-    room,
-    type,
-    state,
-    capacity,
-    campus,
-    page,
-    loading,
-  ],
+  [date, from, to, building, room, type, state, capacity, campus, loading],
   () => {
     selectedKey.value = "";
+    activeUsage.value = undefined;
   },
 );
+watch(selectedKey, () => {
+  activeUsage.value = undefined;
+});
 function inQueryRange(record: RoomUsage) {
   return (
     validTime.value &&
@@ -171,7 +200,7 @@ function reset() {
         ><ChevronDown :size="14" />
       </summary>
       <p>
-        仅展示公开记录涉及的教室；推算未发现占用不代表空闲、可预约或获准使用。
+        教室名单和楼层来自原站目录；无记录的地点保留覆盖未知，推算未发现占用不代表空闲、可预约或获准使用。
         <span v-if="unlocated"
           >另有
           {{ unlocated }} 条未提供教室的记录，未占用时段的覆盖仍可能不足。</span
@@ -202,7 +231,9 @@ function reset() {
         <label for="room-building">楼宇编号</label
         ><select id="room-building" v-model="building">
           <option value="">全部楼宇</option>
-          <option v-for="b in buildings" :key="b">{{ b }}</option>
+          <option v-for="b in buildings" :key="b" :value="b">
+            {{ buildingLabel(b) }}
+          </option>
         </select>
       </div>
       <div class="filter-field">
@@ -282,39 +313,87 @@ function reset() {
       @clear="reset"
     />
     <div
-      v-if="data && validTime"
+      v-if="validDate && validTime"
       class="section-heading compact-results-heading"
     >
       <h2>
-        公开记录涉及的教室
+        按楼层浏览教室
         <span class="muted result-total" aria-live="polite"
           >{{ filtered.length }} 间</span
         >
       </h2>
       <span class="muted">{{ date }} · {{ from }}–{{ to }}</span>
     </div>
-    <RoomUsageTimeline
-      v-if="validDate && validTime && visible.length"
-      :rooms="visible"
-      :from="clockMinutes(from)!"
-      :to="clockMinutes(to)!"
-      :type="type"
-      @select="selectedKey = roomKey($event)"
-    />
+    <div class="room-directory-source">
+      <span>教室目录核对于 {{ roomDirectorySource.verifiedAt }}</span>
+      <a
+        :href="roomDirectorySource.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        >原站目录</a
+      >
+      <span>无公开记录的教室为覆盖未知</span>
+    </div>
+    <div
+      v-if="validDate && validTime && floors.length"
+      class="room-floor-controls panel"
+    >
+      <label for="room-floor-jump">跳转楼层</label>
+      <select
+        id="room-floor-jump"
+        v-model="floorJump"
+        class="field-input"
+        @change="jumpToFloor"
+      >
+        <option value="">选择楼栋与楼层</option>
+        <option v-for="floor in floors" :key="floor.key" :value="floor.key">
+          {{ floor.title }} · {{ floor.rooms.length }} 间
+        </option>
+      </select>
+      <div class="room-usage-legend" aria-label="记录类型图例">
+        <span><i class="usage-swatch teaching" />教学安排</span
+        ><span><i class="usage-swatch occupation" />公开占用</span
+        ><span><i class="usage-swatch exam" />考试</span>
+      </div>
+      <p>
+        上下浏览楼层，每层左右滑动；点击占用项看详情，点教室编号看全天清单。
+      </p>
+      <p v-if="type" class="room-type-caption">
+        仅绘制 {{ usageTypes[type] ?? type }}；名单保留，状态仍综合全部类型。
+      </p>
+    </div>
+    <p v-if="data && !data.length" class="notice room-empty-day">
+      该日期暂无公开使用记录，以下仅展示教室目录，所有教室状态为覆盖未知。
+    </p>
+    <div v-if="validDate && validTime" class="room-floor-board">
+      <section
+        v-for="floor in floors"
+        :key="floor.key"
+        :ref="(element) => floorRef(floor.key, element)"
+        class="room-floor-section"
+      >
+        <div class="room-floor-heading">
+          <h3 class="room-floor-title" tabindex="-1">{{ floor.title }}</h3>
+          <span class="muted">{{ floor.rooms.length }} 间教室</span>
+        </div>
+        <RoomUsageTimeline
+          :rooms="floor.rooms"
+          :from="clockMinutes(from)!"
+          :to="clockMinutes(to)!"
+          :type="type"
+          :label="floor.title"
+          @select="selectedKey = roomKey($event)"
+          @usage="showUsage"
+        />
+      </section>
+    </div>
     <EmptyState
-      v-if="data && validTime && !filtered.length"
-      :title="data.length ? '没有符合条件的教室记录' : '此日期暂无公开使用记录'"
-      message="没有记录不代表空闲；公开记录未提供完整教室清单或日期覆盖范围。可更换日期或清除筛选。"
+      v-if="validDate && validTime && !filtered.length"
+      title="没有符合条件的教室"
+      message="尝试修改楼栋、名称或状态筛选；没有公开记录不代表空闲。"
     >
       <button class="button secondary" @click="reset">清除筛选</button>
     </EmptyState>
-    <Pagination
-      v-if="validDate && validTime"
-      :total="filtered.length"
-      :size="12"
-      :page="page"
-      @change="change"
-    />
     <DisclosureDialog
       :open="!!selectedRoom"
       :title="`${selectedRoom?.room ?? ''} · 全天公开记录`"
@@ -334,13 +413,19 @@ function reset() {
           <span class="muted">查询时段 {{ from }}–{{ to }}</span>
         </div>
         <p class="muted room-detail-caption">
-          楼宇 {{ selectedRoom.building ?? "未提供"
+          {{ buildingLabel(selectedRoom.building)
           }}<span v-if="selectedRoom.capacity !== undefined">
             · 容量 {{ selectedRoom.capacity }}</span
           ><span v-if="selectedRoom.campus"> · {{ selectedRoom.campus }}</span
           >。下列为全天全部类型的记录，包含当前图中隐藏的安排。
         </p>
-        <div class="table-scroll room-record-table">
+        <p v-if="!selectedRecords.length" class="notice">
+          该教室暂无公开使用记录，不能据此判断为空闲。
+        </p>
+        <div
+          v-if="selectedRecords.length"
+          class="table-scroll room-record-table"
+        >
           <table>
             <thead>
               <tr>
@@ -367,8 +452,22 @@ function reset() {
                   }}</span>
                 </td>
                 <td>
-                  <strong>{{ record.title }}</strong
-                  ><span v-if="inQueryRange(record)" class="room-record-match"
+                  <button
+                    type="button"
+                    class="room-record-detail-button"
+                    aria-haspopup="dialog"
+                    @click="
+                      showUsage(
+                        selectedRoom,
+                        record,
+                        $event.currentTarget as HTMLElement,
+                      )
+                    "
+                  >
+                    <strong>{{ record.title }}</strong>
+                    <span>查看占用详情</span>
+                  </button>
+                  <span v-if="inQueryRange(record)" class="room-record-match"
                     >与查询时段重叠</span
                   >
                 </td>
@@ -388,5 +487,9 @@ function reset() {
         </p>
       </template>
     </DisclosureDialog>
+    <RoomUsagePopover
+      :selection="activeUsage"
+      @close="activeUsage = undefined"
+    />
   </div>
 </template>

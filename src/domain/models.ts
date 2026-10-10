@@ -138,6 +138,10 @@ export interface RoomUsage {
   type: string;
   capacity?: number;
   campus?: string;
+  teachers?: string[];
+  courseId?: string;
+  applierName?: string;
+  sponsorName?: string;
 }
 export interface Substitution {
   id: string;

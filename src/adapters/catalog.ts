@@ -225,6 +225,24 @@ export const roomUsage = (
       type,
       capacity: typeof r.capacity === "number" ? r.capacity : undefined,
       campus: typeof r.campus === "string" ? r.campus : undefined,
+      teachers: Array.isArray(r.teachers)
+        ? r.teachers
+            .filter((value): value is string => typeof value === "string")
+            .map((value) => plainText(value))
+            .filter((value): value is string => !!value)
+        : undefined,
+      courseId:
+        typeof r.courseId === "string" || typeof r.courseId === "number"
+          ? String(r.courseId)
+          : undefined,
+      applierName:
+        typeof r.applierName === "string"
+          ? plainText(r.applierName)
+          : undefined,
+      sponsorName:
+        typeof r.sponsorName === "string"
+          ? plainText(r.sponsorName)
+          : undefined,
     })),
   );
 export const substitutions = (

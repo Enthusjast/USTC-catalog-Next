@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { ArrowLeftRight } from "@lucide/vue";
 import type { RoomSummary } from "../domain/roomAvailability";
-import { roomStateLabels, usageTypes } from "../domain/roomAvailability";
+import {
+  roomKey,
+  roomStateLabels,
+  usageTypes,
+} from "../domain/roomAvailability";
 import { formatClock } from "../domain/schedule";
 import {
   hasUsageTime,
@@ -15,8 +18,23 @@ const props = defineProps<{
   from: number;
   to: number;
   type: string;
+  label: string;
 }>();
-defineEmits<{ select: [room: RoomSummary] }>();
+const emit = defineEmits<{
+  select: [room: RoomSummary];
+  usage: [
+    room: RoomSummary,
+    record: RoomSummary["records"][number],
+    anchor: HTMLElement,
+  ];
+}>();
+function selectUsage(
+  room: RoomSummary,
+  record: RoomSummary["records"][number],
+  event: MouseEvent,
+) {
+  emit("usage", room, record, event.currentTarget as HTMLElement);
+}
 const scroll = ref<HTMLElement>();
 const ticks = computed(() => roomTimelineTicks(props.from, props.to));
 const columns = computed(() =>
@@ -38,7 +56,7 @@ const shortState = {
   unknown: "未知",
 };
 watch(
-  () => props.rooms.map((room) => `${room.building}:${room.room}`).join("|"),
+  () => props.rooms.map((room) => roomKey(room)).join("|"),
   () => {
     if (scroll.value) scroll.value.scrollLeft = 0;
   },
@@ -46,32 +64,18 @@ watch(
 </script>
 <template>
   <figure class="room-timeline panel">
-    <figcaption class="room-timeline-caption">
-      <div class="room-usage-legend" aria-label="记录类型图例">
-        <span><i class="usage-swatch teaching" />教学安排</span>
-        <span><i class="usage-swatch occupation" />公开占用</span>
-        <span><i class="usage-swatch exam" />考试</span>
-      </div>
-      <span class="muted room-caption-full"
-        >状态综合全部类型；点击教室编号查看全天记录。</span
-      >
-      <span class="muted room-caption-short">点编号看记录</span>
-      <span v-if="type" class="room-type-caption"
-        >图中仅展示：{{ usageTypes[type] ?? type }}；状态仍综合全部类型。</span
-      >
-    </figcaption>
     <div
       ref="scroll"
       class="room-timeline-scroll"
       tabindex="0"
       role="region"
-      aria-label="教室占用时间轴，可左右滚动查看教室"
+      :aria-label="`${label}，可左右滚动查看教室`"
     >
       <div
         class="room-timeline-grid"
         :style="{
-          gridTemplateColumns: `48px repeat(${rooms.length}, minmax(84px, 1fr))`,
-          minWidth: `${48 + rooms.length * 84}px`,
+          gridTemplateColumns: `48px repeat(${rooms.length}, 112px)`,
+          width: `${48 + rooms.length * 112}px`,
         }"
       >
         <div class="room-time-axis" aria-hidden="true">
@@ -93,7 +97,7 @@ watch(
         </div>
         <div
           v-for="column in columns"
-          :key="`${column.room.building}:${column.room.room}`"
+          :key="roomKey(column.room)"
           class="room-time-column"
         >
           <div class="room-column-header">
@@ -104,7 +108,6 @@ watch(
               @click="$emit('select', column.room)"
             >
               <strong class="mono">{{ column.room.room }}</strong>
-              <span>楼宇 {{ column.room.building ?? "未提供" }}</span>
             </button>
             <span
               class="tag room-state"
@@ -117,21 +120,23 @@ watch(
               >{{ shortState[column.room.state] }}</span
             >
           </div>
-          <div class="room-time-track" aria-hidden="true">
+          <div class="room-time-track">
             <div
               v-for="tick in ticks"
               :key="tick.time"
               class="room-gridline"
+              aria-hidden="true"
               :style="{ top: `${tick.position}%` }"
             />
-            <div
+            <button
+              type="button"
               v-for="block in column.blocks"
               :key="block.record.id"
               class="room-usage-block"
               :class="[
                 usageCategory(block.record.type),
                 {
-                  'is-short': block.height < (22 / 360) * 100,
+                  'is-short': block.height < (22 / 240) * 100,
                   'is-narrow': block.width < 50,
                   'is-clipped-start': block.clippedStart,
                   'is-clipped-end': block.clippedEnd,
@@ -143,10 +148,13 @@ watch(
                 left: `${block.left}%`,
                 width: `calc(${block.width}% - 2px)`,
               }"
+              aria-haspopup="dialog"
+              @click="selectUsage(column.room, block.record, $event)"
+              :aria-label="`${column.room.room} · ${block.record.title} · ${formatClock(block.record.start)}–${formatClock(block.record.end)} · ${usageTypes[block.record.type] ?? block.record.type}`"
               :title="`${formatClock(block.record.start)}–${formatClock(block.record.end)} · ${block.record.title} · ${usageTypes[block.record.type] ?? block.record.type}`"
             >
               <span>{{ block.record.title }}</span>
-            </div>
+            </button>
             <p v-if="!column.blocks.length" class="room-track-empty">
               {{
                 type && column.room.state === "occupied"
@@ -156,18 +164,20 @@ watch(
             </p>
           </div>
           <div class="room-column-footer">
-            <span>全天 {{ column.room.records.length }} 条</span>
+            <button
+              type="button"
+              class="room-records-button"
+              :aria-label="`查看 ${column.room.room} 全天 ${column.room.records.length} 项占用清单`"
+              @click="$emit('select', column.room)"
+            >
+              全天 {{ column.room.records.length }} 项
+            </button>
             <span v-if="column.unknown" class="room-unknown-count"
-              >{{ column.unknown }} 条时刻未知</span
+              >{{ column.unknown }} 项时刻未知</span
             >
           </div>
         </div>
       </div>
     </div>
-    <p class="room-timeline-hint">
-      <ArrowLeftRight
-        :size="14"
-      />窄屏可左右滑动；完整记录包含未标时及查询时段以外的安排。
-    </p>
   </figure>
 </template>
