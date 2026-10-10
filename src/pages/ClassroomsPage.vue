@@ -281,7 +281,10 @@ function reset() {
       @remove="filterSummary.remove"
       @clear="reset"
     />
-    <div v-if="data" class="section-heading compact-results-heading">
+    <div
+      v-if="data && validTime"
+      class="section-heading compact-results-heading"
+    >
       <h2>
         公开记录涉及的教室
         <span class="muted result-total" aria-live="polite"
@@ -299,7 +302,7 @@ function reset() {
       @select="selectedKey = roomKey($event)"
     />
     <EmptyState
-      v-if="data && !filtered.length"
+      v-if="data && validTime && !filtered.length"
       :title="data.length ? '没有符合条件的教室记录' : '此日期暂无公开使用记录'"
       message="没有记录不代表空闲；公开记录未提供完整教室清单或日期覆盖范围。可更换日期或清除筛选。"
     >
