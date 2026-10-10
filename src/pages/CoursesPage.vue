@@ -185,7 +185,6 @@ function clear() {
 <template>
   <PageHeading
     title="课程目录"
-    description="按名称、编号或院系查找课程。课程有效状态与具体学期开课情况分别展示。"
     eyebrow="01 / COURSE CATALOG"
     ><a
       class="button secondary"
