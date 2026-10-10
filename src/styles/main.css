@@ -2600,14 +2600,28 @@ tbody tr:hover {
 .room-usage-block:focus-visible {
   outline-offset: -2px;
 }
-.room-usage-block.is-short {
-  padding: 0;
-  border-top-width: 0;
-  border-bottom-width: 0;
-  background: var(--usage-text);
+.room-usage-block > span {
+  min-width: 0;
+  max-width: 100%;
+}
+.room-usage-block.is-short,
+.room-usage-block.is-narrow {
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 14px;
 }
 .room-usage-block.is-short > span,
 .room-usage-block.is-narrow > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.room-usage-block.is-tiny {
+  padding: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+}
+.room-usage-block.is-tiny > span {
   display: none;
 }
 .room-usage-block.is-clipped-start {

@@ -137,6 +137,7 @@ watch(
                 usageCategory(block.record.type),
                 {
                   'is-short': block.height < (22 / 240) * 100,
+                  'is-tiny': block.height < (16 / 240) * 100,
                   'is-narrow': block.width < 50,
                   'is-clipped-start': block.clippedStart,
                   'is-clipped-end': block.clippedEnd,
