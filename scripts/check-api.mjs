@@ -110,7 +110,7 @@ for (const item of [
     schema.courseDetailSchema,
   );
 }
-const unknown = await probe("/__catalog_explorer_unknown__");
+const unknown = await probe("/__ustc_catalog_next_unknown__");
 record(
   "未知路径 JSON 404",
   !unknown.error &&

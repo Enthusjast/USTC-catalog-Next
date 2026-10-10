@@ -35,7 +35,7 @@ function calendar(events: string[][]) {
     [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//USTC Catalog Explorer//Public Planner//ZH",
+      "PRODID:-//USTC-catalog-Next//Public Planner//ZH",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
       ...events.flat(),

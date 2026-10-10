@@ -56,7 +56,7 @@ const tasks = [
 <template>
   <section class="home-hero">
     <div class="hero-topline">
-      <p class="eyebrow">USTC CATALOG EXPLORER</p>
+      <p class="eyebrow">USTC-catalog-Next</p>
       <span class="tag">公开资料检索</span>
     </div>
     <h1>让课程信息，<br />更容易找到。</h1>

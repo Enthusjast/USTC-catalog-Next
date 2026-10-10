@@ -25,10 +25,10 @@
 
 服务代码在用户的服务器上，由用户修改。本次修改已通过原来的两项检查：
 
-| 项目                                     | 修改前响应                       | 复查结果                                                                              |
-| ---------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------- |
-| 允许的 Origin                            | `Access-Control-Allow-Origin: *` | 已返回 `Access-Control-Allow-Origin: https://catalog.enthusjast.cc` 与 `Vary: Origin` |
-| 未知路径 `/__catalog_explorer_unknown__` | `200`、`text/html`、SPA 页面     | 已返回 JSON 404 与 `{"error":"not_found"}`；正式页面可跨域读取                        |
+| 项目          | 修改前响应                       | 复查结果                                                                              |
+| ------------- | -------------------------------- | ------------------------------------------------------------------------------------- |
+| 允许的 Origin | `Access-Control-Allow-Origin: *` | 已返回 `Access-Control-Allow-Origin: https://catalog.enthusjast.cc` 与 `Vary: Origin` |
+| 未知 API 路径 | `200`、`text/html`、SPA 页面     | 已返回 JSON 404 与 `{"error":"not_found"}`；正式页面可跨域读取                        |
 
 ### CORS
 
@@ -59,7 +59,7 @@ curl -i 'https://api.catalog.enthusjast.cc/teach/course/infos' \
   -H 'Content-Type: application/json' \
   --data '{"codes":["MATH1006"]}'
 
-curl -i 'https://api.catalog.enthusjast.cc/__catalog_explorer_unknown__' \
+curl -i 'https://api.catalog.enthusjast.cc/__ustc_catalog_next_unknown__' \
   -H 'Origin: https://catalog.enthusjast.cc'
 
 curl -i 'https://api.catalog.enthusjast.cc/restricted' \

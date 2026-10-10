@@ -160,7 +160,7 @@ onErrorCaptured(() => {
       </nav>
     </div>
     <div class="footer-bottom">
-      USTC CATALOG EXPLORER <span>公开数据 · 本地规划 · 无需账号</span>
+      USTC-catalog-Next <span>公开数据 · 本地规划 · 无需账号</span>
     </div>
   </footer>
 </template>
