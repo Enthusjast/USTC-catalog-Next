@@ -94,7 +94,10 @@ function reset() {
 function exportICS() {
   const result = examCalendar(filtered.value);
   if (result.count)
-    downloadCalendar(result.content, `ustc-exams-${semester.value}.ics`);
+    downloadCalendar(
+      result.content,
+      `ustc-exams-${kind.value}-${semester.value}.ics`,
+    );
   exportMessage.value = `已导出 ${result.count} 场考试${result.skipped.length ? `；日期或时间不足，跳过：${result.skipped.join("、")}` : ""}。`;
 }
 </script>

@@ -139,7 +139,7 @@ export function examCalendar(exams: Exam[]) {
     }
     events.push([
       "BEGIN:VEVENT",
-      `UID:exam-${escape(exam.id)}-${exam.date}@catalog.enthusjast.cc`,
+      `UID:exam-${exam.type ?? "course"}-${escape(exam.id)}-${escape(exam.courseCode)}-${exam.date}@catalog.enthusjast.cc`,
       `DTSTAMP:${stamp()}`,
       `DTSTART:${utcDate(exam.date, exam.start)}`,
       `DTEND:${utcDate(exam.date, exam.end)}`,

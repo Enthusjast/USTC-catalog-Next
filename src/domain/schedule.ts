@@ -1,41 +1,40 @@
 import type { Lesson, Schedule } from "./models";
 
 /** Only fully recognized expressions participate in a no-overlap conclusion. */
-export function parseWeeks(text: string): number[] | undefined {
-  let value = text
-    .trim()
-    .replace(/[，、]/g, ",")
-    .replace(/[~～—–]/g, "-")
-    .replace(/周/g, "");
-  const odd = /单/.test(value),
-    even = /双/.test(value);
-  value = value.replace(/[()（）单双\s]/g, "");
-  if (!value || (odd && even)) return undefined;
-  const excluded: number[] = [];
-  const exception = value.match(/^(.*?)(?:除|去掉)(.+?)(?:外)?$/);
-  if (exception) {
-    value = exception[1]!.replace(/,$/, "");
-    const parsed = parseWeeks(exception[2]!.replace(/外$/, ""));
-    if (!parsed) return undefined;
-    excluded.push(...parsed);
-  }
-  const weeks: number[] = [];
-  for (const part of value.split(",")) {
-    const match = part.match(/^(\d{1,2})(?:-(\d{1,2}))?$/);
-    if (!match) return undefined;
-    const start = Number(match[1]),
-      end = Number(match[2] ?? match[1]);
+function weekSet(expression: string): number[] | undefined {
+  if (/\d\s+\d/.test(expression.replace(/周/g, ""))) return undefined;
+  const normalized = expression
+    .replace(/[()（）周\s]/g, "")
+    .replace(/[~～—–至]/g, "-")
+    .replace(/[，、]/g, ",");
+  const result = new Set<number>();
+  for (const part of normalized.split(",")) {
+    const match = part.match(
+      /^(?:第)?([单双])?(\d{1,2})(?:-(\d{1,2}))?([单双])?$/,
+    );
+    if (!match || (match[1] && match[4] && match[1] !== match[4]))
+      return undefined;
+    const start = Number(match[2]),
+      end = Number(match[3] ?? match[2]),
+      parity = match[1] ?? match[4];
     if (start < 1 || end > 53 || end < start) return undefined;
     for (let week = start; week <= end; week++) {
-      if (
-        (!odd || week % 2 === 1) &&
-        (!even || week % 2 === 0) &&
-        !excluded.includes(week)
-      )
-        weeks.push(week);
+      if (!parity || (parity === "单" ? week % 2 === 1 : week % 2 === 0))
+        result.add(week);
     }
   }
-  return [...new Set(weeks)].sort((a, b) => a - b);
+  return [...result].sort((a, b) => a - b);
+}
+
+export function parseWeeks(text: string): number[] | undefined {
+  const exception = text.match(/^(.*?)(?:除|去掉)(.+)$/);
+  if (!exception) return weekSet(text);
+  const base = weekSet(exception[1]!.replace(/[,，、（(\s]+$/, ""));
+  const excluded = weekSet(
+    exception[2]!.replace(/[）)\s]+$/, "").replace(/外$/, ""),
+  );
+  if (!base || !excluded) return undefined;
+  return base.filter((week) => !excluded.includes(week));
 }
 
 export function parseSchedule(text: string): Schedule {
@@ -44,44 +43,46 @@ export function parseSchedule(text: string): Schedule {
   for (const line of text.split(/[\n;；]/).filter((line) => line.trim())) {
     const match = line
       .trim()
-      .match(
-        /^(.+?周(?:[（(][单双]周?[）)])?)\s+(.+?)\s*[:：]\s*([1-7])\s*\(([\d,，\s~-]+)\)/,
-      );
+      .match(/^(.+?)\s*[:：]\s*([1-7])\s*[（(]([\d,，、\s~～—–至-]+)[）)]/);
     if (!match) {
       unknown = true;
       continue;
     }
-    const weeks = parseWeeks(match[1]!),
-      periods = parseWeeks(match[4]!);
-    if (
-      !weeks?.length ||
-      !periods?.length ||
-      periods.some((period) => period > 14)
-    ) {
+    const prefix = match[1]!;
+    let split: { weeks: number[]; location: string } | undefined;
+    for (const gap of prefix.matchAll(/\s+/g)) {
+      const weekText = prefix.slice(0, gap.index);
+      const location = prefix.slice(gap.index! + gap[0].length).trim();
+      if (!weekText.includes("周") || !location) continue;
+      const weeks = parseWeeks(weekText);
+      if (weeks?.length) split = { weeks, location };
+    }
+    const periods = parseWeeks(match[3]!);
+    if (!split || !periods?.length || periods.some((period) => period > 14)) {
       unknown = true;
       continue;
     }
-    const location = match[2]!.trim(),
-      day = Number(match[3]);
+    // Inspect the tail before deduplication so repeated lines cannot hide unknown segments.
+    if (/[:：]\s*[1-7]\s*[（(]/.test(line.trim().slice(match[0].length)))
+      unknown = true;
+    const day = Number(match[2]);
     const existing = slots.find(
       (slot) =>
         slot.day === day &&
-        slot.location === location &&
+        slot.location === split.location &&
         slot.periods.join(",") === periods.join(","),
     );
-    if (existing) {
-      existing.weeks = [...new Set([...existing.weeks, ...weeks])].sort(
+    if (existing)
+      existing.weeks = [...new Set([...existing.weeks, ...split.weeks])].sort(
         (a, b) => a - b,
       );
-      continue;
-    }
-    if (/[:：]\s*[1-7]\s*\(/.test(line.slice(match[0].length))) unknown = true;
-    slots.push({
-      day,
-      periods,
-      weeks,
-      location,
-    });
+    else
+      slots.push({
+        day,
+        periods,
+        weeks: split.weeks,
+        location: split.location,
+      });
   }
   return { slots, unknown, text };
 }

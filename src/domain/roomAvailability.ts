@@ -14,6 +14,7 @@ export function roomAvailability(
 ): RoomSummary[] {
   const grouped = new Map<string, RoomUsage[]>(),
     unlocated = records.some((r) => !r.room);
+  const validRange = from !== undefined && to !== undefined && to > from;
   records
     .filter((r) => !!r.room)
     .forEach((r) => {
@@ -23,19 +24,17 @@ export function roomAvailability(
   return [...grouped.values()]
     .map((rows) => {
       const occupied =
-        from !== undefined &&
-        to !== undefined &&
+        validRange &&
         rows.some(
           (r) =>
             r.start !== undefined &&
             r.end !== undefined &&
-            r.start < to &&
-            r.end > from,
+            r.end > r.start &&
+            r.start < to! &&
+            r.end > from!,
         );
       const unknown =
-        from === undefined ||
-        to === undefined ||
-        to <= from ||
+        !validRange ||
         unlocated ||
         rows.some(
           (r) =>

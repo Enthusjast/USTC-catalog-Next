@@ -7,6 +7,14 @@ const entrySchema = z.object({
 });
 export type CacheEntry = z.infer<typeof entrySchema>;
 const memory = new Map<string, CacheEntry>();
+const MAX_ENTRIES = 100;
+let generation = 0;
+export const cacheGeneration = () => generation;
+function remember(entry: CacheEntry) {
+  memory.delete(entry.key);
+  memory.set(entry.key, entry);
+  while (memory.size > MAX_ENTRIES) memory.delete(memory.keys().next().value!);
+}
 let database: Promise<IDBDatabase | undefined> | undefined;
 function open() {
   database ??= new Promise<IDBDatabase | undefined>((resolve) => {
@@ -24,16 +32,17 @@ function open() {
   return database;
 }
 export async function readCache(key: string) {
+  const current = generation;
   if (memory.has(key)) return memory.get(key);
   const db = await open();
-  if (!db) return undefined;
+  if (!db || current !== generation) return undefined;
   return new Promise<CacheEntry | undefined>((resolve) => {
     try {
       const request = db.transaction("queries").objectStore("queries").get(key);
       request.onsuccess = () => {
         const result = entrySchema.safeParse(request.result);
-        if (result.success) {
-          memory.set(key, result.data);
+        if (result.success && current === generation) {
+          remember(result.data);
           resolve(result.data);
         } else resolve(undefined);
       };
@@ -43,10 +52,11 @@ export async function readCache(key: string) {
     }
   });
 }
-export async function writeCache(entry: CacheEntry) {
-  memory.set(entry.key, entry);
+export async function writeCache(entry: CacheEntry, current = generation) {
+  if (current !== generation) return;
+  remember(entry);
   const db = await open();
-  if (!db) return;
+  if (!db || current !== generation) return;
   try {
     const store = db.transaction("queries", "readwrite").objectStore("queries");
     store.put(entry);
@@ -55,7 +65,7 @@ export async function writeCache(entry: CacheEntry) {
       const entries = (request.result as CacheEntry[]).sort((a, b) =>
         b.retrievedAt.localeCompare(a.retrievedAt),
       );
-      entries.slice(100).forEach((item) => {
+      entries.slice(MAX_ENTRIES).forEach((item) => {
         store.delete(item.key);
         memory.delete(item.key);
       });
@@ -66,6 +76,7 @@ export async function writeCache(entry: CacheEntry) {
   }
 }
 export async function clearCache() {
+  generation++;
   memory.clear();
   const db = await open();
   if (!db) return;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { QueryResult } from "../domain/models";
-import { readCache, writeCache } from "./cache";
+import { readCache, writeCache, cacheGeneration } from "./cache";
 import { restrictedSchema } from "./schemas";
 import { createLimiter } from "../domain/concurrency";
 import { DEMO_MODE } from "./environment";
@@ -125,6 +125,7 @@ async function request<T>(
   if (!flight) {
     const controller = new AbortController();
     const promise = (async (): Promise<QueryResult<T>> => {
+      const generation = cacheGeneration();
       const cacheKey = `${url}:${JSON.stringify(options.body ?? null)}`;
       const cached = await readCache(cacheKey),
         parsedCache = cached ? schema.safeParse(cached.payload) : undefined;
@@ -134,7 +135,9 @@ async function request<T>(
           : undefined;
       if (
         usable &&
+        generation === cacheGeneration() &&
         !options.force &&
+        Date.now() - Date.parse(usable.retrievedAt) >= 0 &&
         Date.now() - Date.parse(usable.retrievedAt) <
           (options.ttl ?? TTL.search)
       )
@@ -160,13 +163,21 @@ async function request<T>(
             url,
           );
         const retrievedAt = new Date().toISOString();
-        await writeCache({ key: cacheKey, retrievedAt, payload: parsed.data });
+        await writeCache(
+          { key: cacheKey, retrievedAt, payload: parsed.data },
+          generation,
+        );
         return {
           data: parsed.data,
           meta: { source: url, retrievedAt, state: "online" },
         };
       } catch (error) {
-        if (error instanceof ApiError && error.kind === "network" && usable)
+        if (
+          error instanceof ApiError &&
+          error.kind === "network" &&
+          usable &&
+          generation === cacheGeneration()
+        )
           return {
             data: usable.payload,
             meta: {

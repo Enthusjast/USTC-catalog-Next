@@ -116,6 +116,7 @@ export interface Program {
   referenceSources?: QueryMeta[];
 }
 export interface Exam {
+  type?: "course" | "general";
   id: string;
   courseCode: string;
   courseName: string;

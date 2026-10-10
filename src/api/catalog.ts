@@ -132,7 +132,7 @@ export const catalog = {
         schema.examSchema,
         { ttl: TTL.schedule, ...options },
       ),
-      adapt.exams,
+      (data) => adapt.exams(data, general ? "general" : "course"),
     ),
   rooms: (date: string, options?: Options) =>
     map(

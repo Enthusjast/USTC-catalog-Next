@@ -186,8 +186,12 @@ export const program = (
   beginSemester: data.beginSemester ?? undefined,
   modules: data.moduleTree.map(programModule),
 });
-export const exams = (data: z.infer<typeof schemas.examSchema>): Exam[] =>
+export const exams = (
+  data: z.infer<typeof schemas.examSchema>,
+  type: "course" | "general" = "course",
+): Exam[] =>
   data.map((e) => ({
+    type,
     id: String(e.id),
     courseCode: e.lesson?.course.code ?? e.courseCode ?? "",
     courseName: e.lesson?.course.cn ?? e.courseName ?? e.courseCode ?? "未提供",
