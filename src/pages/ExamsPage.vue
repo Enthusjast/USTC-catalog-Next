@@ -123,7 +123,6 @@ function exportICS() {
 <template>
   <PageHeading
     title="考试查询"
-    description="查看公开课程考试与通识类考试，按日期、课程和考场筛选。"
     eyebrow="04 / EXAM SCHEDULE"
     ><div class="filter-field" style="margin: 0; min-width: 200px">
       <label for="exam-semester">查询学期</label
@@ -136,7 +135,7 @@ function exportICS() {
     </div></PageHeading
   >
   <div class="notice warning">
-    公开考试安排可能次日更新，实际安排以综合教务系统为准。
+    本页查询结果非实时数据，次日更新；实时数据请登录综合教务系统查看。
   </div>
   <QueryState
     :loading="semesterQuery.loading.value"
