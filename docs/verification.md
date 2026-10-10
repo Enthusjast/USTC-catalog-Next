@@ -64,3 +64,12 @@
 - 未授权 Origin 的 GET 不带允许来源头；从 `https://example.com` 页面发起 GET 被浏览器拒绝。两种 JSON POST 未取得跨域读取权限，但 OPTIONS 在浏览器与 curl 中均超时，未形成及时的拒绝响应。
 - `npm run check:api` 仍退出 1。差异已缩小到 User-Agent：保持 URL 和 Origin 相同，普通 curl 返回 200，增加 `User-Agent: node` 后 `/restricted` 与课程详情 POST 均返回 JSON 404；curl HTTP/1.1 和 HTTP/2 都能复现，Node fetch 也能复现。精确 CORS、允许来源的两种 OPTIONS 和未知路径 JSON 404 在脚本中均已通过。
 - GitHub Pages 仍为 `legacy`，自定义域和 HTTPS 设置正确；远端 main 为 `509bb5a`，本地最新开发代码尚未推送。本轮只更新验收与服务器修改说明，不改变发布门槛。
+
+## API 发布检查通过（2026-10-10 14:33—14:38，北京时间）
+
+- `npm run check:api` 全部通过，退出 0。Node GET 与两种 JSON POST 均返回 200 并通过 schema；精确生产 Origin、允许来源的 OPTIONS、JSON 404 和错误响应 CORS 均通过。
+- 两个未授权 OPTIONS 均返回 403，无允许来源头；未授权 GET 返回 200 JSON 但不授予跨域读取权限。从实际 `https://example.com` 页面发起 GET 和两种 JSON POST，均及时得到浏览器读取拒绝，未再出现等待超时。
+- 在正式 `https://catalog.enthusjast.cc` 页面再次读取 GET 与两种详情 POST，均为 `200 / cors / application/json`；未知路径为可读取的 JSON 404。
+- 当前开发代码在 `http://127.0.0.1:5173` 直连真实 API，强制在线读取学期、院系、课程搜索、通识课程、计划树、教学班、两类考试、教室、替代关系与展开计划，共 11 组，全部通过前端 schema/适配器。计划 #3430 的五个公共引用均在线读取，引用问题为 0；课程页与详情正常显示，无接口错误。两种本地开发 Origin 的响应头也按白名单返回。
+- `npm run build` 的 Vue TypeScript 检查和 Vite 生产构建再次通过。已有 5173 开发服务继续用于浏览器检查；本轮没有替换其进程。
+- 服务端 API 门槛已全部关闭。最新前端发布、Pages 发布源切换及发布后页面验收仍待完成，整份 spec 尚不能标记交付完成。

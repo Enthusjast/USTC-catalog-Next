@@ -13,7 +13,7 @@ npm run dev
 
 开发地址为 `http://127.0.0.1:5173`。API 默认直连 `https://api.catalog.enthusjast.cc`，路径不包含原站的 `/api` 前缀。可复制 `.env.example` 到 `.env.local` 修改公开配置。
 
-**本地 API 访问取决于 API 服务的 CORS 配置**。规格要求放行明确的开发 Origin：`http://127.0.0.1:5173` 或 `http://localhost:5173`，生产来源为 `https://catalog.enthusjast.cc`。最新浏览器探测已成功从正式来源及本地来源读取 GET/POST；精确 Origin 限制和未知路径 JSON 404 仍须修正或确认，见 [验证记录](docs/verification.md)。被拒绝时页面展示请求错误与重试入口。
+**本地 API 访问取决于 API 服务的 CORS 配置**。规格要求放行明确的开发 Origin：`http://127.0.0.1:5173` 或 `http://localhost:5173`，生产来源为 `https://catalog.enthusjast.cc`。2026-10-10 复查已通过正式来源及本地来源读取、精确 Origin、JSON POST 预检、未授权来源拒绝与未知路径 JSON 404；`npm run check:api` 已全部通过，见 [验证记录](docs/verification.md)。被拒绝时页面展示请求错误与重试入口。
 
 ```sh
 npm run typecheck

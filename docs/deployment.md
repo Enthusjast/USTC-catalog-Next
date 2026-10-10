@@ -1,6 +1,6 @@
 # 部署与真实接口验收
 
-2026-10-10 服务器修改后的复查：正式域与 HTTPS 可访问，精确生产 Origin 的 GET、两种详情 POST 和未知路径 JSON 404 已通过。发布检查仍被两项服务器行为阻止：`User-Agent: node` 的合法请求返回 JSON 404，未授权来源的 OPTIONS 不返回响应而超时。仓库 Pages 仍是 legacy 发布源；最新代码需切换为 GitHub Actions 后发布，详见 [验证记录](verification.md)。
+2026-10-10 最新复查：正式 Origin 的浏览器 GET、两种 JSON POST、精确 CORS、未知路径 JSON 404 和未授权来源拒绝均通过；`npm run check:api` 全部通过，生产构建通过。仓库 Pages 仍是 legacy 发布源；下一步将最新代码发布到 GitHub Actions 管理的 Pages，并验收该版本的正式页面，详见 [验证记录](verification.md)。
 
 ## 仓库部署设置
 
@@ -21,7 +21,7 @@
 
 工作流在发布前执行 `npm run check:api`；它检查 HTTP、schema、精确生产 Origin、两种 POST 预检、未知路径 JSON 404 与错误响应 CORS，并检查未授权 Origin 的 GET/OPTIONS 不获准跨域读取，将结果写入 Actions 摘要。HTTP 检查不会替代上述正式页面浏览器验收，运行环境的网络失败也会阻止发布，需要结合浏览器记录诊断。
 
-## API 服务器需要修改的配置
+## API 服务器配置与复查
 
 服务代码在用户的服务器上，由用户修改。本次修改已通过原来的两项检查：
 
@@ -68,9 +68,9 @@ curl -i 'https://api.catalog.enthusjast.cc/restricted' \
 
 前四项分别应返回 JSON 200、正确预检、JSON 200、JSON 404，并允许精确生产 Origin；最后一项不得允许示例中的未授权来源。教学班 POST 还需使用上文的路径与请求体检查。以上命令核对 HTTP 响应，最终仍需从正式站点页面完成浏览器读取验收。
 
-### 复查发现的发布检查阻塞
+### 已修复的发布检查问题
 
-同样的合法接口请求仅改变 User-Agent，响应即发生变化：普通 curl 的 `/restricted` 返回 `200 {"restricted":false}`，`User-Agent: node` 返回 `404 {"error":"not_found"}`；课程详情 POST 也有相同行为。Node 内置 fetch 默认使用该 User-Agent，Actions 发布检查因此仍失败。请检查按 User-Agent 分流、过滤或兜底的规则，让这些公开只读接口能由 Node 正常读取；未知路径仍应返回 JSON 404。
+此前合法请求在 `User-Agent: node` 下返回 JSON 404；最新复查已恢复 Node GET 与两种 JSON POST 的正常 200/schema 响应。此前未授权来源的 OPTIONS 超时，现已及时返回不带允许来源头的 403。以下命令可复查这两项，预期分别是 JSON 200 和 403：
 
 ```sh
 curl -i 'https://api.catalog.enthusjast.cc/restricted' \
@@ -84,7 +84,7 @@ curl -i --max-time 10 -X OPTIONS \
   -H 'Access-Control-Request-Headers: content-type'
 ```
 
-未授权来源的 GET 已不返回允许来源头，浏览器无法读取，符合预期；但两种详情接口的未授权 OPTIONS 在 curl 和浏览器中均超时。请让该预检及时结束，例如返回不含允许来源头的 `403`，避免转发到等待响应的处理分支。生产来源的 OPTIONS 已返回正确的 204，应保留。
+未授权来源的 GET 不返回允许来源头，浏览器无法读取；两种 JSON POST 在浏览器中均及时被拒绝。生产来源的 OPTIONS 返回正确的 204。发布脚本已覆盖并通过这些条件。
 
 ## 数据语义验收
 
