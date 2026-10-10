@@ -2490,6 +2490,7 @@ tbody tr:hover {
 }
 .room-building-section {
   min-width: 0;
+  scroll-margin-top: calc(var(--header-offset) + 12px);
 }
 .room-building-title {
   font-size: 18px;
@@ -2522,7 +2523,7 @@ tbody tr:hover {
   border-bottom: 0;
   border-radius: 9px 0 0 9px;
 }
-.room-floor-controls {
+.room-building-controls {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -2531,7 +2532,7 @@ tbody tr:hover {
   margin-bottom: 16px;
   font-size: 13px;
 }
-.room-floor-controls .field-input {
+.room-building-controls .field-input {
   max-width: 340px;
 }
 .room-record-detail-button {

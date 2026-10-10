@@ -100,21 +100,19 @@ const filtered = computed(() =>
   ),
 );
 const buildingGroups = computed(() => groupRoomBuildings(filtered.value));
-const floors = computed(() =>
-  buildingGroups.value.flatMap((group) => group.floors),
-);
-const floorElements = new Map<string, HTMLElement>();
-const floorJump = ref("");
+const buildingElements = new Map<string, HTMLElement>();
+const buildingJump = ref("");
 const activeUsage = shallowRef<UsageSelection>();
-function floorRef(key: string, element: unknown) {
-  if (element instanceof HTMLElement) floorElements.set(key, element);
-  else floorElements.delete(key);
+function buildingRef(key: string, element: unknown) {
+  if (element instanceof HTMLElement) buildingElements.set(key, element);
+  else buildingElements.delete(key);
 }
-function jumpToFloor() {
-  const target = floorElements.get(floorJump.value);
+function jumpToBuilding() {
+  activeUsage.value = undefined;
+  const target = buildingElements.get(buildingJump.value);
   target?.scrollIntoView({ block: "start" });
   target
-    ?.querySelector<HTMLElement>(".room-floor-title")
+    ?.querySelector<HTMLElement>(".room-building-title")
     ?.focus({ preventScroll: true });
 }
 function showUsage(entry: RoomSummary, record: RoomUsage, anchor: HTMLElement) {
@@ -127,9 +125,9 @@ function showUsage(entry: RoomSummary, record: RoomUsage, anchor: HTMLElement) {
   }
   activeUsage.value = { room: entry, record, date: date.value, anchor };
 }
-watch(floors, (value) => {
-  if (!value.some((floor) => floor.key === floorJump.value))
-    floorJump.value = "";
+watch(buildingGroups, (value) => {
+  if (!value.some((group) => group.key === buildingJump.value))
+    buildingJump.value = "";
 });
 const advancedCount = computed(
     () => [capacity.value, campus.value].filter(Boolean).length,
@@ -264,17 +262,24 @@ function reset() {
       @remove="filterSummary.remove"
       @clear="reset"
     />
-    <div v-if="validDate && floors.length" class="room-floor-controls panel">
-      <label for="room-floor-jump">跳转楼层</label>
+    <div
+      v-if="validDate && buildingGroups.length"
+      class="room-building-controls panel"
+    >
+      <label for="room-building-jump">跳转楼栋</label>
       <select
-        id="room-floor-jump"
-        v-model="floorJump"
+        id="room-building-jump"
+        v-model="buildingJump"
         class="field-input"
-        @change="jumpToFloor"
+        @change="jumpToBuilding"
       >
-        <option value="">选择楼栋与楼层</option>
-        <option v-for="floor in floors" :key="floor.key" :value="floor.key">
-          {{ floor.title }}
+        <option value="">选择楼栋</option>
+        <option
+          v-for="group in buildingGroups"
+          :key="group.key"
+          :value="group.key"
+        >
+          {{ group.title }}
         </option>
       </select>
       <div class="room-usage-legend" aria-label="记录类型图例">
@@ -287,14 +292,14 @@ function reset() {
       <section
         v-for="group in buildingGroups"
         :key="group.key"
+        :ref="(element) => buildingRef(group.key, element)"
         class="room-building-section"
       >
-        <h3 class="room-building-title">{{ group.title }}</h3>
+        <h3 class="room-building-title" tabindex="-1">{{ group.title }}</h3>
         <div class="room-floor-board">
           <section
             v-for="floor in group.floors"
             :key="floor.key"
-            :ref="(element) => floorRef(floor.key, element)"
             class="room-floor-section"
             :aria-label="floor.title"
           >

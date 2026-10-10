@@ -118,7 +118,7 @@ function skipToMain() {
         ><span class="brand-icon"><BookOpen :size="23" /></span
         ><span
           ><strong>USTC-catalog-Next</strong
-          ><small>科大课程与公开教学查询</small></span
+          ><small>新一代公共查询</small></span
         ></RouterLink
       >
       <nav class="desktop-nav" aria-label="主要导航">
@@ -180,9 +180,6 @@ function skipToMain() {
       ><RouterLink to="/program-compare">计划对比</RouterLink
       ><RouterLink to="/about/data">数据说明</RouterLink>
     </nav>
-    <p class="header-disclaimer">
-      独立公共查询工具，非中国科学技术大学官方系统。
-    </p>
   </header>
   <main id="main" class="main-container" tabindex="-1">
     <p v-if="DEMO_MODE" class="notice warning" role="status">
@@ -207,8 +204,7 @@ function skipToMain() {
     <div class="footer-inner">
       <div>
         <strong>USTC-catalog-Next</strong>
-        <p>独立公共查询工具，非中国科学技术大学官方系统。</p>
-        <p>公开信息可能次日更新，实际安排以综合教务系统为准。</p>
+        <p>新一代中国科学技术大学公共查询工具</p>
       </div>
       <nav aria-label="官方来源与站点信息">
         <a
