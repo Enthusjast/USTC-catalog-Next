@@ -6,8 +6,9 @@ withDefaults(
     activeCount?: number;
     resultCount?: number;
     resultLabel?: string;
+    layout?: "sidebar" | "inline";
   }>(),
-  { activeCount: 0, resultLabel: "条结果" },
+  { activeCount: 0, resultLabel: "条结果", layout: "sidebar" },
 );
 const open = ref(false),
   mobile = ref(false),
@@ -68,6 +69,9 @@ onBeforeUnmount(() => {
 });
 </script>
 <template>
+  <div v-if="mobile && $slots.primary" class="filter-primary panel">
+    <slot name="primary" />
+  </div>
   <button
     ref="toggle"
     type="button"
@@ -88,7 +92,7 @@ onBeforeUnmount(() => {
     :id="`${headingId}-panel`"
     ref="panel"
     class="filter-panel panel"
-    :class="{ 'is-open': open }"
+    :class="{ 'is-open': open, 'filter-panel--inline': layout === 'inline' }"
     :aria-labelledby="headingId"
     @cancel.prevent="close"
     @click="closeOnBackdrop"
@@ -109,7 +113,10 @@ onBeforeUnmount(() => {
         <X :size="20" />
       </button>
     </h2>
-    <div class="filter-panel-body"><slot /></div>
+    <div class="filter-panel-body">
+      <slot v-if="!mobile" name="primary" />
+      <slot />
+    </div>
     <div class="filter-panel-footer">
       <button type="button" class="button" @click="close">
         {{

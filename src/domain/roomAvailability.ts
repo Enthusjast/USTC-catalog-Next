@@ -7,6 +7,11 @@ export interface RoomSummary {
   capacity?: number;
   campus?: string;
 }
+export const roomStateLabels = {
+  occupied: "有公开占用",
+  inferred: "推算未发现占用",
+  unknown: "未知 / 覆盖不足",
+};
 export function roomAvailability(
   records: RoomUsage[],
   from?: number,
