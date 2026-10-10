@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from "vue";
-import { ChevronDown } from "@lucide/vue";
+import { LoaderCircle } from "@lucide/vue";
 import { useRouter } from "vue-router";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
@@ -11,15 +11,10 @@ import {
   roomAvailability,
   roomKey,
   groupRoomBuildings,
-  roomStateLabels,
   usageTypes,
   type RoomSummary,
 } from "../domain/roomAvailability";
-import {
-  roomDirectory,
-  roomDirectorySource,
-  buildingLabel,
-} from "../domain/roomDirectory";
+import { roomDirectory, buildingLabel } from "../domain/roomDirectory";
 import {
   classroomDay,
   hasUsageTime,
@@ -28,7 +23,6 @@ import {
 import type { RoomUsage } from "../domain/models";
 import { isISODate } from "../domain/dates";
 import PageHeading from "../components/PageHeading.vue";
-import QueryState from "../components/QueryState.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import FilterPanel from "../components/FilterPanel.vue";
 import RoomUsageTimeline from "../components/RoomUsageTimeline.vue";
@@ -43,7 +37,6 @@ const router = useRouter(),
   building = useFilter("building"),
   room = useFilter("room"),
   type = useFilter("type"),
-  state = useFilter("state"),
   capacity = useFilter("capacity"),
   campus = useFilter("campus");
 const filterSummary = useFilterSummary({
@@ -54,16 +47,11 @@ const filterSummary = useFilterSummary({
     model: type,
     display: () => usageTypes[type.value],
   },
-  state: {
-    label: "教学日状态",
-    model: state,
-    display: () => roomStateLabels[state.value as keyof typeof roomStateLabels],
-  },
   capacity: { label: "容量至少", model: capacity },
   campus: { label: "校区", model: campus },
 });
 const validDate = computed(() => isISODate(date.value));
-const { data, meta, loading, error, reload } = useQuery(
+const { data, loading } = useQuery(
   (signal, force) => catalog.rooms(date.value, { signal, force }),
   date,
   validDate,
@@ -99,7 +87,6 @@ const filtered = computed(() =>
     (r) =>
       (!room.value || r.room.includes(room.value)) &&
       (!building.value || r.building === building.value) &&
-      (!state.value || r.state === state.value) &&
       (!capacity.value ||
         (r.capacity !== undefined && r.capacity >= Number(capacity.value))) &&
       (!campus.value || r.campus === campus.value),
@@ -137,11 +124,8 @@ watch(floors, (value) => {
   if (!value.some((floor) => floor.key === floorJump.value))
     floorJump.value = "";
 });
-const unlocated = computed(
-  () => data.value?.filter((r) => !r.room?.trim()).length ?? 0,
-);
 const advancedCount = computed(
-    () => [state.value, capacity.value, campus.value].filter(Boolean).length,
+    () => [capacity.value, campus.value].filter(Boolean).length,
   ),
   advancedOpen = ref(!!advancedCount.value),
   selectedKey = ref("");
@@ -159,7 +143,7 @@ const selectedRecords = computed(() =>
 watch(advancedCount, (count) => {
   if (count) advancedOpen.value = true;
 });
-watch([date, building, room, type, state, capacity, campus, loading], () => {
+watch([date, building, room, type, capacity, campus, loading], () => {
   selectedKey.value = "";
   activeUsage.value = undefined;
 });
@@ -184,24 +168,9 @@ function reset() {
   <div class="compact-query-page classroom-page">
     <PageHeading
       title="教室使用情况"
-      description="按日期查看完整教学日的教室公开使用分布。"
+      description=""
       eyebrow="CLASSROOMS / 教室使用"
     />
-    <details class="notice warning room-coverage-note">
-      <summary>
-        <span>未发现占用 ≠ 可使用</span
-        ><span v-if="unlocated" class="coverage-count"
-          >{{ unlocated }} 条缺少地点</span
-        ><ChevronDown :size="14" />
-      </summary>
-      <p>
-        教室名单和楼层来自原站目录；无记录的地点保留覆盖未知，推算未发现占用不代表空闲、可预约或获准使用。
-        <span v-if="unlocated"
-          >另有
-          {{ unlocated }} 条未提供教室的记录，未占用时段的覆盖仍可能不足。</span
-        >
-      </p>
-    </details>
     <FilterPanel
       layout="inline"
       :active-count="filterSummary.count.value"
@@ -242,6 +211,7 @@ function reset() {
         </select>
       </div>
       <details
+        v-if="hasCapacity || campuses.length"
         class="room-more-filters"
         :open="advancedOpen"
         @toggle="advancedOpen = ($event.target as HTMLDetailsElement).open"
@@ -252,15 +222,6 @@ function reset() {
           }}</span>
         </summary>
         <div class="room-advanced-fields">
-          <div class="filter-field">
-            <label for="room-state">教学日状态</label
-            ><select id="room-state" v-model="state">
-              <option value="">全部状态</option>
-              <option value="occupied">有公开占用</option>
-              <option value="inferred">推算未发现占用</option>
-              <option value="unknown">未知 / 覆盖不足</option>
-            </select>
-          </div>
           <div v-if="hasCapacity" class="filter-field">
             <label for="room-capacity">最低容量</label
             ><input
@@ -282,39 +243,19 @@ function reset() {
       </details>
       <button type="button" class="text-button" @click="reset">清除筛选</button>
     </FilterPanel>
-    <p v-if="!validDate" class="notice error" role="alert">
-      请选择有效的查询日期。
-    </p>
-    <QueryState
-      :loading="loading"
-      :meta="meta"
-      :error="error"
-      @retry="reload"
-    />
+    <div
+      v-if="loading"
+      class="room-query-loading"
+      role="status"
+      aria-label="正在加载教室使用情况"
+    >
+      <LoaderCircle class="spin" :size="18" aria-hidden="true" />
+    </div>
     <FilterSummary
       :filters="filterSummary.filters.value"
       @remove="filterSummary.remove"
       @clear="reset"
     />
-    <div v-if="validDate" class="section-heading compact-results-heading">
-      <h2>
-        按楼栋浏览教室
-        <span class="muted result-total" aria-live="polite"
-          >{{ filtered.length }} 间</span
-        >
-      </h2>
-      <span class="muted">{{ date }} · 完整教学日</span>
-    </div>
-    <div class="room-directory-source">
-      <span>教室目录核对于 {{ roomDirectorySource.verifiedAt }}</span>
-      <a
-        :href="roomDirectorySource.url"
-        target="_blank"
-        rel="noopener noreferrer"
-        >原站目录</a
-      >
-      <span>无公开记录的教室为覆盖未知</span>
-    </div>
     <div v-if="validDate && floors.length" class="room-floor-controls panel">
       <label for="room-floor-jump">跳转楼层</label>
       <select
@@ -329,20 +270,11 @@ function reset() {
         </option>
       </select>
       <div class="room-usage-legend" aria-label="记录类型图例">
-        <span><i class="usage-swatch teaching" />教学安排</span
-        ><span><i class="usage-swatch occupation" />公开占用</span
-        ><span><i class="usage-swatch exam" />考试</span>
+        <span><i class="usage-swatch teaching" />上课使用</span
+        ><span><i class="usage-swatch occupation" />临时借用</span
+        ><span><i class="usage-swatch exam" />考试使用</span>
       </div>
-      <p>
-        上下浏览楼层，每层左右滑动；点击占用项看详情，点教室编号看全天清单。
-      </p>
-      <p v-if="type" class="room-type-caption">
-        仅绘制 {{ usageTypes[type] ?? type }}；名单保留，状态仍综合全部类型。
-      </p>
     </div>
-    <p v-if="data && !data.length" class="notice room-empty-day">
-      该日期暂无公开使用记录，以下仅展示教室目录，所有教室状态为覆盖未知。
-    </p>
     <div v-if="validDate" class="room-building-board">
       <section
         v-for="group in buildingGroups"
@@ -371,9 +303,9 @@ function reset() {
       </section>
     </div>
     <EmptyState
-      v-if="validDate && !filtered.length"
+      v-if="validDate && data && !filtered.length"
       title="没有符合条件的教室"
-      message="尝试修改楼栋、名称或状态筛选；没有公开记录不代表空闲。"
+      message="请调整楼宇或教室筛选。"
     >
       <button class="button secondary" @click="reset">清除筛选</button>
     </EmptyState>
@@ -385,14 +317,6 @@ function reset() {
       <template v-if="selectedRoom">
         <div class="room-detail-summary">
           <strong>{{ date }}</strong>
-          <span
-            class="tag"
-            :class="{
-              warning: selectedRoom.state === 'occupied',
-              valid: selectedRoom.state === 'inferred',
-            }"
-            >{{ roomStateLabels[selectedRoom.state] }}</span
-          >
           <span class="muted">完整教学日</span>
         </div>
         <p class="muted room-detail-caption">
@@ -402,9 +326,7 @@ function reset() {
           ><span v-if="selectedRoom.campus"> · {{ selectedRoom.campus }}</span
           >。下列为全天全部类型的记录，包含当前图中隐藏的安排。
         </p>
-        <p v-if="!selectedRecords.length" class="notice">
-          该教室暂无公开使用记录，不能据此判断为空闲。
-        </p>
+        <p v-if="!selectedRecords.length" class="notice">暂无记录。</p>
         <div
           v-if="selectedRecords.length"
           class="table-scroll room-record-table"
@@ -465,9 +387,6 @@ function reset() {
             </tbody>
           </table>
         </div>
-        <p class="muted room-detail-caption">
-          教学日状态综合全部公开类型；时刻无法识别或记录覆盖不足时，未发现占用仍为未知。
-        </p>
       </template>
     </DisclosureDialog>
     <RoomUsagePopover

@@ -2,17 +2,12 @@
 import { computed, ref, watch } from "vue";
 import { ClockAlert } from "@lucide/vue";
 import type { RoomSummary } from "../domain/roomAvailability";
-import {
-  roomKey,
-  roomStateLabels,
-  usageTypes,
-} from "../domain/roomAvailability";
+import { roomKey, usageTypes } from "../domain/roomAvailability";
 import { formatClock } from "../domain/schedule";
 import {
   hasUsageTime,
   classroomDay,
   layoutRoomUsage,
-  roomTimelineTicks,
   usageCategory,
 } from "../domain/roomTimeline";
 const props = defineProps<{
@@ -36,11 +31,6 @@ function selectUsage(
   emit("usage", room, record, event.currentTarget as HTMLElement);
 }
 const scroll = ref<HTMLElement>();
-const ticks = roomTimelineTicks(
-  classroomDay.from,
-  classroomDay.to,
-  classroomDay.plotHeight,
-);
 const columns = computed(() =>
   props.rooms.map((room) => ({
     room,
@@ -59,11 +49,6 @@ const columns = computed(() =>
     ).length,
   })),
 );
-const shortState = {
-  occupied: "有公开占用",
-  inferred: "推算未发现",
-  unknown: "未知",
-};
 watch(
   () => props.rooms.map((room) => roomKey(room)).join("|"),
   () => {
@@ -99,7 +84,7 @@ watch(
             <button
               type="button"
               class="room-label"
-              :aria-label="`查看 ${column.room.room} 全天记录，共 ${column.room.records.length} 条，${roomStateLabels[column.room.state]}${column.unplotted ? `，其中 ${column.unplotted} 项时刻未知或在教学日显示范围外` : ''}`"
+              :aria-label="`查看 ${column.room.room} 全天记录，共 ${column.room.records.length} 条${column.unplotted ? `，其中 ${column.unplotted} 项时刻未知或在教学日显示范围外` : ''}`"
               @click="$emit('select', column.room)"
             >
               <strong class="mono">{{ column.room.room }}</strong>
@@ -112,25 +97,8 @@ watch(
                 <ClockAlert :size="13" />
               </span>
             </button>
-            <span
-              class="tag room-state"
-              :class="{
-                warning: column.room.state === 'occupied',
-                valid: column.room.state === 'inferred',
-              }"
-              :title="roomStateLabels[column.room.state]"
-              :aria-label="roomStateLabels[column.room.state]"
-              >{{ shortState[column.room.state] }}</span
-            >
           </div>
           <div class="room-time-track">
-            <div
-              v-for="tick in ticks"
-              :key="tick.time"
-              class="room-gridline"
-              aria-hidden="true"
-              :style="{ top: `${tick.position}%` }"
-            />
             <button
               type="button"
               v-for="block in column.blocks"
@@ -161,13 +129,6 @@ watch(
             >
               <span>{{ block.record.title }}</span>
             </button>
-            <p v-if="!column.blocks.length" class="room-track-empty">
-              {{
-                type && column.room.state === "occupied"
-                  ? "占用来自其他类型"
-                  : "此时段暂无可定位记录"
-              }}
-            </p>
           </div>
         </div>
       </div>

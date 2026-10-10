@@ -22,6 +22,12 @@
   --error: #b42318;
   --warning-bg: #fff6e7;
   --error-bg: #fff0ed;
+  --room-teaching-bg: #ebf4fd;
+  --room-teaching-text: #1b4f7e;
+  --room-borrowing-bg: #ebfde0;
+  --room-borrowing-text: #2b662c;
+  --room-exam-bg: #faf1f6;
+  --room-exam-text: #7a345c;
   --shadow: 0 6px 24px #18345412;
   color-scheme: light;
 }
@@ -40,6 +46,12 @@
   --error: #ffb3a8;
   --warning-bg: #382e20;
   --error-bg: #392824;
+  --room-teaching-bg: #22354b;
+  --room-teaching-text: #a4cced;
+  --room-borrowing-bg: #223923;
+  --room-borrowing-text: #b4e3a8;
+  --room-exam-bg: #3a2736;
+  --room-exam-text: #f0b9d8;
   --shadow: 0 8px 40px #0003;
   color-scheme: dark;
 }
@@ -2359,33 +2371,14 @@ tbody tr:hover {
 .compact-query-page > .data-status {
   padding: 0 0 6px;
 }
-.compact-query-page > .room-coverage-note {
-  display: block;
-  padding: 0;
-}
-.room-coverage-note > summary {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  min-height: 44px;
-  padding: 8px 12px;
-  list-style: none;
-}
-.room-coverage-note > summary::-webkit-details-marker {
+.classroom-page .page-heading p:empty {
   display: none;
 }
-.room-coverage-note > summary > svg {
-  margin-left: auto;
-}
-.room-coverage-note[open] > summary > svg {
-  transform: rotate(180deg);
-}
-.room-coverage-note > p {
-  padding: 0 12px 12px;
-}
-.coverage-count {
-  font-size: 12px;
+.room-query-loading {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+  color: var(--muted);
 }
 .compact-results-heading {
   margin: 8px 0 12px;
@@ -2421,26 +2414,25 @@ tbody tr:hover {
   .room-more-filters[open] {
     grid-column: 1 / -1;
     order: 1;
-    border-top: 1px solid var(--border);
   }
 }
 .room-usage-block.teaching,
 .usage-swatch.teaching,
 .room-usage-type.teaching {
-  --usage-bg: var(--surface-soft);
-  --usage-text: var(--primary);
+  --usage-bg: var(--room-teaching-bg);
+  --usage-text: var(--room-teaching-text);
 }
 .room-usage-block.occupation,
 .usage-swatch.occupation,
 .room-usage-type.occupation {
-  --usage-bg: var(--warning-bg);
-  --usage-text: var(--warning);
+  --usage-bg: var(--room-borrowing-bg);
+  --usage-text: var(--room-borrowing-text);
 }
 .room-usage-block.exam,
 .usage-swatch.exam,
 .room-usage-type.exam {
-  --usage-bg: var(--error-bg);
-  --usage-text: var(--error);
+  --usage-bg: var(--room-exam-bg);
+  --usage-text: var(--room-exam-text);
 }
 .room-usage-block.other,
 .room-usage-type.other {
@@ -2454,6 +2446,8 @@ tbody tr:hover {
   overflow: hidden;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  border-top: 0;
+  border-bottom: 0;
 }
 @media (max-width: 767px) {
   .classroom-page > .filter-toggle {
@@ -2492,10 +2486,6 @@ tbody tr:hover {
   border: 1px solid var(--usage-text);
   background: var(--usage-bg);
 }
-.room-type-caption {
-  width: 100%;
-  color: var(--primary);
-}
 .room-timeline-scroll {
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -2515,14 +2505,13 @@ tbody tr:hover {
   border-right: 0;
 }
 .room-column-header {
-  height: 78px;
+  height: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 5px 4px;
+  padding: 2px 4px;
   background: var(--surface-soft);
-  border-bottom: 1px solid var(--border);
 }
 .room-label {
   display: flex;
@@ -2554,20 +2543,10 @@ tbody tr:hover {
   flex-shrink: 0;
   color: var(--warning);
 }
-.room-state {
-  font-size: 12px;
-  padding: 2px 4px;
-  line-height: 1.5;
-}
 .room-time-track {
   position: relative;
   height: var(--room-track-height);
   overflow: hidden;
-}
-.room-gridline {
-  position: absolute;
-  width: 100%;
-  border-top: 1px dashed var(--border);
 }
 .room-usage-block {
   position: absolute;
@@ -2625,15 +2604,6 @@ tbody tr:hover {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
-.room-track-empty {
-  position: absolute;
-  top: 42%;
-  left: 6px;
-  right: 6px;
-  color: var(--muted);
-  font-size: 12px;
-  text-align: center;
-}
 .room-building-board {
   display: grid;
   gap: 24px;
@@ -2654,12 +2624,12 @@ tbody tr:hover {
   grid-template-columns: 48px minmax(0, 1fr);
   min-width: 0;
   content-visibility: auto;
-  contain-intrinsic-size: auto 440px;
+  contain-intrinsic-size: auto 410px;
   scroll-margin-top: calc(var(--header-offset) + 12px);
 }
 .room-floor-title {
   margin: 0;
-  padding: 28px 4px 4px;
+  padding: 14px 4px 4px;
   font-size: 13px;
   line-height: 1.4;
   text-align: center;
@@ -2668,22 +2638,9 @@ tbody tr:hover {
   color: var(--primary);
   border: 1px solid var(--border);
   border-right: 0;
+  border-top: 0;
+  border-bottom: 0;
   border-radius: 9px 0 0 9px;
-}
-.room-directory-source {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-.room-directory-source a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--primary);
 }
 .room-floor-controls {
   display: flex;
@@ -2696,11 +2653,6 @@ tbody tr:hover {
 }
 .room-floor-controls .field-input {
   max-width: 340px;
-}
-.room-floor-controls p {
-  width: 100%;
-  font-size: 12px;
-  color: var(--muted);
 }
 .room-record-detail-button {
   min-height: 44px;

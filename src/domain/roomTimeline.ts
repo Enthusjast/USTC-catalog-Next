@@ -20,8 +20,8 @@ export function hasUsageTime(
 }
 
 export function usageCategory(type: string) {
-  if (type === "lessons" || type === "tmpLessons") return "teaching";
-  if (type === "roomOccupies") return "occupation";
+  if (type === "lessons") return "teaching";
+  if (type === "tmpLessons" || type === "roomOccupies") return "occupation";
   if (["exams", "makeupExams", "tmpExams"].includes(type)) return "exam";
   return "other";
 }
