@@ -48,9 +48,12 @@ function escapeMenus(event: KeyboardEvent) {
     moreMenu.value.querySelector<HTMLElement>("summary")?.focus();
   }
 }
-onMounted(() => {
+let navigationReady = false;
+onMounted(async () => {
   document.addEventListener("pointerdown", closeMenus);
   document.addEventListener("keydown", escapeMenus);
+  await router.isReady();
+  navigationReady = true;
 });
 onBeforeUnmount(() => {
   document.removeEventListener("pointerdown", closeMenus);
@@ -91,6 +94,7 @@ watch(
 watch(
   () => route.path,
   async () => {
+    if (!navigationReady) return;
     await nextTick();
     document.getElementById("main")?.focus({ preventScroll: true });
   },

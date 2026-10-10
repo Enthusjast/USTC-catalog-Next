@@ -135,6 +135,14 @@ input[type="checkbox"] {
   outline-offset: 3px;
   border-radius: 4px;
 }
+.main-container:focus-visible:has(h1) {
+  outline: none;
+}
+.main-container:focus-visible h1 {
+  outline: 3px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
 .sr-only {
   position: absolute;
   width: 1px;
