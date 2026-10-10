@@ -24,7 +24,6 @@ function link(path: string) {
     <h2>
       {{ semester?.name ?? (loading ? "正在读取学期…" : "暂无学期资料") }}
     </h2>
-    <p>开课和考试按学期查询；候选清单保存在本机。</p>
     <div class="semester-links">
       <RouterLink :to="link('/lessons')"
         >查看本学期开课<ArrowRight :size="16"

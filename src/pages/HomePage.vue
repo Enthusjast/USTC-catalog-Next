@@ -34,7 +34,6 @@ const tasks = [
     index: "01",
     title: "课程目录",
     name: "课程目录",
-    description: "检索课程名称与编号，了解课程内容和有效状态。",
   },
   {
     path: "/programs",
@@ -42,7 +41,6 @@ const tasks = [
     index: "02",
     title: "培养计划",
     name: "培养方案",
-    description: "按年级、院系和培养类型，浏览执行计划与课程模块。",
   },
   {
     path: "/lessons",
@@ -50,7 +48,6 @@ const tasks = [
     index: "03",
     title: "全校开课",
     name: "全校教学班",
-    description: "比较教师与上课时间，建立清单并检查公开安排冲突。",
   },
   {
     path: "/exams",
@@ -58,7 +55,6 @@ const tasks = [
     index: "04",
     title: "考试查询",
     name: "考试查询",
-    description: "查询课程与通识考试，查看日期、时段和考场。",
   },
 ];
 </script>
@@ -95,7 +91,6 @@ const tasks = [
   <section class="home-tasks">
     <div class="section-heading">
       <h2>查询入口</h2>
-      <span>课程内容、培养要求与学期安排分别查询</span>
     </div>
     <div class="task-grid">
       <RouterLink
@@ -111,7 +106,6 @@ const tasks = [
           <component :is="task.icon" :size="21" /><span>{{ task.index }}</span>
         </div>
         <h3>{{ task.title }}</h3>
-        <p>{{ task.description }}</p>
         <div class="task-link">{{ task.name }}<ArrowRight :size="17" /></div
       ></RouterLink>
     </div>
@@ -127,15 +121,15 @@ const tasks = [
   <section class="secondary-tasks">
     <RouterLink to="/classrooms"
       ><MapPin :size="21" />
-      <div><strong>教室使用</strong><span>查看公开占用与时段</span></div>
+      <div><strong>教室使用</strong></div>
       <ArrowRight :size="17" /></RouterLink
     ><RouterLink to="/substitutions"
       ><ArrowLeftRight :size="21" />
-      <div><strong>替代课程</strong><span>查找直接替代关系</span></div>
+      <div><strong>替代课程</strong></div>
       <ArrowRight :size="17" /></RouterLink
     ><RouterLink to="/archives"
       ><Archive :size="21" />
-      <div><strong>历史归档</strong><span>2013 级方案与官方资料</span></div>
+      <div><strong>历史归档</strong></div>
       <ArrowRight :size="17"
     /></RouterLink>
   </section>
