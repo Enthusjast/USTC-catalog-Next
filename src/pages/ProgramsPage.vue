@@ -59,7 +59,6 @@ function clear() {
 <template>
   <PageHeading
     title="培养方案与执行计划"
-    description="按培养类型、院系与年级找到专业计划，展开模块查看课程和要求。"
     eyebrow="02 / ACADEMIC PROGRAMS"
     ><RouterLink class="button secondary" to="/program-compare"
       ><ArrowLeftRight :size="16" />计划对比</RouterLink
