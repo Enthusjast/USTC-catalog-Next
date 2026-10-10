@@ -675,7 +675,15 @@ function exportICS() {
               <option v-for="w in 53" :key="w" :value="String(w)">
                 第 {{ w }} 周
               </option></select
-            ><span class="muted">显示本机候选清单中已识别的安排</span>
+            ><a
+              class="button secondary small"
+              href="https://class-arrange.raymondzylei.me/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="详细课程安排（新窗口打开）"
+              >详细课程安排<ExternalLink :size="14" aria-hidden="true" />
+            </a>
+            <span class="muted">显示本机候选清单中已识别的安排</span>
           </div>
           <WeekTimetable
             v-if="planner.lessons.value.length"
