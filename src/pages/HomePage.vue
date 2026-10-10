@@ -101,8 +101,10 @@ const tasks = [
         ><div class="task-top">
           <component :is="task.icon" :size="21" /><span>{{ task.index }}</span>
         </div>
-        <h3>{{ task.title }}</h3></RouterLink
-      >
+        <h3>
+          <span>{{ task.title }}</span>
+          <ArrowRight :size="17" aria-hidden="true" /></h3
+      ></RouterLink>
     </div>
   </section>
   <HomeSemesterCard

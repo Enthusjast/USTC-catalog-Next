@@ -670,7 +670,15 @@ input[type="checkbox"] {
   font-size: 12px;
 }
 .task-card h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 18px;
+}
+.task-card h3 > svg {
+  flex-shrink: 0;
+  color: var(--primary);
 }
 .secondary-tasks {
   display: grid;
