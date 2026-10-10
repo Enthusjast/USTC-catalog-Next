@@ -1,6 +1,6 @@
 # 部署与真实接口验收
 
-2026-10-10 最新复查：正式 Origin 的浏览器 GET、两种 JSON POST、精确 CORS、未知路径 JSON 404 和未授权来源拒绝均通过；`npm run check:api` 全部通过，生产构建通过。仓库 Pages 仍是 legacy 发布源；下一步将最新代码发布到 GitHub Actions 管理的 Pages，并验收该版本的正式页面，详见 [验证记录](verification.md)。
+2026-10-10 本轮开发版本已发布到 https://catalog.enthusjast.cc。Pages 发布源为 GitHub Actions（`build_type=workflow`），自定义域和 HTTPS 已启用；[发布工作流](https://github.com/Enthusjast/USTC-catalog-Next/actions/runs/38031772381)的构建、API 检查与部署全部成功。正式 Origin 的 GET/JSON POST、精确 CORS、JSON 404 和未授权来源拒绝均通过；正式站 14 个页面在四种宽度下共 56 项检查通过，分享链接刷新通过，详见 [验证记录](verification.md)。
 
 ## 仓库部署设置
 

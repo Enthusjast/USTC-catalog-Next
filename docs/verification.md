@@ -73,3 +73,13 @@
 - 当前开发代码在 `http://127.0.0.1:5173` 直连真实 API，强制在线读取学期、院系、课程搜索、通识课程、计划树、教学班、两类考试、教室、替代关系与展开计划，共 11 组，全部通过前端 schema/适配器。计划 #3430 的五个公共引用均在线读取，引用问题为 0；课程页与详情正常显示，无接口错误。两种本地开发 Origin 的响应头也按白名单返回。
 - `npm run build` 的 Vue TypeScript 检查和 Vite 生产构建再次通过。已有 5173 开发服务继续用于浏览器检查；本轮没有替换其进程。
 - 服务端 API 门槛已全部关闭。最新前端发布、Pages 发布源切换及发布后页面验收仍待完成，整份 spec 尚不能标记交付完成。
+
+## 正式发布与最终验收（2026-10-10 14:40—14:56，北京时间）
+
+- 经用户明确授权，Pages 发布源由 legacy 切换为 workflow，并推送已提交的开发代码。Pages API 确认 `cname=catalog.enthusjast.cc`、`https_enforced=true`、`status=built`。
+- 开发版本 `a39a029861d2a508bc50bce68371d026708b1bc0` 的 [Actions 运行 38031772381](https://github.com/Enthusjast/USTC-catalog-Next/actions/runs/38031772381)成功：锁文件安装、生产构建、发布前 API 检查和 Pages 部署全部通过。部署记录 6977285918 的状态为 success，正式 URL 为 https://catalog.enthusjast.cc/。
+- 下载该运行的 Pages artifact，入口 HTML 与本地构建逐字节一致；实际正式页面读取的 HTML SHA-256 为 `e23347917931809b45f1d45a37fc84fab936a8792e753e290804d8af21e1beae`，与 CI artifact 完全一致，入口脚本为 `/assets/index-DU3M3rNK.js`。
+- 使用实际浏览器 viewport 检查 375px、768px、1024px、1440px。每种宽度均检查首页、课程及详情、计划目录、计划详情、计划对比、教学班、考试、教室、替代关系、历史目录、历史正文表格、数据说明、全站搜索和未知路由，共 14 个页面、56 项；无页面整体横向溢出、接口错误或渲染错误。课程详情在四种宽度下均正常打开。
+- 课程详情 `/#/courses?q=MATH1006&course=MATH1006`、计划 `/#/programs/3430`、教学班 `/#/lessons?semester=461&q=022063.01` 均直接打开并刷新，路径与筛选保留、数据正常显示，无接口错误；计划模块内容和课程要求正常显示。教学班检查使用不带发布参数的正式 URL，入口脚本同样为已验证版本。
+- 发布后从实际正式页面再次读取 GET 与两种详情 POST，均为 `200 / cors / application/json`；未知路径为可读取的 JSON 404。Actions 运行环境中的完整 API 检查也全部通过，已消除此前 Node 与浏览器环境的差异。
+- 当前规格范围内的开发、发布与验收已完成，剩余发布阻塞为 0。可选视图与接口未提供的字段边界见 [规格状态](spec-status.md)。`spec.md` 始终未跟踪，未进入提交或推送。
