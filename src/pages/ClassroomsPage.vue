@@ -5,11 +5,13 @@ import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useFilter } from "../features/useFilters";
 import { usePagination } from "../features/usePagination";
+import { useFilterSummary } from "../features/useFilterSummary";
 import { clockMinutes, formatClock } from "../domain/schedule";
 import { roomAvailability, usageTypes } from "../domain/roomAvailability";
 import { isISODate } from "../domain/dates";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
+import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
 const router = useRouter(),
@@ -23,6 +25,27 @@ const router = useRouter(),
   state = useFilter("state"),
   capacity = useFilter("capacity"),
   campus = useFilter("campus");
+const filterSummary = useFilterSummary({
+  building: { label: "楼宇", model: building },
+  room: { label: "教室", model: room },
+  type: {
+    label: "使用类型",
+    model: type,
+    display: () => usageTypes[type.value],
+  },
+  state: {
+    label: "时段状态",
+    model: state,
+    display: () =>
+      ({
+        occupied: "有公开占用",
+        inferred: "推算未发现占用",
+        unknown: "未知 / 覆盖不足",
+      })[state.value as "occupied" | "inferred" | "unknown"],
+  },
+  capacity: { label: "容量至少", model: capacity },
+  campus: { label: "校区", model: campus },
+});
 const validDate = computed(() => isISODate(date.value));
 const { data, meta, loading, error, reload } = useQuery(
   (signal, force) => catalog.rooms(date.value, { signal, force }),
@@ -74,7 +97,10 @@ const unlocated = computed(
   () => data.value?.filter((r) => !r.room).length ?? 0,
 );
 function reset() {
-  void router.replace({ path: "/classrooms", query: { date: date.value } });
+  void router.replace({
+    path: "/classrooms",
+    query: { date: date.value, from: from.value, to: to.value },
+  });
 }
 </script>
 <template>
@@ -146,6 +172,11 @@ function reset() {
     结束时间应晚于开始时间，时段状态暂时未知。
   </p>
   <QueryState :loading="loading" :meta="meta" :error="error" @retry="reload" />
+  <FilterSummary
+    :filters="filterSummary.filters.value"
+    @remove="filterSummary.remove"
+    @clear="reset"
+  />
   <p v-if="unlocated" class="notice warning">
     该日期另有
     {{ unlocated }}

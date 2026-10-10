@@ -1,7 +1,8 @@
 import { query, TTL } from "./client";
 import * as schema from "./schemas";
 import * as adapt from "../adapters/catalog";
-import type { QueryResult, Program } from "../domain/models";
+import type { QueryResult, Program, Course } from "../domain/models";
+import type { PublicCourseCatalogue } from "../domain/courseCatalog";
 import { resolveProgramReferences } from "../domain/programReferences";
 type Options = { signal?: AbortSignal; force?: boolean };
 async function map<T, U>(
@@ -56,6 +57,49 @@ export const catalog = {
       query("/teach/course/quality", schema.courseCollectionSchema, options),
       adapt.courseCollection,
     ),
+  publicCourses: async (
+    entry: PublicCourseCatalogue,
+    options?: Options,
+  ): Promise<QueryResult<Course[]>> => {
+    const parts = await Promise.all(
+      entry.sourceIds.map((id) =>
+        map(
+          query(
+            `/teach/course/public/${e(id)}`,
+            schema.courseCollectionSchema,
+            options,
+          ),
+          adapt.courseCollection,
+        ),
+      ),
+    );
+    if (parts.length === 1) return parts[0]!;
+    // Collapse identical records, retaining different source memberships for the same code.
+    const unique = new Map(
+      parts
+        .flatMap((part) => part.data)
+        .map((course) => [JSON.stringify(course), course]),
+    );
+    const sources = parts.map((part) => part.meta);
+    return {
+      data: [...unique.values()],
+      meta: {
+        source: `https://catalog.ustc.edu.cn/catalog/${encodeURIComponent(entry.code)}`,
+        retrievedAt: sources.map((source) => source.retrievedAt).sort()[0]!,
+        state: sources.some((source) => source.state === "stale")
+          ? "stale"
+          : sources.some((source) => source.state === "cache")
+            ? "cache"
+            : "online",
+        kind: sources.every((source) => source.kind === "demo")
+          ? "demo"
+          : undefined,
+        sources,
+        message:
+          "此结果合并多个门类。查询时间按最早读取的来源计算，各来源的缓存状态可展开查看。",
+      },
+    };
+  },
   departmentCourses: (id: string, name: string, options?: Options) =>
     map(
       query(

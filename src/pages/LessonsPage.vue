@@ -16,12 +16,14 @@ import { useSemester } from "../features/useSemester";
 import { useFilter, useDebounced } from "../features/useFilters";
 import { usePlanner } from "../features/usePlanner";
 import { usePagination } from "../features/usePagination";
+import { useFilterSummary } from "../features/useFilterSummary";
 import { lessonConflicts, weekdays, formatClock } from "../domain/schedule";
 import { lessonCalendar, downloadCalendar } from "../domain/calendar";
 import { periodLayouts } from "../domain/periods";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import FilterPanel from "../components/FilterPanel.vue";
+import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
 import DisclosureDialog from "../components/DisclosureDialog.vue";
@@ -44,7 +46,8 @@ const q = useFilter("q"),
   examMode = useFilter("exam"),
   view = useFilter("view", "list"),
   week = useFilter("week", "1"),
-  detailCode = useFilter("lesson");
+  detailCode = useFilter("lesson"),
+  sort = useFilter("sort", "code");
 const { data, meta, loading, error, reload } = useQuery(
   (signal, force) => catalog.lessons(semester.value, { signal, force }),
   semester,
@@ -77,6 +80,37 @@ const selectedDepartment = computed({
   set: (value) => {
     dept.value = value;
   },
+});
+const filterSummary = useFilterSummary({
+  q: { label: "关键词", model: q },
+  dept: {
+    label: "院系",
+    model: dept,
+    display: () =>
+      departments.value.find(
+        (department) => department.code === selectedDepartment.value,
+      )?.name,
+  },
+  teacher: { label: "教师", model: teacher },
+  day: {
+    label: "星期",
+    model: day,
+    display: () =>
+      weekdays[Number(day.value) - 1]
+        ? `周${weekdays[Number(day.value) - 1]}`
+        : day.value,
+  },
+  period: {
+    label: "课节",
+    model: period,
+    display: () => `第 ${period.value} 节`,
+  },
+  location: { label: "地点", model: location },
+  education: { label: "学历层次", model: education },
+  type: { label: "课堂类型", model: type },
+  category: { label: "课程范畴", model: category },
+  language: { label: "授课语言", model: language },
+  exam: { label: "考试方式", model: examMode },
 });
 const options = (
   field: "education" | "classType" | "category" | "language" | "examMode",
@@ -113,29 +147,46 @@ const advanced = computed(() => [
   },
 ]);
 const filtered = computed(() =>
-  (data.value ?? []).filter(
-    (l) =>
-      (!keyword.value ||
-        `${l.code} ${l.course.code} ${l.course.name} ${l.course.englishName ?? ""} ${l.teachers.join(" ")} ${l.department} ${l.schedule.text}`
-          .toLowerCase()
-          .includes(keyword.value.toLowerCase())) &&
-      (!dept.value ||
-        l.department === dept.value ||
-        l.departmentCode === dept.value) &&
-      (!teacher.value || l.teachers.some((t) => t.includes(teacher.value))) &&
-      ((!day.value && !period.value) ||
-        l.schedule.slots.some(
-          (s) =>
-            (!day.value || s.day === Number(day.value)) &&
-            (!period.value || s.periods.includes(Number(period.value))),
-        )) &&
-      (!location.value || l.schedule.text.includes(location.value)) &&
-      (!education.value || l.education === education.value) &&
-      (!type.value || l.classType === type.value) &&
-      (!category.value || l.category === category.value) &&
-      (!language.value || l.language === language.value) &&
-      (!examMode.value || l.examMode === examMode.value),
-  ),
+  (data.value ?? [])
+    .filter(
+      (l) =>
+        (!keyword.value ||
+          `${l.code} ${l.course.code} ${l.course.name} ${l.course.englishName ?? ""} ${l.teachers.join(" ")} ${l.department} ${l.schedule.text}`
+            .toLowerCase()
+            .includes(keyword.value.toLowerCase())) &&
+        (!dept.value ||
+          l.department === dept.value ||
+          l.departmentCode === dept.value) &&
+        (!teacher.value || l.teachers.some((t) => t.includes(teacher.value))) &&
+        ((!day.value && !period.value) ||
+          l.schedule.slots.some(
+            (s) =>
+              (!day.value || s.day === Number(day.value)) &&
+              (!period.value || s.periods.includes(Number(period.value))),
+          )) &&
+        (!location.value || l.schedule.text.includes(location.value)) &&
+        (!education.value || l.education === education.value) &&
+        (!type.value || l.classType === type.value) &&
+        (!category.value || l.category === category.value) &&
+        (!language.value || l.language === language.value) &&
+        (!examMode.value || l.examMode === examMode.value),
+    )
+    .sort((a, b) =>
+      (sort.value === "name"
+        ? a.course.name
+        : sort.value === "department"
+          ? a.department
+          : a.code
+      ).localeCompare(
+        sort.value === "name"
+          ? b.course.name
+          : sort.value === "department"
+            ? b.department
+            : b.code,
+        "zh-CN",
+        { numeric: true },
+      ),
+    ),
 );
 const { page, visible, change } = usePagination(filtered);
 const detail = computed(
@@ -149,7 +200,7 @@ const currentWeek = computed(() =>
 function reset() {
   void router.replace({
     path: "/lessons",
-    query: { semester: semester.value },
+    query: { semester: semester.value, view: view.value, week: week.value },
   });
 }
 function exportICS() {
@@ -191,6 +242,9 @@ function exportICS() {
   </div>
   <div class="query-layout">
     <FilterPanel
+      :active-count="filterSummary.count.value"
+      :result-count="data ? filtered.length : undefined"
+      result-label="个教学班"
       ><div class="filter-field">
         <label for="lesson-q">课程、编号或关键词</label
         ><input
@@ -266,6 +320,11 @@ function exportICS() {
         :meta="meta"
         @retry="reload"
       />
+      <FilterSummary
+        :filters="filterSummary.filters.value"
+        @remove="filterSummary.remove"
+        @clear="reset"
+      />
       <div class="panel">
         <div class="results-toolbar">
           <strong
@@ -275,6 +334,13 @@ function exportICS() {
             }}</span></strong
           >
           <div class="flex-actions">
+            <label v-if="view === 'list'" class="sort-control"
+              >排序<select v-model="sort">
+                <option value="code">教学班号</option>
+                <option value="name">课程名称</option>
+                <option value="department">开课院系</option>
+              </select></label
+            >
             <button
               class="text-button"
               :aria-pressed="view === 'list'"

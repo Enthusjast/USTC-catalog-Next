@@ -81,8 +81,24 @@ function age(value: string) {
     ><button class="text-button" @click="$emit('retry')">
       <RefreshCw :size="13" />刷新
     </button>
-    <p v-if="meta.state === 'stale'">
+    <details v-if="meta.sources?.length" class="query-source-details">
+      <summary>各门类来源与缓存状态（{{ meta.sources.length }}）</summary>
+      <p v-if="meta.message" class="muted">{{ meta.message }}</p>
+      <ul>
+        <li v-for="(source, index) in meta.sources" :key="source.source">
+          <span>{{ stateLabel(source) }}</span
+          ><span>{{ timestamp(source.retrievedAt) }}</span
+          ><a :href="source.source" target="_blank" rel="noopener noreferrer"
+            >来源 {{ index + 1 }}<ArrowUpRight :size="12"
+          /></a>
+        </li>
+      </ul>
+    </details>
+    <p v-if="meta.state === 'stale' && !meta.sources?.length">
       当前网络不可用，以下为本机保存的旧结果。查询时间不等于教务数据更新时间。
+    </p>
+    <p v-else-if="meta.state === 'stale'">
+      部分门类的网络读取失败，结果含本机保存的过期资料，请展开查看各来源状态。
     </p>
   </div>
 </template>

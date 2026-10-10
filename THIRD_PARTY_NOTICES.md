@@ -4,6 +4,8 @@ The API schemas and adapters were independently implemented against public
 responses and the USTC-catalog-CLI interface definitions. The teaching period
 layouts in `src/domain/periods.ts` are transcribed from that project's
 `src/domain/schedule.ts`.
+The public subject code mappings in `src/domain/courseCatalog.ts` are transcribed
+from its `src/data/course-catalog.ts` and checked against the official catalogue.
 
 Source: https://github.com/Enthusjast/USTC-catalog-CLI
 

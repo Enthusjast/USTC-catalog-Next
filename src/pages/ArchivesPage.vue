@@ -6,8 +6,11 @@ import { archives } from "../api/archives";
 import { useQuery } from "../features/useQuery";
 import { useFilter } from "../features/useFilters";
 import { usePagination } from "../features/usePagination";
+import { useFilterSummary } from "../features/useFilterSummary";
 import PageHeading from "../components/PageHeading.vue";
 import FilterPanel from "../components/FilterPanel.vue";
+import FilterSummary from "../components/FilterSummary.vue";
+import ProgramCollectionTabs from "../components/ProgramCollectionTabs.vue";
 import QueryState from "../components/QueryState.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
@@ -15,6 +18,11 @@ const router = useRouter(),
   q = useFilter("q"),
   type = useFilter("type"),
   department = useFilter("department");
+const filterSummary = useFilterSummary({
+  q: { label: "关键词", model: q },
+  type: { label: "资料类型", model: type },
+  department: { label: "院系", model: department },
+});
 const { data, meta, loading, error, reload } = useQuery((signal, force) =>
   archives.index({ signal, force }),
 );
@@ -56,12 +64,7 @@ function reset() {
       rel="noopener noreferrer"
       >官方历史归档<ArrowUpRight :size="16" /></a
   ></PageHeading>
-  <nav class="tabs" aria-label="资料集合">
-    <RouterLink to="/programs">API 执行计划</RouterLink
-    ><RouterLink class="active" to="/archives"
-      >历史培养方案 / 静态归档</RouterLink
-    >
-  </nav>
+  <ProgramCollectionTabs current="archives" />
   <div class="notice">
     <Archive :size="19" />
     <p>
@@ -72,6 +75,9 @@ function reset() {
   <QueryState :loading="loading" :error="error" :meta="meta" @retry="reload" />
   <div class="query-layout">
     <FilterPanel
+      :active-count="filterSummary.count.value"
+      :result-count="data ? filtered.length : undefined"
+      result-label="份资料"
       ><div class="filter-field">
         <label for="archive-q">文档名称或编号</label
         ><input
@@ -98,6 +104,11 @@ function reset() {
       <button class="text-button" @click="reset">清除筛选</button></FilterPanel
     >
     <div>
+      <FilterSummary
+        :filters="filterSummary.filters.value"
+        @remove="filterSummary.remove"
+        @clear="reset"
+      />
       <div v-if="data" class="section-heading">
         <h2>
           2013 级静态目录

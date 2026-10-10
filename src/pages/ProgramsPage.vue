@@ -6,9 +6,12 @@ import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useFilter } from "../features/useFilters";
 import { usePagination } from "../features/usePagination";
+import { useFilterSummary } from "../features/useFilterSummary";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import FilterPanel from "../components/FilterPanel.vue";
+import FilterSummary from "../components/FilterSummary.vue";
+import ProgramCollectionTabs from "../components/ProgramCollectionTabs.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
 const router = useRouter(),
@@ -16,6 +19,16 @@ const router = useRouter(),
   dept = useFilter("dept"),
   type = useFilter("type"),
   grade = useFilter("grade");
+const filterSummary = useFilterSummary({
+  q: { label: "关键词", model: q },
+  type: { label: "培养类型", model: type },
+  dept: { label: "院系", model: dept },
+  grade: {
+    label: "入学年级",
+    model: grade,
+    display: () => `${grade.value} 级`,
+  },
+});
 const { data, meta, loading, error, reload } = useQuery((signal, force) =>
   catalog.programs({ signal, force }),
 );
@@ -52,12 +65,12 @@ function clear() {
       ><ArrowLeftRight :size="16" />计划对比</RouterLink
     ></PageHeading
   >
-  <nav class="tabs" aria-label="资料集合">
-    <RouterLink class="active" to="/programs">API 执行计划</RouterLink
-    ><RouterLink to="/archives">历史培养方案 / 静态归档</RouterLink>
-  </nav>
+  <ProgramCollectionTabs current="plans" />
   <div class="query-layout">
     <FilterPanel
+      :active-count="filterSummary.count.value"
+      :result-count="data ? filtered.length : undefined"
+      result-label="个计划"
       ><div class="filter-field">
         <label for="program-q">专业或计划名称</label
         ><input
@@ -99,6 +112,11 @@ function clear() {
         :error="error"
         @retry="reload"
       />
+      <FilterSummary
+        :filters="filterSummary.filters.value"
+        @remove="filterSummary.remove"
+        @clear="clear"
+      />
       <div class="section-heading">
         <h2>
           计划目录
@@ -108,7 +126,7 @@ function clear() {
         </h2>
         <span>按入学年级降序</span>
       </div>
-      <div class="result-list">
+      <div class="result-list program-results">
         <article
           v-for="program in visible"
           :key="program.id"

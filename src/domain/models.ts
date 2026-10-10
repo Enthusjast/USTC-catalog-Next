@@ -146,6 +146,8 @@ export interface Substitution {
   remark?: string;
 }
 export interface QueryMeta {
+  sources?: QueryMeta[];
+  message?: string;
   kind?: "archive" | "demo";
   snapshotAt?: string;
   retrievedAt: string;

@@ -72,9 +72,12 @@ export function courseCollection(
   data: z.infer<typeof schemas.courseCollectionSchema>,
   department?: string,
 ): Course[] {
-  return courses(
-    Array.isArray(data) ? data : Object.values(data).flat(),
-    department,
+  if (Array.isArray(data)) return courses(data, department);
+  return Object.entries(data).flatMap(([group, rows]) =>
+    courses(rows, department).map((course) => ({
+      ...course,
+      category: course.category ?? group,
+    })),
   );
 }
 export const courseDetails = (

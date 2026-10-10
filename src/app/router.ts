@@ -99,5 +99,5 @@ router.beforeEach((to, from) => {
 router.afterEach((to, _from, failure) => {
   if (failure) return;
   saveFilters(to.path, to.query);
-  document.title = `${String(to.meta.title ?? "公共查询")} · 科大目录`;
+  document.title = `${String(to.meta.title ?? "公共查询")} · USTC-catalog-Next`;
 });

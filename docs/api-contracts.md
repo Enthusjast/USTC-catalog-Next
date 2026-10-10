@@ -21,7 +21,7 @@
 | `/teach/timetable-public-all/{date}` GET      | `timetable` 六组：`lessons, tmpLessons, roomOccupies, exams, makeupExams, tmpExams`；记录含 `classroomName, buildingCode, courseName, start, end`              | 未定位/无时间为未知；增加未知记录组会触发 schema 错误。容量/校区仅在提供时显示 |
 | `/teach/course-substitute-pool/list` GET      | `id, substituteCourses[], originalCourses[]`，课程含 `code, cn, en, credits`                                                                                   | 保留组合；不推导传递资格                                                       |
 
-`/teach/course/public/{id}` 是课程集合接口，不按课程编号读取详情。真实探测中数值 ID 返回数组；课程详情统一使用已经核对的 infos POST。
+`/teach/course/public/{id}` 是通修门类集合接口，不按课程编号读取详情。响应可以是课程数组或按课程层次分组的对象；数学类为 ID 43，原站页面路径为 `/catalog/ma`。本站保留对象的分组名称，组合门类分别读取实际 ID 并展示各来源缓存状态；门类映射见 `src/domain/courseCatalog.ts`。`/teach/course/quality` 对应综合素质类，不能当作数学、物理等基础门类。课程详情统一使用已经核对的 infos POST。
 
 历史正文 `/data/program/cn/{code}.html` 是原站静态资料，不能映射到镜像 API 前缀。本站归档表格从同域 JSON 读取，正文阅读区使用官方 UTF-8 页面入口；所有 JSON、文本、表格单元格与官方链接分别处理，不将 API HTML 插入页面。
 

@@ -8,11 +8,13 @@ import { useSemester } from "../features/useSemester";
 import { useFilter } from "../features/useFilters";
 import { usePlanner } from "../features/usePlanner";
 import { usePagination } from "../features/usePagination";
+import { useFilterSummary } from "../features/useFilterSummary";
 import { formatClock, weekdays } from "../domain/schedule";
 import { examConflicts } from "../domain/examConflicts";
 import { examCalendar, downloadCalendar } from "../domain/calendar";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
+import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
 const router = useRouter(),
@@ -26,6 +28,18 @@ const kind = useFilter("kind", "course"),
   view = useFilter("view", "list"),
   savedOnly = useFilter("saved"),
   weekDate = useFilter("week");
+const filterSummary = useFilterSummary({
+  q: { label: "关键词", model: q },
+  date: { label: "考试日期", model: date },
+  dept: { label: "院系", model: dept },
+  room: { label: "考场", model: room },
+  saved: {
+    label: "关联范围",
+    model: savedOnly,
+    active: () => savedOnly.value === "1",
+    display: () => "本机候选教学班",
+  },
+});
 const { data, meta, loading, error, reload } = useQuery(
   (signal, force) =>
     catalog.exams(semester.value, kind.value === "general", { signal, force }),
@@ -88,7 +102,12 @@ const days = computed(() => {
 function reset() {
   void router.replace({
     path: "/exams",
-    query: { semester: semester.value, kind: kind.value },
+    query: {
+      semester: semester.value,
+      kind: kind.value,
+      view: view.value,
+      week: weekDate.value || undefined,
+    },
   });
 }
 function exportICS() {
@@ -170,6 +189,11 @@ function exportICS() {
       "
     />仅看本学期候选教学班关联考试</label
   ><QueryState :loading="loading" :error="error" :meta="meta" @retry="reload" />
+  <FilterSummary
+    :filters="filterSummary.filters.value"
+    @remove="filterSummary.remove"
+    @clear="reset"
+  />
   <div class="panel">
     <div class="results-toolbar">
       <strong

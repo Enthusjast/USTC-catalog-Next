@@ -157,7 +157,8 @@ export function fixturePayload(path: string, body?: unknown): unknown {
   }
   if (
     endpoint === "/teach/course/quality" ||
-    endpoint.startsWith("/teach/course/department/")
+    endpoint.startsWith("/teach/course/department/") ||
+    endpoint.startsWith("/teach/course/public/")
   )
     return { 演示分类: courseRows };
   if (endpoint === "/teach/course/infos") {
