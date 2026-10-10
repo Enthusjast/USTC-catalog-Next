@@ -1,6 +1,6 @@
 # 部署与真实接口验收
 
-截至本轮最新观察，现有正式域与 HTTPS 可访问，实际生产 Origin 的 GET 和两种详情 POST 已可读取 JSON。仓库 Pages 仍是 legacy 发布源；本轮代码需切换为 GitHub Actions 后发布。接口精确 Origin 及未知路径 JSON 404 门槛尚未通过，详见 [验证记录](verification.md)。
+2026-10-10 服务器修改后的复查：正式域与 HTTPS 可访问，精确生产 Origin 的 GET、两种详情 POST 和未知路径 JSON 404 已通过。发布检查仍被两项服务器行为阻止：`User-Agent: node` 的合法请求返回 JSON 404，未授权来源的 OPTIONS 不返回响应而超时。仓库 Pages 仍是 legacy 发布源；最新代码需切换为 GitHub Actions 后发布，详见 [验证记录](verification.md)。
 
 ## 仓库部署设置
 
@@ -23,12 +23,12 @@
 
 ## API 服务器需要修改的配置
 
-服务代码在用户的服务器上，由用户修改。最近浏览器观察到的两处未通过项如下：
+服务代码在用户的服务器上，由用户修改。本次修改已通过原来的两项检查：
 
-| 项目                                     | 当前响应                         | 需要的响应                                                                                    |
-| ---------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------- |
-| 允许的 Origin                            | `Access-Control-Allow-Origin: *` | 对生产来源返回 `Access-Control-Allow-Origin: https://catalog.enthusjast.cc`；按白名单匹配来源 |
-| 未知路径 `/__catalog_explorer_unknown__` | `200`、`text/html`、SPA 页面     | `404`、`application/json`，例如 `{"error":"not_found"}`                                       |
+| 项目                                     | 修改前响应                       | 复查结果                                                                              |
+| ---------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------- |
+| 允许的 Origin                            | `Access-Control-Allow-Origin: *` | 已返回 `Access-Control-Allow-Origin: https://catalog.enthusjast.cc` 与 `Vary: Origin` |
+| 未知路径 `/__catalog_explorer_unknown__` | `200`、`text/html`、SPA 页面     | 已返回 JSON 404 与 `{"error":"not_found"}`；正式页面可跨域读取                        |
 
 ### CORS
 
@@ -67,6 +67,24 @@ curl -i 'https://api.catalog.enthusjast.cc/restricted' \
 ```
 
 前四项分别应返回 JSON 200、正确预检、JSON 200、JSON 404，并允许精确生产 Origin；最后一项不得允许示例中的未授权来源。教学班 POST 还需使用上文的路径与请求体检查。以上命令核对 HTTP 响应，最终仍需从正式站点页面完成浏览器读取验收。
+
+### 复查发现的发布检查阻塞
+
+同样的合法接口请求仅改变 User-Agent，响应即发生变化：普通 curl 的 `/restricted` 返回 `200 {"restricted":false}`，`User-Agent: node` 返回 `404 {"error":"not_found"}`；课程详情 POST 也有相同行为。Node 内置 fetch 默认使用该 User-Agent，Actions 发布检查因此仍失败。请检查按 User-Agent 分流、过滤或兜底的规则，让这些公开只读接口能由 Node 正常读取；未知路径仍应返回 JSON 404。
+
+```sh
+curl -i 'https://api.catalog.enthusjast.cc/restricted' \
+  -H 'Origin: https://catalog.enthusjast.cc' \
+  -H 'User-Agent: node'
+
+curl -i --max-time 10 -X OPTIONS \
+  'https://api.catalog.enthusjast.cc/teach/course/infos' \
+  -H 'Origin: https://unapproved.example' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: content-type'
+```
+
+未授权来源的 GET 已不返回允许来源头，浏览器无法读取，符合预期；但两种详情接口的未授权 OPTIONS 在 curl 和浏览器中均超时。请让该预检及时结束，例如返回不含允许来源头的 `403`，避免转发到等待响应的处理分支。生产来源的 OPTIONS 已返回正确的 204，应保留。
 
 ## 数据语义验收
 

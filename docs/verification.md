@@ -55,3 +55,12 @@
 - 本轮 Vue TypeScript 检查、Vite 生产构建及改动空白检查通过。
 - 已合并远端新增的根目录 CNAME，保留自定义域配置；本轮未推送或部署。`spec.md` 保持未跟踪，未加入提交。
 - 用户将手动修改服务器的精确 CORS 与未知路径 JSON 404；响应要求和快速检查命令已补充到 [部署文档](deployment.md)。
+
+## 服务器修改后的复查（2026-10-10 14:23—14:27，北京时间）
+
+- 在实际 `https://catalog.enthusjast.cc` 页面读取 `/restricted`、学期列表、课程 infos POST 与教学班 infos POST，均返回 `200 / cors / application/json`；学期列表含 81 项，两种详情分别返回一项。
+- 生产 Origin 的响应头已为 `Access-Control-Allow-Origin: https://catalog.enthusjast.cc`、`Vary: Origin`。两种详情 OPTIONS 返回 204，允许 GET/POST/OPTIONS 与 Content-Type。
+- 未知路径返回 `404 / application/json / {"error":"not_found"}`，正式页面能跨域读取该错误。误带 `/api` 前缀的两个探测路径也返回 JSON 404；有效接口仍使用不带 `/api` 的镜像路径。
+- 未授权 Origin 的 GET 不带允许来源头；从 `https://example.com` 页面发起 GET 被浏览器拒绝。两种 JSON POST 未取得跨域读取权限，但 OPTIONS 在浏览器与 curl 中均超时，未形成及时的拒绝响应。
+- `npm run check:api` 仍退出 1。差异已缩小到 User-Agent：保持 URL 和 Origin 相同，普通 curl 返回 200，增加 `User-Agent: node` 后 `/restricted` 与课程详情 POST 均返回 JSON 404；curl HTTP/1.1 和 HTTP/2 都能复现，Node fetch 也能复现。精确 CORS、允许来源的两种 OPTIONS 和未知路径 JSON 404 在脚本中均已通过。
+- GitHub Pages 仍为 `legacy`，自定义域和 HTTPS 设置正确；远端 main 为 `509bb5a`，本地最新开发代码尚未推送。本轮只更新验收与服务器修改说明，不改变发布门槛。
