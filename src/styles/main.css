@@ -2679,9 +2679,6 @@ tbody tr:hover {
 .official-substitutions {
   font-size: 13px;
 }
-.official-label-short {
-  display: none;
-}
 .substitution-results {
   display: grid;
   grid-template-columns: 1fr;
@@ -2894,18 +2891,12 @@ tbody tr:hover {
   }
   .substitutions-page .page-heading {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: 10px;
   }
   .substitutions-page .heading-actions {
     margin-top: 0;
-  }
-  .official-label-full {
-    display: none;
-  }
-  .official-label-short {
-    display: inline;
   }
 }
 .search-container {
