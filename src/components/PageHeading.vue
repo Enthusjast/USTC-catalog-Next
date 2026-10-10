@@ -4,7 +4,7 @@ defineProps<{ title: string; description?: string; eyebrow?: string }>();
 <template>
   <div class="page-heading">
     <div>
-      <p class="eyebrow">{{ eyebrow ?? "PUBLIC CATALOG / 公共查询" }}</p>
+      <p v-if="eyebrow" class="eyebrow">{{ eyebrow }}</p>
       <h1>{{ title }}</h1>
       <p v-if="description">{{ description }}</p>
     </div>

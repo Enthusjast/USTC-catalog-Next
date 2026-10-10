@@ -246,9 +246,7 @@ function exportICS() {
 }
 </script>
 <template>
-  <PageHeading
-    title="全校教学班"
-    eyebrow="03 / PUBLIC LESSONS"
+  <PageHeading title="全校教学班"
     ><div class="filter-field lesson-semester-field">
       <label for="lesson-semester">查询学期</label
       ><select id="lesson-semester" v-model="semester">

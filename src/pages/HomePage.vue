@@ -65,10 +65,6 @@ const tasks = [
 <template>
   <section class="home-hero">
     <div class="hero-main">
-      <div class="hero-topline">
-        <p class="eyebrow">USTC-catalog-Next</p>
-        <span class="tag">独立公共查询</span>
-      </div>
       <h1>
         <span>课程与教学安排，</span
         ><span class="hero-headline-tail">一处查询。</span>

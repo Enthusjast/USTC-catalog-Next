@@ -57,9 +57,7 @@ function clear() {
 }
 </script>
 <template>
-  <PageHeading
-    title="培养方案与执行计划"
-    eyebrow="02 / ACADEMIC PROGRAMS"
+  <PageHeading title="培养方案与执行计划"
     ><RouterLink class="button secondary" to="/program-compare"
       ><ArrowLeftRight :size="16" />计划对比</RouterLink
     ></PageHeading

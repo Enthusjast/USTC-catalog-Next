@@ -121,9 +121,7 @@ function exportICS() {
 }
 </script>
 <template>
-  <PageHeading
-    title="考试查询"
-    eyebrow="04 / EXAM SCHEDULE"
+  <PageHeading title="考试查询"
     ><div class="filter-field" style="margin: 0; min-width: 200px">
       <label for="exam-semester">查询学期</label
       ><select id="exam-semester" v-model="semester">

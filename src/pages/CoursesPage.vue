@@ -183,9 +183,7 @@ function clear() {
 }
 </script>
 <template>
-  <PageHeading
-    title="课程目录"
-    eyebrow="01 / COURSE CATALOG"
+  <PageHeading title="课程目录"
     ><a
       class="button secondary"
       href="https://catalog.ustc.edu.cn/catalog"

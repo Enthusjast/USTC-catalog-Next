@@ -503,15 +503,6 @@ input[type="checkbox"] {
 .semester-mobile {
   display: none;
 }
-.hero-topline {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-.hero-topline .eyebrow {
-  margin: 0;
-}
 .home-hero h1 {
   font-size: 36px;
   letter-spacing: -0.03em;
@@ -1656,16 +1647,6 @@ tbody tr:hover {
     font-size: 12px;
     min-height: 44px;
     padding: 6px 0;
-  }
-  .hero-topline {
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .hero-topline .eyebrow {
-    font-size: 10px;
-  }
-  .hero-topline .tag {
-    font-size: 10px;
   }
   .home-hero h1 {
     font-size: 29px;
