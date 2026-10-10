@@ -154,6 +154,9 @@ export function programModule(data: schemas.ModuleDTO): ProgramModule {
     requirement: plainText(s.remark),
     requiredCredits: s.requiredCredits ?? undefined,
     requiredCourses: s.requiredCourseNum ?? undefined,
+    requiredSubmodules: s.requiredSubModuleNum ?? undefined,
+    creditsUpperLimit: s.creditsUpperLimit ?? undefined,
+    courseCountUpperLimit: s.courseNumUpperLimit ?? undefined,
     publicId: s.public == null ? undefined : String(s.public),
     courses: (s.courses ?? []).map((c) => ({
       course: {

@@ -1,6 +1,8 @@
 import { computed, ref, watch } from "vue";
 import { z } from "zod";
 import type { Lesson } from "../domain/models";
+import { storageKey } from "./storageKey";
+const key = storageKey("planner");
 
 const savedLesson = z.object({
   id: z.string(),
@@ -42,9 +44,7 @@ const savedSchema = z.record(
 );
 function read() {
   try {
-    return savedSchema.parse(
-      JSON.parse(localStorage.getItem("catalog:planner") ?? "{}"),
-    );
+    return savedSchema.parse(JSON.parse(localStorage.getItem(key) ?? "{}"));
   } catch {
     return {};
   }
@@ -56,7 +56,7 @@ watch(
   plans,
   (value) => {
     try {
-      localStorage.setItem("catalog:planner", JSON.stringify(value));
+      localStorage.setItem(key, JSON.stringify(value));
       storageError.value = "";
     } catch {
       storageError.value =

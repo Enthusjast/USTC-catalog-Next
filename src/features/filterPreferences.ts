@@ -1,8 +1,9 @@
 import { ref } from "vue";
 import { z } from "zod";
 import type { LocationQuery, LocationQueryRaw } from "vue-router";
+import { storageKey as key } from "./storageKey";
 
-const storageKey = "catalog:filters";
+const storageKey = key("filters");
 const fields: Record<string, string[]> = {
   "/courses": ["q", "dept", "mode", "category", "history", "saved"],
   "/programs": ["q", "dept", "type", "grade"],

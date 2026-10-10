@@ -30,7 +30,11 @@ defineEmits<{ refresh: [] }>();
       </button>
     </div>
   </div>
-  <details v-if="program.referenceSources?.length" class="reference-sources">
+  <details
+    v-if="program.referenceSources?.length"
+    class="reference-sources"
+    :open="program.referenceSources?.some((meta) => meta.state === 'stale')"
+  >
     <summary>
       公共模块数据来源（{{ program.referenceSources.length }} 个接口）
     </summary>

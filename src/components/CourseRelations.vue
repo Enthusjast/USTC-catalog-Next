@@ -154,6 +154,14 @@ const matches = computed(
 const incomplete = computed(
   () => planResults.data.value?.filter((result) => result.issues.length) ?? [],
 );
+const outdated = computed(
+  () =>
+    planResults.data.value?.filter(
+      (item) =>
+        item.meta?.state === "stale" ||
+        item.sources.some((meta) => meta.state === "stale"),
+    ) ?? [],
+);
 const rows = computed(
   () =>
     lessonResults.data.value?.flatMap((result) =>
@@ -401,6 +409,19 @@ function startLessons() {
               · {{ occurrence.entry.terms.join("、") || "建议学期未提供" }}
             </p>
             <QueryState :meta="match.meta" @retry="planResults.reload" />
+            <details
+              v-if="match.sources.length"
+              class="reference-sources"
+              :open="match.sources.some((meta) => meta.state === 'stale')"
+            >
+              <summary>公共模块来源与缓存状态</summary>
+              <QueryState
+                v-for="meta in match.sources"
+                :key="meta.source"
+                :meta="meta"
+                @retry="planResults.reload"
+              />
+            </details>
           </article>
           <p v-if="incomplete.length" class="notice warning">
             {{ incomplete.length }}
@@ -411,6 +432,25 @@ function startLessons() {
             <p v-for="item in incomplete" :key="item.summary.id">
               {{ item.summary.name }}：{{ item.issues.join("；") }}
             </p>
+          </details>
+          <p v-if="outdated.length" class="notice warning">
+            {{ outdated.length }}
+            份计划的匹配结果包含过期计划或公共模块缓存，可能不反映当前关系。
+          </p>
+          <details class="reference-sources">
+            <summary>已检查计划的数据状态（包含未匹配计划）</summary>
+            <div v-for="item in planResults.data.value" :key="item.summary.id">
+              <strong>{{ item.summary.name }}</strong
+              ><QueryState
+                :meta="item.meta"
+                @retry="planResults.reload"
+              /><QueryState
+                v-for="meta in item.sources"
+                :key="meta.source"
+                :meta="meta"
+                @retry="planResults.reload"
+              />
+            </div>
           </details>
           <EmptyState
             v-if="!matches.length"

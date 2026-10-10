@@ -138,6 +138,9 @@ const moduleSelfSchema = z
     remark: text,
     requiredCredits: number,
     requiredCourseNum: number,
+    requiredSubModuleNum: number,
+    creditsUpperLimit: number,
+    courseNumUpperLimit: number,
     public: id.nullable().optional(),
     courses: z.array(programCourseSchema).optional(),
   })
@@ -208,14 +211,16 @@ const usageSchema = z
   })
   .passthrough();
 export const timetableSchema = z.object({
-  timetable: z.object({
-    lessons: z.array(usageSchema),
-    tmpLessons: z.array(usageSchema),
-    roomOccupies: z.array(usageSchema),
-    exams: z.array(usageSchema),
-    makeupExams: z.array(usageSchema),
-    tmpExams: z.array(usageSchema),
-  }),
+  timetable: z
+    .object({
+      lessons: z.array(usageSchema),
+      tmpLessons: z.array(usageSchema),
+      roomOccupies: z.array(usageSchema),
+      exams: z.array(usageSchema),
+      makeupExams: z.array(usageSchema),
+      tmpExams: z.array(usageSchema),
+    })
+    .strict(),
 });
 const substitutionCourse = z
   .object({ code: z.string(), cn: z.string(), en: text, credits: number })

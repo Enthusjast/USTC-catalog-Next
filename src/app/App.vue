@@ -14,6 +14,7 @@ import {
 import { usePreferences } from "../features/usePreferences";
 import CatalogSearch from "../components/CatalogSearch.vue";
 import { filterStorageError } from "../features/filterPreferences";
+import { DEMO_MODE } from "../api/environment";
 
 const route = useRoute(),
   router = useRouter(),
@@ -104,8 +105,14 @@ onErrorCaptured(() => {
       ><RouterLink to="/program-compare">计划对比</RouterLink
       ><RouterLink to="/about/data">数据说明</RouterLink>
     </nav>
+    <p class="header-disclaimer">
+      独立公共查询工具，非中国科学技术大学官方系统。
+    </p>
   </header>
   <main id="main" class="main-container" tabindex="-1">
+    <p v-if="DEMO_MODE" class="notice warning" role="status">
+      演示模式：课程、计划与教学安排使用虚构示例；历史归档为标明来源的静态资料。演示收藏和候选清单独立保存。
+    </p>
     <p v-if="filterStorageError" class="notice warning" role="status">
       {{ filterStorageError }}
     </p>

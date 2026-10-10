@@ -52,12 +52,32 @@ const { data, meta, loading, error, reload } = useQuery(
 );
 const planner = usePlanner(semester),
   conflicts = computed(() => lessonConflicts(planner.lessons.value));
+const lessonInfo = useQuery(
+  (signal, force) =>
+    catalog.lessonDetails(detailCode.value, semester.value, { signal, force }),
+  () => `${semester.value}:${detailCode.value}`,
+  () => !!semester.value && !!detailCode.value,
+);
 const firstMonday = ref(""),
   layout = ref(""),
   exportMessage = ref("");
 const departments = computed(() =>
-  [...new Set(data.value?.map((l) => l.department))].sort(),
+  [
+    ...new Map(
+      (data.value ?? []).map((l) => [
+        l.departmentCode,
+        { code: l.departmentCode, name: l.department },
+      ]),
+    ).values(),
+  ].sort((a, b) => a.name.localeCompare(b.name, "zh")),
 );
+const selectedDepartment = computed({
+  get: () =>
+    departments.value.find((d) => d.name === dept.value)?.code ?? dept.value,
+  set: (value) => {
+    dept.value = value;
+  },
+});
 const options = (
   field: "education" | "classType" | "category" | "language" | "examMode",
 ) => [
@@ -99,7 +119,9 @@ const filtered = computed(() =>
         `${l.code} ${l.course.code} ${l.course.name} ${l.course.englishName ?? ""} ${l.teachers.join(" ")} ${l.department} ${l.schedule.text}`
           .toLowerCase()
           .includes(keyword.value.toLowerCase())) &&
-      (!dept.value || l.department === dept.value) &&
+      (!dept.value ||
+        l.department === dept.value ||
+        l.departmentCode === dept.value) &&
       (!teacher.value || l.teachers.some((t) => t.includes(teacher.value))) &&
       ((!day.value && !period.value) ||
         l.schedule.slots.some(
@@ -180,9 +202,11 @@ function exportICS() {
       </div>
       <div class="filter-field">
         <label for="lesson-dept">开课院系</label
-        ><select id="lesson-dept" v-model="dept">
+        ><select id="lesson-dept" v-model="selectedDepartment">
           <option value="">全部院系</option>
-          <option v-for="d in departments" :key="d">{{ d }}</option>
+          <option v-for="d in departments" :key="d.code" :value="d.code">
+            {{ d.name }}
+          </option>
         </select>
       </div>
       <div class="filter-field">
@@ -478,7 +502,12 @@ function exportICS() {
     title="公开教学班详情"
     @close="detailCode = ''"
     ><template v-if="detail"
-      ><span class="mono muted">{{ detail.code }}</span>
+      ><QueryState
+        :loading="lessonInfo.loading.value"
+        :error="lessonInfo.error.value"
+        :meta="lessonInfo.meta.value"
+        @retry="lessonInfo.reload"
+      /><span class="mono muted">{{ detail.code }}</span>
       <div class="detail-title">
         <h3>{{ detail.course.name }}</h3>
         <p>{{ detail.course.englishName }}</p>
@@ -518,6 +547,20 @@ function exportICS() {
       <p v-if="detail.schedule.unknown" class="notice warning">
         部分时间无法识别，完整冲突状态未知。
       </p>
+      <section
+        v-if="lessonInfo.data.value?.[0]?.description"
+        class="detail-section"
+      >
+        <h3>教学班课程说明</h3>
+        <p>{{ lessonInfo.data.value[0].description }}</p>
+      </section>
+      <section
+        v-if="lessonInfo.data.value?.[0]?.references"
+        class="detail-section"
+      >
+        <h3>教学参考资料</h3>
+        <p>{{ lessonInfo.data.value[0].references }}</p>
+      </section>
       <div class="flex-actions">
         <button class="button" @click="planner.toggle(detail)">
           {{

@@ -43,12 +43,16 @@ const { data, meta, loading, error, reload } = useQuery(
             selectedDepartment.value.name,
             { signal, force },
           )
-        : catalog.quality({ signal, force }),
-  () => `${keyword.value}|${selectedDepartment.value?.id ?? ""}|${mode.value}`,
+        : mode.value === "quality"
+          ? catalog.quality({ signal, force })
+          : catalog.courses(favorites.value, { signal, force }),
+  () =>
+    `${keyword.value}|${selectedDepartment.value?.id ?? ""}|${mode.value}|${saved.value === "1" ? favorites.value.join(",") : ""}`,
   () =>
     !!keyword.value.trim() ||
     !!selectedDepartment.value ||
-    mode.value === "quality",
+    mode.value === "quality" ||
+    (saved.value === "1" && !!favorites.value.length),
 );
 const categories = computed(() => [
   ...new Set(
@@ -74,7 +78,10 @@ const filtered = computed(() =>
 const { page, visible, change } = usePagination(filtered);
 const active = computed(
   () =>
-    !!keyword.value || !!selectedDepartment.value || mode.value === "quality",
+    !!keyword.value ||
+    !!selectedDepartment.value ||
+    mode.value === "quality" ||
+    saved.value === "1",
 );
 function clear() {
   void router.replace({ path: "/courses", query: {} });
@@ -171,6 +178,17 @@ function clear() {
           </button>
         </div>
         <EmptyState
+          v-if="
+            saved === '1' &&
+            !favorites.length &&
+            !keyword &&
+            !selectedDepartment &&
+            mode !== 'quality'
+          "
+          title="本机还没有收藏课程"
+          message="查找课程并在详情中收藏，可在这里汇总查看。"
+        />
+        <EmptyState
           v-if="!active"
           title="从课程名称或院系开始"
           message="输入关键词，选择院系，或浏览接口提供的通识课程集合。课程目录不代表每学期都会开课。"
@@ -220,7 +238,13 @@ function clear() {
                   <span
                     class="tag"
                     :class="course.valid ? 'valid' : 'warning'"
-                    >{{ course.valid ? "当前有效" : "历史课程" }}</span
+                    >{{
+                      course.valid === undefined
+                        ? "状态未提供"
+                        : course.valid
+                          ? "当前有效"
+                          : "历史课程"
+                    }}</span
                   ><button
                     class="icon-button"
                     :aria-label="`查看 ${course.name} 详情`"

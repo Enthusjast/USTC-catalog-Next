@@ -80,10 +80,23 @@ export interface ProgramModule {
   requirement?: string;
   requiredCredits?: number;
   requiredCourses?: number;
+  requiredSubmodules?: number;
+  creditsUpperLimit?: number;
+  courseCountUpperLimit?: number;
   publicId?: string;
   courses: ProgramCourse[];
   children: ProgramModule[];
   referenceState?: "resolved" | "incomplete";
+  referenceRequirements?: {
+    publicId: string;
+    name: string;
+    requirement?: string;
+    requiredCredits?: number;
+    requiredCourses?: number;
+    requiredSubmodules?: number;
+    creditsUpperLimit?: number;
+    courseCountUpperLimit?: number;
+  }[];
 }
 export interface Program {
   grade: string;

@@ -79,6 +79,14 @@ export const router = createRouter({
     saved ?? (to.path === from.path ? false : { top: 0 }),
 });
 router.beforeEach((to, from) => {
+  if (to.path === "/programs" && typeof to.query.id === "string") {
+    const { id, ...query } = to.query;
+    return {
+      path: `/programs/${encodeURIComponent(id)}`,
+      query,
+      replace: true,
+    };
+  }
   // An explicit query is a complete shared filter snapshot. Same-page resets stay empty.
   if (
     !Object.keys(to.query).length &&

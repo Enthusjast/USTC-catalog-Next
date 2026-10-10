@@ -1,5 +1,7 @@
 # 部署与真实接口验收
 
+截至本轮最新观察，现有正式域与 HTTPS 可访问，实际生产 Origin 的 GET 和两种详情 POST 已可读取 JSON。仓库 Pages 仍是 legacy 发布源；本轮代码需切换为 GitHub Actions 后发布。接口精确 Origin 及未知路径 JSON 404 门槛尚未通过，详见 [验证记录](verification.md)。
+
 ## 仓库部署设置
 
 - Pages 发布源：GitHub Actions；允许 `github-pages` environment 从 main 部署。
@@ -16,6 +18,8 @@
 4. 核对 `/teach/lesson/infos` 的 OPTIONS/POST，body 为 `{"codes":["022063.01"],"semester":461}`。首版界面从学期集合获取教学班详情，因此该接口暂不用于页面。
 5. 未知 API 路径应为 JSON 404。确认 HTML/空响应不会渲染为空列表。
 6. 如需本地开发访问，由 API 服务加入 localhost 与 127.0.0.1 的明确来源；修改来源后重查 POST 预检。
+
+工作流在发布前执行 `npm run check:api`；它检查 HTTP、schema 和响应头并将结果写入 Actions 摘要。HTTP 检查不会替代上述正式页面浏览器验收，运行环境的网络失败也会阻止发布，需要结合浏览器记录诊断。
 
 ## 数据语义验收
 

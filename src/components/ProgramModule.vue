@@ -42,12 +42,57 @@ function toggle(event: Event) {
       <p v-if="module.requirement" class="module-requirement">
         {{ module.requirement }}
       </p>
+      <p v-if="module.requiredSubmodules" class="module-requirement">
+        要求子模块数：{{ module.requiredSubmodules }}；请结合各子模块说明核对。
+      </p>
+      <p
+        v-if="
+          module.creditsUpperLimit !== undefined ||
+          module.courseCountUpperLimit !== undefined
+        "
+        class="module-requirement"
+      >
+        {{
+          module.creditsUpperLimit !== undefined
+            ? `学分上限：${module.creditsUpperLimit}。`
+            : ""
+        }}{{
+          module.courseCountUpperLimit !== undefined
+            ? `课程数上限：${module.courseCountUpperLimit}。`
+            : ""
+        }}
+      </p>
       <QueryState
         :loading="reference.loading.value"
         :error="reference.error.value"
         :meta="reference.meta.value"
         @retry="reference.reload"
       />
+      <div
+        v-for="rules in content.referenceRequirements"
+        :key="rules.publicId"
+        class="notice"
+      >
+        <div>
+          <strong>公共模块 {{ rules.name }} #{{ rules.publicId }}</strong>
+          <p v-if="rules.requiredCredits">
+            学分要求：{{ rules.requiredCredits }}
+          </p>
+          <p v-if="rules.requiredCourses">
+            课程数要求：{{ rules.requiredCourses }}
+          </p>
+          <p v-if="rules.requiredSubmodules">
+            子模块数要求：{{ rules.requiredSubmodules }}
+          </p>
+          <p v-if="rules.creditsUpperLimit !== undefined">
+            学分上限：{{ rules.creditsUpperLimit }}
+          </p>
+          <p v-if="rules.courseCountUpperLimit !== undefined">
+            课程数上限：{{ rules.courseCountUpperLimit }}
+          </p>
+          <p v-if="rules.requirement">{{ rules.requirement }}</p>
+        </div>
+      </div>
       <div v-if="content.courses.length" class="table-scroll">
         <table>
           <thead>

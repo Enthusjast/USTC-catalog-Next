@@ -73,6 +73,25 @@ export const catalog = {
       }),
       adapt.courseDetails,
     ),
+  courses: (codes: string[], options?: Options) =>
+    map(
+      query("/teach/course/infos", schema.courseDetailSchema, {
+        ...options,
+        body: { codes: [...new Set(codes)].sort() },
+      }),
+      adapt.courseDetails,
+    ),
+  lessonDetails: (code: string, semester: string, options?: Options) =>
+    map(
+      query("/teach/lesson/infos", schema.courseDetailSchema, {
+        ...options,
+        body: {
+          codes: [code],
+          semester: /^\d+$/.test(semester) ? Number(semester) : semester,
+        },
+      }),
+      adapt.courseDetails,
+    ),
   lessons: (semester: string, options?: Options) =>
     map(
       query(

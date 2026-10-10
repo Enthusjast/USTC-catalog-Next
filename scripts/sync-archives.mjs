@@ -83,6 +83,7 @@ const documents = records.map((record) => archiveDocument(record, labels));
 const attachments = archiveAttachments(historyHTML, snapshotAt);
 const destination = join(root, "public/data/archives"),
   staging = join(root, "public/data/.archives-staging");
+await rm(staging, { recursive: true, force: true });
 await mkdir(staging, { recursive: true });
 for (const document of documents)
   await writeFile(
@@ -99,9 +100,23 @@ const manifest = {
   attachments,
 };
 await writeFile(join(staging, "index.json"), JSON.stringify(manifest));
-// Every source is parsed successfully before replacing the versioned snapshot.
-await rm(destination, { recursive: true, force: true });
-await rename(staging, destination);
+// Keep the previous snapshot until the complete replacement is installed.
+const backup = join(root, "public/data/.archives-backup");
+await rm(backup, { recursive: true, force: true });
+let previous = false;
+try {
+  await rename(destination, backup);
+  previous = true;
+} catch (error) {
+  if (error.code !== "ENOENT") throw error;
+}
+try {
+  await rename(staging, destination);
+} catch (error) {
+  if (previous) await rename(backup, destination);
+  throw error;
+}
+await rm(backup, { recursive: true, force: true });
 console.log(
   `Archived ${documents.length} historical documents and ${attachments.length} versioned official attachments.`,
 );

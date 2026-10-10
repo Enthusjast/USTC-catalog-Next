@@ -13,16 +13,19 @@ npm run dev
 
 开发地址为 `http://127.0.0.1:5173`。API 默认直连 `https://api.catalog.enthusjast.cc`，路径不包含原站的 `/api` 前缀。可复制 `.env.example` 到 `.env.local` 修改公开配置。
 
-**本地 API 访问需要 API 服务放行开发 Origin**：`http://127.0.0.1:5173` 或 `http://localhost:5173`。生产镜像的精确 CORS 来源为 `https://catalog.enthusjast.cc`；页面能在本地加载并不表示 API 已允许该来源。被拒绝时页面展示请求错误与重试入口。
+**本地 API 访问取决于 API 服务的 CORS 配置**。规格要求放行明确的开发 Origin：`http://127.0.0.1:5173` 或 `http://localhost:5173`，生产来源为 `https://catalog.enthusjast.cc`。最新浏览器探测已成功从正式来源及本地来源读取 GET/POST；精确 Origin 限制和未知路径 JSON 404 仍须修正或确认，见 [验证记录](docs/verification.md)。被拒绝时页面展示请求错误与重试入口。
 
 ```sh
 npm run typecheck
 npm run build
 npm run preview
 npm run format
+npm run check:api
 ```
 
 构建产物为 `dist`，Vue Router 使用 hash history，支持直接打开和刷新 `/#/programs/3430` 等链接。TypeScript 固定为 5.9 系列，以兼容当前 `vue-tsc`。
+
+没有可用接口时，可用 `npm run dev:fixtures` 启动开发演示模式。示例课程、计划与安排均为虚构，页面显示“演示数据”，其收藏、候选清单和筛选使用独立存储。历史归档仍读取已标明来源的静态资料。发布构建拒绝 fixtures 模式，并将开发样例模块替换为不含样例记录的占位模块。
 
 ## 当前功能
 
@@ -56,11 +59,13 @@ npm run format
 
 ## GitHub Pages
 
-`.github/workflows/pages.yml` 在 PR 上构建，在 main 推送或手动触发时构建并发布。锁文件通过 `npm ci` 安装；自定义域名由 `public/CNAME` 声明，Vite base 为 `/`。
+`.github/workflows/pages.yml` 在 PR 上构建，在 main 推送或手动触发时构建，在 API 发布检查通过后发布。检查包括精确 Origin、JSON/schema、POST/OPTIONS 和未知路径 JSON 404；失败时写入 Actions 摘要并阻止该次发布。锁文件通过 `npm ci` 安装；自定义域名由 `public/CNAME` 声明，Vite base 为 `/`。
 
 仓库管理员需在 Settings → Pages 选择 GitHub Actions，并确认 `catalog.enthusjast.cc` 的 DNS 指向 `Enthusjast.github.io` 及 HTTPS 可用。API 子域名继续指向 API 服务。
 
 上线前请完成 [部署验收清单](docs/deployment.md)，尤其是正式 Origin 的浏览器跨域读取与 POST 预检。当前代码提交不等于这些外部设置已完成。
+
+逐项实现和验收状态见 [规格状态表](docs/spec-status.md)，真实接口字段见 [API 字段清单](docs/api-contracts.md)。
 
 ## 历史归档更新
 

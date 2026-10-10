@@ -161,6 +161,14 @@ input[type="checkbox"] {
   top: 0;
   z-index: 30;
 }
+.header-disclaimer {
+  padding: 4px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--muted);
+}
 .header-inner {
   max-width: 1440px;
   margin: auto;

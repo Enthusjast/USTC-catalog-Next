@@ -3,6 +3,7 @@ import type { QueryResult } from "../domain/models";
 import { readCache, writeCache } from "./cache";
 import { restrictedSchema } from "./schemas";
 import { createLimiter } from "../domain/concurrency";
+import { DEMO_MODE } from "./environment";
 
 export const API_BASE = (
   import.meta.env.VITE_API_BASE_URL || "https://api.catalog.enthusjast.cc"
@@ -74,7 +75,7 @@ async function fetchPayload(
           url,
         );
       if (
-        !/application\/(?:[\w.+-]+\+)?json/i.test(
+        !/^application\/(?:[\w.+-]+\+)?json(?:\s*;|$)/i.test(
           response.headers.get("content-type") ?? "",
         )
       )
@@ -85,7 +86,8 @@ async function fetchPayload(
         );
       try {
         return await response.json();
-      } catch {
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error;
         throw new ApiError(
           "json",
           "接口返回的 JSON 无法解析，请稍后重试。",
@@ -219,6 +221,38 @@ export async function query<T>(
   schema: z.ZodType<T>,
   options: RequestOptions = {},
 ): Promise<QueryResult<T>> {
+  if (DEMO_MODE) {
+    if (options.signal?.aborted)
+      throw new DOMException("查询已取消", "AbortError");
+    await new Promise<void>((resolve, reject) => {
+      const abort = () => {
+        clearTimeout(timer);
+        reject(new DOMException("查询已取消", "AbortError"));
+      };
+      const timer = setTimeout(() => {
+        options.signal?.removeEventListener("abort", abort);
+        resolve();
+      }, 120);
+      options.signal?.addEventListener("abort", abort, { once: true });
+    });
+    const { fixturePayload } = await import("./fixtures");
+    const result = schema.safeParse(
+      fixturePayload(mirrorPath(path), options.body),
+    );
+    if (!result.success)
+      throw new ApiError("schema", "演示数据结构异常。", location.origin);
+    if (options.signal?.aborted)
+      throw new DOMException("查询已取消", "AbortError");
+    return {
+      data: result.data,
+      meta: {
+        retrievedAt: new Date().toISOString(),
+        source: `${location.origin}/#/about/data`,
+        state: "online",
+        kind: "demo",
+      },
+    };
+  }
   const restriction = await request("/restricted", restrictedSchema, {
     signal: options.signal,
     ttl: 5 * 60_000,

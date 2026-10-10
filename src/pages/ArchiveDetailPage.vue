@@ -9,7 +9,7 @@ import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import ArchiveTable from "../components/ArchiveTable.vue";
 const route = useRoute(),
-  view = useFilter("view", "text"),
+  view = useFilter("view", "tables"),
   copied = ref("");
 const code = computed(() => String(route.params.code));
 const { data, meta, loading, error, reload } = useQuery(
@@ -44,7 +44,7 @@ async function share() {
     ><a
       v-if="data"
       class="button secondary"
-      :href="data.source"
+      :href="data.officialPage"
       target="_blank"
       rel="noopener noreferrer"
       >官方原始正文<ArrowUpRight :size="16" /></a
@@ -77,19 +77,19 @@ async function share() {
     <section v-if="view === 'text'" class="panel archive-reader">
       <h2>原始历史正文</h2>
       <p class="muted">
-        下方由官方静态文档直接加载，可在阅读区内滚动；网络不可用时，可查看已归档课程表或稍后打开官方来源。
+        下方为官方历史方案原始页面，可在阅读区内滚动；网络不可用时，可查看已归档课程表或稍后打开官方来源。
       </p>
       <blockquote v-if="data.excerpt">正文摘录：{{ data.excerpt }}…</blockquote>
       <iframe
-        :key="data.source"
-        :src="data.source"
+        :key="data.officialPage"
+        :src="data.officialPage"
         :title="`${data.title}（官方 ${data.version} 历史正文）`"
-        sandbox="allow-popups allow-popups-to-escape-sandbox"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
         referrerpolicy="no-referrer"
         loading="lazy"
       /><a
         class="text-button"
-        :href="data.source"
+        :href="data.officialPage"
         target="_blank"
         rel="noopener noreferrer"
         >在官方页面阅读完整正文<ArrowUpRight :size="14"

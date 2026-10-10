@@ -70,8 +70,12 @@ export function comparePrograms(left: Program, right: Program) {
       JSON.stringify([
         m.requiredCredits,
         m.requiredCourses,
+        m.requiredSubmodules,
+        m.creditsUpperLimit,
+        m.courseCountUpperLimit,
         m.requirement,
         m.publicId,
+        m.referenceRequirements,
       ]);
     return signature(row.module) !== signature(matched[0]!.module)
       ? [{ path: row.path, before: row.module, after: matched[0]!.module }]

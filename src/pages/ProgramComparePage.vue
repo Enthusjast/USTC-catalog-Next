@@ -176,7 +176,37 @@ const comparison = computed(() =>
             {{ module.requiredCourses ?? "未提供" }} 门课程
           </p>
           <p>{{ module.requirement ?? "要求说明未提供" }}</p>
+          <p v-if="module.requiredSubmodules !== undefined">
+            要求子模块数：{{ module.requiredSubmodules }}
+          </p>
+          <p v-if="module.creditsUpperLimit !== undefined">
+            学分上限：{{ module.creditsUpperLimit }}
+          </p>
+          <p v-if="module.courseCountUpperLimit !== undefined">
+            课程数上限：{{ module.courseCountUpperLimit }}
+          </p>
           <p v-if="module.publicId">公共模块引用 #{{ module.publicId }}</p>
+          <div
+            v-for="rules in module.referenceRequirements"
+            :key="rules.publicId"
+          >
+            <p>
+              公共模块 {{ rules.name }} #{{ rules.publicId }}：{{
+                rules.requiredCredits ?? "未提供"
+              }}
+              学分，{{ rules.requiredCourses ?? "未提供" }} 门课程，{{
+                rules.requiredSubmodules ?? "未提供"
+              }}
+              个子模块。
+            </p>
+            <p v-if="rules.creditsUpperLimit !== undefined">
+              公共模块学分上限：{{ rules.creditsUpperLimit }}
+            </p>
+            <p v-if="rules.courseCountUpperLimit !== undefined">
+              公共模块课程数上限：{{ rules.courseCountUpperLimit }}
+            </p>
+            <p v-if="rules.requirement">{{ rules.requirement }}</p>
+          </div>
         </div>
       </article>
       <p v-if="!comparison.requirements.length" class="muted">

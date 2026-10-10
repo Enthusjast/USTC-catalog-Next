@@ -7,7 +7,8 @@ export function examConflicts(exams: Exam[], sharedRoom = false) {
       isISODate(e.date) &&
       e.start !== undefined &&
       e.end !== undefined &&
-      e.end > e.start,
+      e.end > e.start &&
+      (!sharedRoom || e.rooms.length > 0),
   );
   const overlaps: { left: Exam; right: Exam; rooms: string[] }[] = [];
   const byDate = new Map<string, Exam[]>();

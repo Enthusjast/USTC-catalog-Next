@@ -304,7 +304,7 @@ function exportICS() {
     </p>
     <p v-if="conflicts.unknown.length" class="notice warning">
       {{ conflicts.unknown.length }}
-      场考试缺少准确日期或时间，无法判断完整重叠状态。
+      场考试缺少准确日期、时间或本次检查所需的考场信息，无法判断完整重叠状态。
     </p>
     <p v-if="!conflicts.overlaps.length && !conflicts.unknown.length">
       已知安排中未发现{{ savedOnly === "1" ? "时间" : "同一考场的时间" }}重叠。

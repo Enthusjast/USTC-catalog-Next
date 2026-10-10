@@ -66,6 +66,19 @@ export async function resolveProgramReferences(
       );
       return {
         ...module,
+        referenceRequirements: [
+          {
+            publicId,
+            name: shared.name,
+            requirement: shared.requirement,
+            requiredCredits: shared.requiredCredits,
+            requiredCourses: shared.requiredCourses,
+            requiredSubmodules: shared.requiredSubmodules,
+            creditsUpperLimit: shared.creditsUpperLimit,
+            courseCountUpperLimit: shared.courseCountUpperLimit,
+          },
+          ...(shared.referenceRequirements ?? []),
+        ],
         courses: courses(module.courses, shared.courses),
         children: [
           ...children,
