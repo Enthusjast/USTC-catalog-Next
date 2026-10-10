@@ -33,6 +33,7 @@ const savedLesson = z.object({
   capacity: z.number().optional(),
   education: z.string().optional(),
   classType: z.string().optional(),
+  courseType: z.string().optional(),
   category: z.string().optional(),
   language: z.string().optional(),
   examMode: z.string().optional(),

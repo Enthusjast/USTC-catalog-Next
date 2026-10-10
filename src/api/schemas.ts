@@ -65,10 +65,37 @@ export const courseDetailSchema = z.array(
       examType: text,
       lang: text,
       ref: text,
+      grading: text,
+      discipline: text,
+      courseType: text,
+      textbook: text,
+      textbooks: z
+        .array(
+          z
+            .object({
+              nameZh: text,
+              nameEn: text,
+              author: text,
+              publishingHouse: text,
+              edition: text,
+              dates: text,
+              isbn: text,
+            })
+            .passthrough(),
+        )
+        .nullable()
+        .optional(),
       courseCategory: text,
       courseClassify: text,
     })
     .passthrough(),
+);
+export const lessonFilterInfoSchema = z.array(
+  z.object({
+    code: z.string().min(1),
+    discipline: text,
+    grading: text,
+  }),
 );
 export const lessonSchema = z.array(
   z
@@ -88,6 +115,7 @@ export const lessonSchema = z.array(
       teacherAssignmentList: z.array(name),
       education: name.optional(),
       classType: name.optional(),
+      courseType: name.nullable().optional(),
       courseCategory: name.optional(),
       teachLang: name.optional(),
       examMode: name.optional(),

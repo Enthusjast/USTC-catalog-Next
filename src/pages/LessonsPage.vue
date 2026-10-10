@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   Plus,
@@ -11,8 +11,9 @@ import {
   CalendarDays,
   ClipboardList,
   ArrowDown,
+  ExternalLink,
 } from "@lucide/vue";
-import type { Lesson } from "../domain/models";
+import type { CourseTextbook, Lesson } from "../domain/models";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useSemester } from "../features/useSemester";
@@ -20,6 +21,7 @@ import { useFilter, useDebounced } from "../features/useFilters";
 import { usePlanner } from "../features/usePlanner";
 import { usePagination } from "../features/usePagination";
 import { useFilterSummary } from "../features/useFilterSummary";
+import { useLessonFilterInfo } from "../features/useLessonFilterInfo";
 import { lessonConflicts, weekdays, formatClock } from "../domain/schedule";
 import { lessonCalendar, downloadCalendar } from "../domain/calendar";
 import { periodLayouts } from "../domain/periods";
@@ -45,7 +47,11 @@ const q = useFilter("q"),
   location = useFilter("location"),
   education = useFilter("education"),
   type = useFilter("type"),
+  courseType = useFilter("courseType"),
   category = useFilter("category"),
+  discipline = useFilter("discipline"),
+  grading = useFilter("grading"),
+  campus = useFilter("campus"),
   language = useFilter("language"),
   examMode = useFilter("exam"),
   view = useFilter("view", "list"),
@@ -57,6 +63,49 @@ const { data, meta, loading, error, reload } = useQuery(
   semester,
   () => !!semester.value,
 );
+const advancedOpen = ref(false);
+watch(
+  () =>
+    [
+      education,
+      type,
+      courseType,
+      category,
+      discipline,
+      grading,
+      campus,
+      language,
+      examMode,
+    ].some((field) => !!field.value),
+  (active) => {
+    if (active) advancedOpen.value = true;
+  },
+  { immediate: true },
+);
+const lessonFilterInfo = useLessonFilterInfo(
+  semester,
+  data,
+  () => advancedOpen.value || !!discipline.value || !!grading.value,
+);
+const filterInfoByCode = computed(
+  () =>
+    new Map(
+      (lessonFilterInfo.data.value ?? []).map((info) => [info.code, info]),
+    ),
+);
+const metadataFiltersPending = computed(
+  () =>
+    !!data.value?.length &&
+    !!(discipline.value || grading.value) &&
+    !lessonFilterInfo.data.value,
+);
+const missingValue = "__missing__";
+function matchesOption(value: string | undefined, selected: string) {
+  return !selected || (selected === missingValue ? !value : value === selected);
+}
+function isDetailFilter(key: string) {
+  return key === "discipline" || key === "grading";
+}
 const planner = usePlanner(semester),
   conflicts = computed(() => lessonConflicts(planner.lessons.value));
 const candidateIds = computed(
@@ -135,17 +184,64 @@ const filterSummary = useFilterSummary({
   location: { label: "地点", model: location },
   education: { label: "学历层次", model: education },
   type: { label: "课堂类型", model: type },
+  courseType: {
+    label: "课程类型",
+    model: courseType,
+    display: () => (courseType.value === missingValue ? "未提供" : undefined),
+  },
   category: { label: "课程范畴", model: category },
+  discipline: {
+    label: "学科类别",
+    model: discipline,
+    display: () => (discipline.value === missingValue ? "未提供" : undefined),
+  },
+  grading: {
+    label: "评分制",
+    model: grading,
+    display: () => (grading.value === missingValue ? "未提供" : undefined),
+  },
+  campus: {
+    label: "校区",
+    model: campus,
+    display: () => (campus.value === missingValue ? "未提供" : undefined),
+  },
   language: { label: "授课语言", model: language },
   exam: { label: "考试方式", model: examMode },
 });
+function distinctOptions(
+  values: (string | undefined)[],
+  includeMissing = false,
+) {
+  const result = [...new Set(values.filter((v): v is string => !!v))].sort(
+    (a, b) => a.localeCompare(b, "zh-CN"),
+  );
+  if (includeMissing && values.some((value) => !value))
+    result.push(missingValue);
+  return result;
+}
 const options = (
-  field: "education" | "classType" | "category" | "language" | "examMode",
-) => [
-  ...new Set(
-    (data.value ?? []).map((l) => l[field]).filter((v): v is string => !!v),
-  ),
-];
+  field:
+    | "education"
+    | "classType"
+    | "courseType"
+    | "category"
+    | "language"
+    | "examMode"
+    | "campus",
+) =>
+  distinctOptions(
+    (data.value ?? []).map((l) => l[field]),
+    field === "courseType" || field === "campus",
+  );
+function detailOptions(field: "discipline" | "grading") {
+  if (!lessonFilterInfo.data.value) return [];
+  return distinctOptions(
+    (data.value ?? []).map(
+      (lesson) => filterInfoByCode.value.get(lesson.code)?.[field],
+    ),
+    true,
+  );
+}
 const advanced = computed(() => [
   {
     key: "education",
@@ -155,11 +251,30 @@ const advanced = computed(() => [
   },
   { key: "type", label: "课堂类型", model: type, values: options("classType") },
   {
+    key: "courseType",
+    label: "课程类型",
+    model: courseType,
+    values: options("courseType"),
+  },
+  {
     key: "category",
     label: "课程范畴",
     model: category,
     values: options("category"),
   },
+  {
+    key: "discipline",
+    label: "学科类别",
+    model: discipline,
+    values: detailOptions("discipline"),
+  },
+  {
+    key: "grading",
+    label: "评分制",
+    model: grading,
+    values: detailOptions("grading"),
+  },
+  { key: "campus", label: "校区", model: campus, values: options("campus") },
   {
     key: "language",
     label: "授课语言",
@@ -174,7 +289,7 @@ const advanced = computed(() => [
   },
 ]);
 const filtered = computed(() =>
-  (data.value ?? [])
+  (metadataFiltersPending.value ? [] : (data.value ?? []))
     .filter(
       (l) =>
         (!keyword.value ||
@@ -194,7 +309,17 @@ const filtered = computed(() =>
         (!location.value || l.schedule.text.includes(location.value)) &&
         (!education.value || l.education === education.value) &&
         (!type.value || l.classType === type.value) &&
+        matchesOption(l.courseType, courseType.value) &&
         (!category.value || l.category === category.value) &&
+        matchesOption(
+          filterInfoByCode.value.get(l.code)?.discipline,
+          discipline.value,
+        ) &&
+        matchesOption(
+          filterInfoByCode.value.get(l.code)?.grading,
+          grading.value,
+        ) &&
+        matchesOption(l.campus, campus.value) &&
         (!language.value || l.language === language.value) &&
         (!examMode.value || l.examMode === examMode.value),
     )
@@ -221,6 +346,30 @@ const detail = computed(
     data.value?.find((l) => l.code === detailCode.value) ??
     planner.lessons.value.find((l) => l.code === detailCode.value),
 );
+const detailCourse = computed(() =>
+  lessonInfo.data.value?.find((course) => course.code === detailCode.value),
+);
+const additionalCourseFields = computed(() => [
+  {
+    label: "课程类型",
+    value: detailCourse.value?.courseType ?? detail.value?.courseType,
+  },
+  {
+    label: "课程范畴",
+    value: detailCourse.value?.category ?? detail.value?.category,
+  },
+  { label: "学科类别", value: detailCourse.value?.discipline },
+  { label: "评分制", value: detailCourse.value?.grading },
+]);
+function textbookFields(book: CourseTextbook) {
+  return [
+    { label: "作者", value: book.author },
+    { label: "出版社", value: book.publisher },
+    { label: "版次", value: book.edition },
+    { label: "出版日期", value: book.publicationDate },
+    { label: "ISBN", value: book.isbn },
+  ].filter((field) => !!field.value);
+}
 const currentWeek = computed(() =>
   Math.min(53, Math.max(1, Number(week.value) || 1)),
 );
@@ -267,7 +416,9 @@ function exportICS() {
   <div class="query-layout">
     <FilterPanel
       :active-count="filterSummary.count.value"
-      :result-count="data ? filtered.length : undefined"
+      :result-count="
+        data && !metadataFiltersPending ? filtered.length : undefined
+      "
       result-label="个教学班"
       ><div class="filter-field">
         <label for="lesson-q">课程、编号或关键词</label
@@ -309,7 +460,10 @@ function exportICS() {
           </option>
         </select>
       </div>
-      <details>
+      <details
+        :open="advancedOpen"
+        @toggle="advancedOpen = ($event.target as HTMLDetailsElement).open"
+      >
         <summary>更多筛选</summary>
         <div class="filter-field">
           <label for="lesson-location">上课地点</label
@@ -324,25 +478,52 @@ function exportICS() {
           ><select
             :id="`lesson-${field.key}`"
             :value="field.model.value"
+            :disabled="
+              isDetailFilter(field.key) && !lessonFilterInfo.data.value
+            "
+            :aria-busy="
+              isDetailFilter(field.key) && lessonFilterInfo.loading.value
+            "
             @change="
               field.model.value = ($event.target as HTMLSelectElement).value
             "
           >
-            <option value="">不限</option>
-            <option v-for="value in field.values" :key="value">
-              {{ value }}
+            <option value="">
+              {{
+                isDetailFilter(field.key) && lessonFilterInfo.loading.value
+                  ? "正在读取…"
+                  : "不限"
+              }}
+            </option>
+            <option v-for="value in field.values" :key="value" :value="value">
+              {{ value === missingValue ? "未提供" : value }}
             </option>
           </select>
         </div>
+        <QueryState
+          v-if="!metadataFiltersPending"
+          :loading="lessonFilterInfo.loading.value"
+          :error="lessonFilterInfo.error.value"
+          @retry="lessonFilterInfo.reload"
+        />
       </details>
       <button class="text-button" @click="reset">清除筛选</button></FilterPanel
     >
     <div>
       <QueryState
-        :loading="loading"
-        :error="error"
+        :loading="
+          loading || (metadataFiltersPending && lessonFilterInfo.loading.value)
+        "
+        :error="
+          error ??
+          (metadataFiltersPending ? lessonFilterInfo.error.value : undefined)
+        "
         :meta="meta"
-        @retry="reload"
+        @retry="
+          metadataFiltersPending && lessonFilterInfo.error.value
+            ? lessonFilterInfo.reload()
+            : reload()
+        "
       />
       <FilterSummary
         :filters="filterSummary.filters.value"
@@ -383,7 +564,7 @@ function exportICS() {
             tabindex="-1"
             >教学班
             <span class="muted" aria-live="polite">{{
-              data ? filtered.length : "—"
+              data && !metadataFiltersPending ? filtered.length : "—"
             }}</span></strong
           >
           <div class="lesson-result-controls">
@@ -478,7 +659,7 @@ function exportICS() {
             </table>
           </div>
           <EmptyState
-            v-if="data && !filtered.length"
+            v-if="data && !metadataFiltersPending && !filtered.length"
             message="尝试切换学期、修改关键词或清除时间与院系筛选。"
             ><button class="button secondary" @click="reset">
               清除筛选
@@ -523,13 +704,6 @@ function exportICS() {
             </button>
           </div>
         </div>
-        <p class="muted planner-note">
-          仅保存在此浏览器。{{
-            planner.savedAt.value
-              ? `清单保存时间：${new Date(planner.savedAt.value).toLocaleString("zh-CN")}。`
-              : ""
-          }}已保存安排可能过期，可使用当前查询结果更新。
-        </p>
         <p v-if="planner.storageError.value" class="notice warning">
           {{ planner.storageError.value }}
         </p>
@@ -605,9 +779,6 @@ function exportICS() {
               <Download :size="16" />导出 ICS
             </button>
           </div>
-          <p class="planner-note muted">
-            请依据官方校历填写首周日期。接口未提供钟点，选择课节表时请先核对下方作息；无法识别的教学班会跳过。
-          </p>
           <details v-if="layout" class="period-preview">
             <summary>核对所选课节表</summary>
             <p v-for="(times, i) in periodLayouts[layout]" :key="i">
@@ -636,7 +807,7 @@ function exportICS() {
       /><span class="mono muted">{{ detail.code }}</span>
       <div class="detail-title">
         <h3>{{ detail.course.name }}</h3>
-        <p>{{ detail.course.englishName }}</p>
+        <p>{{ detailCourse?.englishName ?? detail.course.englishName }}</p>
       </div>
       <dl class="detail-grid">
         <div>
@@ -648,22 +819,49 @@ function exportICS() {
           <dd>{{ detail.department }}</dd>
         </div>
         <div>
+          <dt>课程编号</dt>
+          <dd class="mono">{{ detail.course.code }}</dd>
+        </div>
+        <div>
           <dt>学分 / 学时</dt>
           <dd>
-            {{ detail.credits ?? "未提供" }} / {{ detail.hours ?? "未提供" }}
+            {{ detailCourse?.credits ?? detail.credits ?? "未提供" }} /
+            {{ detailCourse?.hours ?? detail.hours ?? "未提供" }}
           </dd>
+        </div>
+        <div>
+          <dt>学历层次</dt>
+          <dd>{{ detail.education ?? "未提供" }}</dd>
         </div>
         <div>
           <dt>课堂类型</dt>
           <dd>{{ detail.classType ?? "未提供" }}</dd>
         </div>
-        <div>
-          <dt>授课语言</dt>
-          <dd>{{ detail.language ?? "未提供" }}</dd>
+        <div v-for="field in additionalCourseFields" :key="field.label">
+          <dt>{{ field.label }}</dt>
+          <dd>
+            {{
+              field.value ?? (lessonInfo.loading.value ? "正在读取…" : "未提供")
+            }}
+          </dd>
         </div>
         <div>
-          <dt>考试方式</dt>
-          <dd>{{ detail.examMode ?? "未提供" }}</dd>
+          <dt>授课语言</dt>
+          <dd>{{ detailCourse?.language ?? detail.language ?? "未提供" }}</dd>
+        </div>
+        <div>
+          <dt>考核方式</dt>
+          <dd>{{ detailCourse?.examMode ?? detail.examMode ?? "未提供" }}</dd>
+        </div>
+        <div>
+          <dt>开课校区</dt>
+          <dd>{{ detail.campus ?? "未提供" }}</dd>
+        </div>
+        <div>
+          <dt>选课人数 / 上限</dt>
+          <dd>
+            {{ detail.count ?? "未提供" }} / {{ detail.capacity ?? "未提供" }}
+          </dd>
         </div>
       </dl>
       <section class="detail-section">
@@ -673,20 +871,71 @@ function exportICS() {
       <p v-if="detail.schedule.unknown" class="notice warning">
         部分时间无法识别，完整冲突状态未知。
       </p>
-      <section
-        v-if="lessonInfo.data.value?.[0]?.description"
-        class="detail-section"
-      >
-        <h3>教学班课程说明</h3>
-        <p>{{ lessonInfo.data.value[0].description }}</p>
-      </section>
-      <section
-        v-if="lessonInfo.data.value?.[0]?.references"
-        class="detail-section"
-      >
-        <h3>教学参考资料</h3>
-        <p>{{ lessonInfo.data.value[0].references }}</p>
-      </section>
+      <div v-if="!lessonInfo.loading.value" class="lesson-course-details">
+        <section class="detail-section">
+          <h3>预修要求</h3>
+          <p>{{ detailCourse?.prerequisites ?? "未提供" }}</p>
+        </section>
+        <section class="detail-section">
+          <h3>教材</h3>
+          <p v-if="detailCourse?.textbook">{{ detailCourse.textbook }}</p>
+          <ul
+            v-if="detailCourse?.textbooks?.length"
+            class="lesson-textbook-list"
+          >
+            <li v-for="(book, index) in detailCourse.textbooks" :key="index">
+              <h4>{{ book.name ?? book.englishName ?? "未提供书名" }}</h4>
+              <p v-if="book.name && book.englishName" lang="en">
+                {{ book.englishName }}
+              </p>
+              <dl
+                v-if="textbookFields(book).length"
+                class="lesson-textbook-fields"
+              >
+                <div v-for="field in textbookFields(book)" :key="field.label">
+                  <dt>{{ field.label }}</dt>
+                  <dd>{{ field.value }}</dd>
+                </div>
+              </dl>
+              <div v-if="book.isbn" class="lesson-textbook-actions">
+                <a
+                  class="button small secondary"
+                  :href="`http://opac.lib.ustc.edu.cn/opac/openlink.php?t=isbn&q=${encodeURIComponent(book.isbn)}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="图书馆馆藏检索"
+                  :aria-label="`${book.name ?? book.englishName ?? '教材'}：OPAC 图书馆馆藏查询（新窗口打开）`"
+                  >OPAC<ExternalLink :size="14" aria-hidden="true" />
+                </a>
+                <a
+                  class="button small secondary"
+                  :href="`https://book.douban.com/isbn/${encodeURIComponent(book.isbn)}/`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="豆瓣检索"
+                  :aria-label="`${book.name ?? book.englishName ?? '教材'}：豆瓣查询（新窗口打开）`"
+                  >豆瓣<ExternalLink :size="14" aria-hidden="true" />
+                </a>
+              </div>
+            </li>
+          </ul>
+          <p v-else-if="!detailCourse?.textbook">未提供</p>
+        </section>
+        <section class="detail-section">
+          <h3>参考书</h3>
+          <p>{{ detailCourse?.references ?? "未提供" }}</p>
+        </section>
+        <section class="detail-section">
+          <h3>中文简介</h3>
+          <p>{{ detailCourse?.description ?? "未提供" }}</p>
+        </section>
+        <section class="detail-section">
+          <h3>英文简介</h3>
+          <p :lang="detailCourse?.englishDescription ? 'en' : undefined">
+            {{ detailCourse?.englishDescription ?? "未提供" }}
+          </p>
+        </section>
+      </div>
       <div class="flex-actions">
         <button class="button" @click="toggleCandidate(detail)">
           {{

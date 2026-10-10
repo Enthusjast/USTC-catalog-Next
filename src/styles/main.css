@@ -1383,6 +1383,50 @@ tbody tr:hover {
   line-height: 1.9;
   white-space: pre-line;
 }
+.lesson-course-details p,
+.lesson-textbook-list h4 {
+  overflow-wrap: anywhere;
+}
+.lesson-textbook-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lesson-textbook-list > li {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.lesson-textbook-list h4 {
+  font-size: 14px;
+}
+.lesson-textbook-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.lesson-textbook-fields dt {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.lesson-textbook-fields dd {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.lesson-textbook-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.lesson-textbook-actions .button {
+  min-height: 44px;
+}
 .prose {
   padding: 32px;
   max-width: 900px;

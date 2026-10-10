@@ -135,6 +135,25 @@ export const catalog = {
       }),
       adapt.courseDetails,
     ),
+  lessonFilterInfo: (codes: string[], semester: string, options?: Options) =>
+    map(
+      query("/teach/lesson/infos", schema.lessonFilterInfoSchema, {
+        ttl: TTL.schedule,
+        // Compact filter records must not replace the full lesson-detail payload.
+        cacheVariant: "lesson-filters",
+        ...options,
+        body: {
+          codes: [...new Set(codes)].sort(),
+          semester: /^\d+$/.test(semester) ? Number(semester) : semester,
+        },
+      }),
+      (data) =>
+        data.map((item) => ({
+          code: item.code,
+          discipline: adapt.plainText(item.discipline),
+          grading: adapt.plainText(item.grading),
+        })),
+    ),
   lessons: (semester: string, options?: Options) =>
     map(
       query(

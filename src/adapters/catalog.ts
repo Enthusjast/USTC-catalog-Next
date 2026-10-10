@@ -91,12 +91,29 @@ export const courseDetails = (
     credits: c.credit ?? undefined,
     hours: c.hour ?? undefined,
     description: plainText(c.desc?.cn),
+    englishDescription: plainText(c.desc?.en),
     valid: c.valid,
     lastTerm: c.lastTerm ?? undefined,
-    prerequisites: plainText(c.preq),
+    prerequisites: plainText(c.preq) ?? (c.preq === "" ? "无" : undefined),
     examMode: c.examType ?? undefined,
     language: c.lang ?? undefined,
     references: plainText(c.ref),
+    grading: plainText(c.grading),
+    discipline: plainText(c.discipline),
+    courseType: plainText(c.courseType),
+    textbook: plainText(c.textbook),
+    textbooks: c.textbooks
+      ?.map((book) => ({
+        name: plainText(book.nameZh),
+        englishName: plainText(book.nameEn),
+        author: plainText(book.author),
+        publisher: plainText(book.publishingHouse),
+        edition: plainText(book.edition),
+        publicationDate:
+          book.dates?.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? plainText(book.dates),
+        isbn: plainText(book.isbn),
+      }))
+      .filter((book) => Object.values(book).some(Boolean)),
     category: c.courseCategory ?? undefined,
     classification: c.courseClassify ?? undefined,
   }));
@@ -123,6 +140,7 @@ export const lessons = (data: z.infer<typeof schemas.lessonSchema>): Lesson[] =>
     capacity: l.limitCount ?? undefined,
     education: l.education?.cn ?? undefined,
     classType: l.classType?.cn ?? undefined,
+    courseType: l.courseType?.cn ?? undefined,
     category: l.courseCategory?.cn ?? undefined,
     language: l.teachLang?.cn ?? undefined,
     examMode: l.examMode?.cn ?? undefined,

@@ -13,6 +13,15 @@ export interface Department {
   englishName?: string;
   children: Department[];
 }
+export interface CourseTextbook {
+  name?: string;
+  englishName?: string;
+  author?: string;
+  publisher?: string;
+  edition?: string;
+  publicationDate?: string;
+  isbn?: string;
+}
 export interface Course {
   code: string;
   name: string;
@@ -25,10 +34,16 @@ export interface Course {
   credits?: number;
   hours?: number;
   description?: string;
+  englishDescription?: string;
   prerequisites?: string;
   examMode?: string;
   language?: string;
   references?: string;
+  grading?: string;
+  discipline?: string;
+  courseType?: string;
+  textbook?: string;
+  textbooks?: CourseTextbook[];
 }
 export interface TimeSlot {
   day: number;
@@ -55,10 +70,16 @@ export interface Lesson {
   capacity?: number;
   education?: string;
   classType?: string;
+  courseType?: string;
   category?: string;
   language?: string;
   examMode?: string;
   campus?: string;
+}
+export interface LessonFilterInfo {
+  code: string;
+  discipline?: string;
+  grading?: string;
 }
 export interface ProgramSummary {
   id: string;

@@ -33,6 +33,7 @@ interface RequestOptions {
   ttl?: number;
   force?: boolean;
   body?: unknown;
+  cacheVariant?: string;
 }
 interface Flight {
   promise: Promise<QueryResult<unknown>>;
@@ -118,7 +119,8 @@ async function request<T>(
   options: RequestOptions = {},
 ): Promise<QueryResult<T>> {
   const url = `${options.base ?? API_BASE}${mirrorPath(path)}`,
-    key = `${url}:${JSON.stringify(options.body ?? null)}:${!!options.force}`;
+    variant = options.cacheVariant ? `:variant=${options.cacheVariant}` : "",
+    key = `${url}:${JSON.stringify(options.body ?? null)}:${!!options.force}${variant}`;
   if (options.signal?.aborted)
     throw new DOMException("查询已取消", "AbortError");
   let flight = flights.get(key);
@@ -126,7 +128,7 @@ async function request<T>(
     const controller = new AbortController();
     const promise = (async (): Promise<QueryResult<T>> => {
       const generation = cacheGeneration();
-      const cacheKey = `${url}:${JSON.stringify(options.body ?? null)}`;
+      const cacheKey = `${url}:${JSON.stringify(options.body ?? null)}${variant}`;
       const cached = await readCache(cacheKey),
         parsedCache = cached ? schema.safeParse(cached.payload) : undefined;
       const usable =
