@@ -113,6 +113,7 @@ export const lessonSchema = z.array(
         .object({ code: z.string(), cn: z.string() })
         .passthrough(),
       teacherAssignmentList: z.array(name),
+      adminClasses: z.array(name).nullable().optional(),
       education: name.optional(),
       classType: name.optional(),
       courseType: name.nullable().optional(),

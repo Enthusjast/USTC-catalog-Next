@@ -2604,6 +2604,13 @@ tbody tr:hover {
   margin: 0;
   overflow-wrap: anywhere;
 }
+.usage-detail-class-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 .usage-time-warning {
   color: var(--warning);
   margin-top: 12px;

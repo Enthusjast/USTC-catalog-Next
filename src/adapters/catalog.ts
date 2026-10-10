@@ -131,6 +131,15 @@ export const lessons = (data: z.infer<typeof schemas.lessonSchema>): Lesson[] =>
     teachers: l.teacherAssignmentList
       .map((t) => t.cn)
       .filter((name): name is string => !!name),
+    adminClasses: l.adminClasses
+      ? [
+          ...new Set(
+            l.adminClasses
+              .map((c) => plainText(c.cn ?? c.en))
+              .filter((value): value is string => !!value),
+          ),
+        ]
+      : undefined,
     schedule: parseSchedule(
       l.dateTimePlacePersonText?.cn ?? l.dateTimePlaceText ?? "",
     ),

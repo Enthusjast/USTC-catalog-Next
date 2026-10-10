@@ -21,6 +21,9 @@ import {
   type CSSProperties,
 } from "vue";
 import { X } from "@lucide/vue";
+import { catalog } from "../api/catalog";
+import { useQuery } from "../features/useQuery";
+import { isISODate } from "../domain/dates";
 import { buildingLabel, roomBuildingCode } from "../domain/roomDirectory";
 import { usageTypes } from "../domain/roomAvailability";
 import { formatClock } from "../domain/schedule";
@@ -30,6 +33,34 @@ const emit = defineEmits<{ close: [] }>();
 const card = ref<HTMLElement>(),
   titleId = useId();
 const position = shallowRef<CSSProperties>({ visibility: "hidden" });
+const lessonClassesKey = computed(() => {
+  const selection = props.selection;
+  return selection?.record.type === "lessons" &&
+    selection.record.courseId &&
+    isISODate(selection.date)
+    ? `${selection.date}:${selection.record.courseId}`
+    : "";
+});
+const { data: lessonClasses, loading: classesLoading } = useQuery<
+  string[] | undefined
+>(
+  async (signal, force) => {
+    const selection = props.selection!;
+    const semesters = await catalog.semesters({ signal, force });
+    const semester = semesters.data
+      .filter((s) => s.start <= selection.date && selection.date <= s.end)
+      .sort((a, b) => b.start.localeCompare(a.start))[0];
+    if (!semester) return { data: undefined, meta: semesters.meta };
+    const lessons = await catalog.lessons(semester.id, { signal, force });
+    // The timetable's courseId is the complete teaching-class code, not its numeric id.
+    const lesson = lessons.data.find(
+      (l) => l.code === selection.record.courseId,
+    );
+    return { data: lesson?.adminClasses, meta: lessons.meta };
+  },
+  lessonClassesKey,
+  () => !!lessonClassesKey.value,
+);
 const host = computed(
   () => props.selection?.anchor.closest("dialog") ?? document.body,
 );
@@ -69,9 +100,10 @@ function scrollOrResize(event: Event) {
   close();
 }
 watch(
-  () => props.selection,
-  async (selection) => {
+  [() => props.selection, lessonClasses, classesLoading],
+  async ([selection], [previousSelection]) => {
     if (!selection) return;
+    const selectionChanged = selection !== previousSelection;
     position.value = { visibility: "hidden" };
     await nextTick();
     if (props.selection !== selection || !card.value) return;
@@ -114,7 +146,7 @@ watch(
       top: `${Math.max(topBound, Math.min(preferredTop, bottomBound - cardHeight))}px`,
     };
     await nextTick();
-    if (props.selection !== selection) return;
+    if (props.selection !== selection || !selectionChanged) return;
     card.value
       .querySelector<HTMLButtonElement>("button")
       ?.focus({ preventScroll: true });
@@ -203,6 +235,17 @@ onBeforeUnmount(() => {
           <div v-if="selection.record.courseId">
             <dt>课程标识</dt>
             <dd class="mono">{{ selection.record.courseId }}</dd>
+          </div>
+          <div v-if="lessonClassesKey">
+            <dt>课程班级</dt>
+            <dd>
+              <ul v-if="lessonClasses?.length" class="usage-detail-class-list">
+                <li v-for="className in lessonClasses" :key="className">
+                  {{ className }}
+                </li>
+              </ul>
+              <span v-else>{{ classesLoading ? "正在读取…" : "未提供" }}</span>
+            </dd>
           </div>
           <div v-if="selection.record.applierName">
             <dt>申请人</dt>

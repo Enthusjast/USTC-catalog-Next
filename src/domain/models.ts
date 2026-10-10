@@ -63,6 +63,7 @@ export interface Lesson {
   department: string;
   departmentCode: string;
   teachers: string[];
+  adminClasses?: string[];
   schedule: Schedule;
   credits?: number;
   hours?: number;
