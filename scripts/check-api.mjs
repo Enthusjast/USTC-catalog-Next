@@ -32,6 +32,15 @@ async function probe(path, options = {}) {
 function record(name, ok, detail) {
   checks.push({ name, ok: !!ok, detail });
 }
+function cors(result) {
+  if (result.error) return;
+  const allowed = result.response.headers.get("access-control-allow-origin");
+  record(
+    `${result.path}: Origin`,
+    allowed === origin,
+    `Access-Control-Allow-Origin: ${allowed ?? "未提供"}`,
+  );
+}
 function json(result, validator) {
   if (result.error) {
     record(result.path, false, result.error);
@@ -45,12 +54,7 @@ function json(result, validator) {
       validator.safeParse(result.data).success,
     `HTTP ${result.response.status}, ${type || "Content-Type 未提供"}`,
   );
-  const allowed = result.response.headers.get("access-control-allow-origin");
-  record(
-    `${result.path}: Origin`,
-    allowed === origin,
-    `Access-Control-Allow-Origin: ${allowed ?? "未提供"}`,
-  );
+  cors(result);
 }
 if (new URL(base).protocol !== "https:")
   throw Error("Release API must use HTTPS");
@@ -118,6 +122,42 @@ record(
   unknown.error ??
     `HTTP ${unknown.response.status}, ${unknown.response.headers.get("content-type")}`,
 );
+cors(unknown);
+const unapprovedOrigin = "https://unapproved.example";
+for (const item of [
+  { path: "/restricted", method: "GET", headers: {} },
+  {
+    path: "/teach/course/infos",
+    method: "OPTIONS",
+    headers: {
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type",
+    },
+  },
+  {
+    path: "/teach/lesson/infos",
+    method: "OPTIONS",
+    headers: {
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type",
+    },
+  },
+]) {
+  const result = await probe(item.path, {
+    method: item.method,
+    headers: { ...item.headers, Origin: unapprovedOrigin },
+  });
+  const allowed = result.response?.headers.get("access-control-allow-origin");
+  record(
+    `${item.path}: ${item.method} 拒绝未授权 Origin`,
+    !result.error &&
+      (result.response.ok || result.response.status === 403) &&
+      allowed !== "*" &&
+      allowed !== unapprovedOrigin,
+    result.error ??
+      `HTTP ${result.response.status}; Origin=${allowed ?? "未提供"}`,
+  );
+}
 const report = [
   "| 检查 | 结果 | 观察 |",
   "| --- | --- | --- |",

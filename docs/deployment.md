@@ -15,11 +15,58 @@
 1. 在正式站点页面查询课程、计划、教学班、考试和教室。浏览器 Network 应显示直连 API，URL 不带 `/api` 前缀。
 2. 确认 GET 的 CORS 响应允许精确生产 Origin；未授权 Origin 的拒绝符合预期。
 3. 打开课程详情，确认 `/teach/course/infos` 的 OPTIONS 与 JSON POST 成功；允许 `POST`、`Content-Type`，响应为 JSON。请求体为 `{"codes":["MATH1006"]}`。
-4. 核对 `/teach/lesson/infos` 的 OPTIONS/POST，body 为 `{"codes":["022063.01"],"semester":461}`。首版界面从学期集合获取教学班详情，因此该接口暂不用于页面。
+4. 核对 `/teach/lesson/infos` 的 OPTIONS/POST，body 为 `{"codes":["022063.01"],"semester":461}`。教学班详情已调用此接口；说明与学期列表中的安排分别标注来源。
 5. 未知 API 路径应为 JSON 404。确认 HTML/空响应不会渲染为空列表。
 6. 如需本地开发访问，由 API 服务加入 localhost 与 127.0.0.1 的明确来源；修改来源后重查 POST 预检。
 
-工作流在发布前执行 `npm run check:api`；它检查 HTTP、schema 和响应头并将结果写入 Actions 摘要。HTTP 检查不会替代上述正式页面浏览器验收，运行环境的网络失败也会阻止发布，需要结合浏览器记录诊断。
+工作流在发布前执行 `npm run check:api`；它检查 HTTP、schema、精确生产 Origin、两种 POST 预检、未知路径 JSON 404 与错误响应 CORS，并检查未授权 Origin 的 GET/OPTIONS 不获准跨域读取，将结果写入 Actions 摘要。HTTP 检查不会替代上述正式页面浏览器验收，运行环境的网络失败也会阻止发布，需要结合浏览器记录诊断。
+
+## API 服务器需要修改的配置
+
+服务代码在用户的服务器上，由用户修改。最近浏览器观察到的两处未通过项如下：
+
+| 项目                                     | 当前响应                         | 需要的响应                                                                                    |
+| ---------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------- |
+| 允许的 Origin                            | `Access-Control-Allow-Origin: *` | 对生产来源返回 `Access-Control-Allow-Origin: https://catalog.enthusjast.cc`；按白名单匹配来源 |
+| 未知路径 `/__catalog_explorer_unknown__` | `200`、`text/html`、SPA 页面     | `404`、`application/json`，例如 `{"error":"not_found"}`                                       |
+
+### CORS
+
+- 生产白名单加入 `https://catalog.enthusjast.cc`，值不带路径或结尾斜杠。
+- 如需直连本地开发，分别加入 `http://localhost:5173` 和 `http://127.0.0.1:5173`；其他端口也需明确加入。
+- 匹配白名单后返回该请求的 Origin，并添加 `Vary: Origin`，避免缓存混用不同来源的响应。不要直接回显任意来源，不要返回用逗号分隔的多个 Origin。
+- 对 `/teach/course/infos`、`/teach/lesson/infos` 的 OPTIONS 预检返回 `204`，允许方法包含 `GET, POST, OPTIONS`，允许请求头包含 `Content-Type`。
+- 实际 GET/POST 和错误响应也需要相同的 CORS 策略；浏览器需能读取 JSON 错误。本站请求不携带 Cookie，无需开启 `Access-Control-Allow-Credentials`。
+- 未授权来源不授予跨域读取权限，例如不返回 `Access-Control-Allow-Origin`；不能返回 `*` 或反射该来源。
+
+### JSON 404
+
+API 域名的未知路由不能进入前端的 `index.html` 回退。请检查应用兜底路由、反向代理或重写配置，把该域名的未匹配路径返回为 JSON 404。镜像接口路径不带 `/api` 前缀；例如学期列表是 `/teach/semester/list`。
+
+### 修改后的快速检查
+
+```sh
+curl -i 'https://api.catalog.enthusjast.cc/teach/semester/list' \
+  -H 'Origin: https://catalog.enthusjast.cc'
+
+curl -i -X OPTIONS 'https://api.catalog.enthusjast.cc/teach/course/infos' \
+  -H 'Origin: https://catalog.enthusjast.cc' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: content-type'
+
+curl -i 'https://api.catalog.enthusjast.cc/teach/course/infos' \
+  -H 'Origin: https://catalog.enthusjast.cc' \
+  -H 'Content-Type: application/json' \
+  --data '{"codes":["MATH1006"]}'
+
+curl -i 'https://api.catalog.enthusjast.cc/__catalog_explorer_unknown__' \
+  -H 'Origin: https://catalog.enthusjast.cc'
+
+curl -i 'https://api.catalog.enthusjast.cc/restricted' \
+  -H 'Origin: https://unapproved.example'
+```
+
+前四项分别应返回 JSON 200、正确预检、JSON 200、JSON 404，并允许精确生产 Origin；最后一项不得允许示例中的未授权来源。教学班 POST 还需使用上文的路径与请求体检查。以上命令核对 HTTP 响应，最终仍需从正式站点页面完成浏览器读取验收。
 
 ## 数据语义验收
 
