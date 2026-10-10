@@ -1,5 +1,12 @@
 import type { RoomUsage } from "./models";
 
+// Full teaching day in the official classroom view, checked 2026-10-10.
+export const classroomDay = {
+  from: 7 * 60 + 50,
+  to: 21 * 60 + 55,
+  plotHeight: 360,
+};
+
 export function hasUsageTime(
   record: RoomUsage,
 ): record is RoomUsage & { start: number; end: number } {

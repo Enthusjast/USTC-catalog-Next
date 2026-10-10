@@ -124,9 +124,12 @@ export interface RoomFloorGroup {
   key: string;
   building?: string;
   floor?: number;
+  label: string;
   title: string;
   rooms: RoomSummary[];
 }
+export const roomFloorLabel = (floor?: number) =>
+  floor === undefined ? "楼层未确认" : `${floor}F`;
 export function groupRoomFloors(rooms: RoomSummary[]): RoomFloorGroup[] {
   const groups = new Map<string, RoomFloorGroup>();
   for (const room of rooms) {
@@ -135,7 +138,8 @@ export function groupRoomFloors(rooms: RoomSummary[]): RoomFloorGroup[] {
       key,
       building: room.building,
       floor: room.floor,
-      title: `${buildingLabel(room.building)} · ${room.floor === undefined ? "楼层未确认" : `${room.floor} 层`}`,
+      label: roomFloorLabel(room.floor),
+      title: `${buildingLabel(room.building)} / ${roomFloorLabel(room.floor)}`,
       rooms: [],
     };
     group.rooms.push(room);
@@ -156,6 +160,28 @@ export function groupRoomFloors(rooms: RoomSummary[]): RoomFloorGroup[] {
         a.room.localeCompare(b.room, "zh", { numeric: true }),
       ),
     }));
+}
+
+export interface RoomBuildingGroup {
+  key: string;
+  building?: string;
+  title: string;
+  floors: RoomFloorGroup[];
+}
+export function groupRoomBuildings(rooms: RoomSummary[]): RoomBuildingGroup[] {
+  const groups = new Map<string, RoomBuildingGroup>();
+  for (const floor of groupRoomFloors(rooms)) {
+    const key = JSON.stringify(floor.building ?? null);
+    const group = groups.get(key) ?? {
+      key,
+      building: floor.building,
+      title: buildingLabel(floor.building),
+      floors: [],
+    };
+    group.floors.push(floor);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
 }
 export const usageTypes: Record<string, string> = {
   lessons: "教学班",

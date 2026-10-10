@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { ClockAlert } from "@lucide/vue";
 import type { RoomSummary } from "../domain/roomAvailability";
 import {
   roomKey,
@@ -9,14 +10,13 @@ import {
 import { formatClock } from "../domain/schedule";
 import {
   hasUsageTime,
+  classroomDay,
   layoutRoomUsage,
   roomTimelineTicks,
   usageCategory,
 } from "../domain/roomTimeline";
 const props = defineProps<{
   rooms: RoomSummary[];
-  from: number;
-  to: number;
   type: string;
   label: string;
 }>();
@@ -36,7 +36,11 @@ function selectUsage(
   emit("usage", room, record, event.currentTarget as HTMLElement);
 }
 const scroll = ref<HTMLElement>();
-const ticks = computed(() => roomTimelineTicks(props.from, props.to));
+const ticks = roomTimelineTicks(
+  classroomDay.from,
+  classroomDay.to,
+  classroomDay.plotHeight,
+);
 const columns = computed(() =>
   props.rooms.map((room) => ({
     room,
@@ -44,10 +48,15 @@ const columns = computed(() =>
       room.records.filter(
         (record) => !props.type || record.type === props.type,
       ),
-      props.from,
-      props.to,
+      classroomDay.from,
+      classroomDay.to,
     ),
-    unknown: room.records.filter((record) => !hasUsageTime(record)).length,
+    unplotted: room.records.filter(
+      (record) =>
+        !hasUsageTime(record) ||
+        record.end <= classroomDay.from ||
+        record.start >= classroomDay.to,
+    ).length,
   })),
 );
 const shortState = {
@@ -63,7 +72,10 @@ watch(
 );
 </script>
 <template>
-  <figure class="room-timeline panel">
+  <figure
+    class="room-timeline panel"
+    :style="{ '--room-track-height': `${classroomDay.plotHeight}px` }"
+  >
     <div
       ref="scroll"
       class="room-timeline-scroll"
@@ -74,27 +86,10 @@ watch(
       <div
         class="room-timeline-grid"
         :style="{
-          gridTemplateColumns: `48px repeat(${rooms.length}, 112px)`,
-          width: `${48 + rooms.length * 112}px`,
+          gridTemplateColumns: `repeat(${rooms.length}, 112px)`,
+          width: `${rooms.length * 112}px`,
         }"
       >
-        <div class="room-time-axis" aria-hidden="true">
-          <div class="room-column-header room-axis-heading">时刻</div>
-          <div class="room-axis-track">
-            <span
-              v-for="tick in ticks"
-              :key="tick.time"
-              class="room-axis-tick mono"
-              :class="{
-                'is-start': tick.position === 0,
-                'is-end': tick.position === 100,
-              }"
-              :style="{ top: `${tick.position}%` }"
-              >{{ formatClock(tick.time) }}</span
-            >
-          </div>
-          <div class="room-column-footer" />
-        </div>
         <div
           v-for="column in columns"
           :key="roomKey(column.room)"
@@ -104,10 +99,18 @@ watch(
             <button
               type="button"
               class="room-label"
-              :aria-label="`查看 ${column.room.room} 全天记录，共 ${column.room.records.length} 条，${roomStateLabels[column.room.state]}`"
+              :aria-label="`查看 ${column.room.room} 全天记录，共 ${column.room.records.length} 条，${roomStateLabels[column.room.state]}${column.unplotted ? `，其中 ${column.unplotted} 项时刻未知或在教学日显示范围外` : ''}`"
               @click="$emit('select', column.room)"
             >
               <strong class="mono">{{ column.room.room }}</strong>
+              <span
+                v-if="column.unplotted"
+                class="room-unplotted-indicator"
+                :title="`${column.unplotted} 项时刻未知或在教学日显示范围外，点击教室查看完整记录`"
+                aria-hidden="true"
+              >
+                <ClockAlert :size="13" />
+              </span>
             </button>
             <span
               class="tag room-state"
@@ -136,8 +139,10 @@ watch(
               :class="[
                 usageCategory(block.record.type),
                 {
-                  'is-short': block.height < (22 / 240) * 100,
-                  'is-tiny': block.height < (16 / 240) * 100,
+                  'is-short':
+                    (block.height * classroomDay.plotHeight) / 100 < 22,
+                  'is-tiny':
+                    (block.height * classroomDay.plotHeight) / 100 < 16,
                   'is-narrow': block.width < 50,
                   'is-clipped-start': block.clippedStart,
                   'is-clipped-end': block.clippedEnd,
@@ -152,7 +157,7 @@ watch(
               aria-haspopup="dialog"
               @click="selectUsage(column.room, block.record, $event)"
               :aria-label="`${column.room.room} · ${block.record.title} · ${formatClock(block.record.start)}–${formatClock(block.record.end)} · ${usageTypes[block.record.type] ?? block.record.type}`"
-              :title="`${formatClock(block.record.start)}–${formatClock(block.record.end)} · ${block.record.title} · ${usageTypes[block.record.type] ?? block.record.type}`"
+              :title="`${block.record.title} · ${usageTypes[block.record.type] ?? block.record.type}`"
             >
               <span>{{ block.record.title }}</span>
             </button>
@@ -163,19 +168,6 @@ watch(
                   : "此时段暂无可定位记录"
               }}
             </p>
-          </div>
-          <div class="room-column-footer">
-            <button
-              type="button"
-              class="room-records-button"
-              :aria-label="`查看 ${column.room.room} 全天 ${column.room.records.length} 项占用清单`"
-              @click="$emit('select', column.room)"
-            >
-              全天 {{ column.room.records.length }} 项
-            </button>
-            <span v-if="column.unknown" class="room-unknown-count"
-              >{{ column.unknown }} 项时刻未知</span
-            >
           </div>
         </div>
       </div>
