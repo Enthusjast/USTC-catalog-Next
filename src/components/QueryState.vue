@@ -24,6 +24,10 @@ function stateLabel(meta: QueryMeta) {
 function timestamp(value: string) {
   return new Date(value).toLocaleString("zh-CN", { hour12: false });
 }
+function shortTimestamp(value: string) {
+  const date = new Date(value);
+  return `${date.getMonth() + 1}/${date.getDate()} ${date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+}
 function age(value: string) {
   const minutes = Math.max(
     0,
@@ -71,16 +75,26 @@ function age(value: string) {
   >
     <span class="status-label"
       ><span class="status-dot" />{{ stateLabel(meta) }}</span
-    ><span>查询时间 {{ timestamp(meta.retrievedAt) }}</span
-    ><span v-if="meta.snapshotAt"
+    ><time
+      :datetime="meta.retrievedAt"
+      :title="`查询时间 ${timestamp(meta.retrievedAt)}`"
+      :aria-label="`查询时间 ${timestamp(meta.retrievedAt)}`"
+      ><span class="status-time-full" aria-hidden="true"
+        >查询时间 {{ timestamp(meta.retrievedAt) }}</span
+      ><span class="status-time-short" aria-hidden="true"
+        >查询 {{ shortTimestamp(meta.retrievedAt) }}</span
+      ></time
+    ><span v-if="meta.snapshotAt" class="status-extra"
       >归档采集时间 {{ timestamp(meta.snapshotAt) }}</span
-    ><span v-if="meta.state !== 'online'"
+    ><span v-if="meta.state !== 'online'" class="status-extra"
       >缓存年龄 {{ age(meta.retrievedAt) }}</span
-    ><a :href="meta.source" target="_blank" rel="noopener noreferrer"
-      >数据来源<ArrowUpRight :size="13" /></a
-    ><button class="text-button" @click="$emit('retry')">
-      <RefreshCw :size="13" />刷新
-    </button>
+    ><span class="data-status-actions"
+      ><a :href="meta.source" target="_blank" rel="noopener noreferrer"
+        >数据来源<ArrowUpRight :size="13" /></a
+      ><button class="text-button" @click="$emit('retry')">
+        <RefreshCw :size="13" />刷新
+      </button></span
+    >
     <details v-if="meta.sources?.length" class="query-source-details">
       <summary>各门类来源与缓存状态（{{ meta.sources.length }}）</summary>
       <p v-if="meta.message" class="muted">{{ meta.message }}</p>

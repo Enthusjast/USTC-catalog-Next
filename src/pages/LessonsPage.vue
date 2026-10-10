@@ -9,7 +9,10 @@ import {
   AlertTriangle,
   List,
   CalendarDays,
+  ClipboardList,
+  ArrowDown,
 } from "@lucide/vue";
+import type { Lesson } from "../domain/models";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useSemester } from "../features/useSemester";
@@ -28,6 +31,7 @@ import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
 import DisclosureDialog from "../components/DisclosureDialog.vue";
 import WeekTimetable from "../components/WeekTimetable.vue";
+import LessonSchedule from "../components/LessonSchedule.vue";
 import { clockMinutes } from "../domain/schedule";
 const router = useRouter(),
   semesterQuery = useSemester(),
@@ -55,6 +59,29 @@ const { data, meta, loading, error, reload } = useQuery(
 );
 const planner = usePlanner(semester),
   conflicts = computed(() => lessonConflicts(planner.lessons.value));
+const candidateIds = computed(
+    () => new Set(planner.lessons.value.map((lesson) => lesson.id)),
+  ),
+  plannerHeading = ref<HTMLElement>(),
+  resultsHeading = ref<HTMLElement>(),
+  candidateMessage = ref("");
+function toggleCandidate(lesson: Lesson) {
+  const wasSelected = candidateIds.value.has(lesson.id);
+  planner.toggle(lesson);
+  candidateMessage.value =
+    candidateIds.value.has(lesson.id) !== wasSelected
+      ? `已${wasSelected ? "移除" : "加入"}候选：${lesson.course.name}，当前共 ${planner.lessons.value.length} 个教学班。`
+      : planner.storageError.value;
+}
+function showPlanner() {
+  plannerHeading.value?.scrollIntoView({ block: "start" });
+  plannerHeading.value?.focus({ preventScroll: true });
+}
+function showResults() {
+  view.value = "list";
+  resultsHeading.value?.scrollIntoView({ block: "start" });
+  resultsHeading.value?.focus({ preventScroll: true });
+}
 const lessonInfo = useQuery(
   (signal, force) =>
     catalog.lessonDetails(detailCode.value, semester.value, { signal, force }),
@@ -221,9 +248,9 @@ function exportICS() {
 <template>
   <PageHeading
     title="全校教学班"
-    description="筛选公开开课安排，建立本机候选清单并检查时间重叠。候选清单不表示实际选课。"
+    description="按教师、时间或院系查找教学班，整理本机候选与周课表。"
     eyebrow="03 / PUBLIC LESSONS"
-    ><div class="filter-field" style="margin: 0; min-width: 200px">
+    ><div class="filter-field lesson-semester-field">
       <label for="lesson-semester">查询学期</label
       ><select id="lesson-semester" v-model="semester">
         <option v-if="!semesterQuery.data.value" value="">正在读取学期</option>
@@ -238,7 +265,7 @@ function exportICS() {
     @retry="semesterQuery.reload"
   />
   <div class="notice">
-    公开开课信息可能次日更新。时间冲突仅描述公开安排，不读取个人选课关系。
+    公开信息可能次日更新，候选清单不表示实际选课。时间重叠仅依据公开安排判断。
   </div>
   <div class="query-layout">
     <FilterPanel
@@ -325,15 +352,44 @@ function exportICS() {
         @remove="filterSummary.remove"
         @clear="reset"
       />
-      <div class="panel">
+      <p class="sr-only" role="status" aria-live="polite">
+        {{ candidateMessage }}
+      </p>
+      <div v-if="planner.lessons.value.length" class="planner-shortcut panel">
+        <div class="planner-shortcut-count">
+          <ClipboardList :size="18" /><strong
+            >本机候选 {{ planner.lessons.value.length }}</strong
+          >
+        </div>
+        <div class="planner-shortcut-status">
+          <span v-if="conflicts.overlaps.length" class="tag warning"
+            >{{ conflicts.overlaps.length }} 组时间重叠</span
+          >
+          <span v-if="conflicts.unknown.length" class="tag warning"
+            >{{ conflicts.unknown.length }} 个安排无法完整判断</span
+          >
+          <span
+            v-if="!conflicts.overlaps.length && !conflicts.unknown.length"
+            class="muted"
+            >已识别安排未发现重叠</span
+          >
+        </div>
+        <button class="text-button" @click="showPlanner">
+          管理清单<ArrowDown :size="15" />
+        </button>
+      </div>
+      <div class="panel lesson-results-panel">
         <div class="results-toolbar">
           <strong
+            ref="resultsHeading"
+            class="lesson-results-heading"
+            tabindex="-1"
             >教学班
             <span class="muted" aria-live="polite">{{
               data ? filtered.length : "—"
             }}</span></strong
           >
-          <div class="flex-actions">
+          <div class="lesson-result-controls">
             <label v-if="view === 'list'" class="sort-control"
               >排序<select v-model="sort">
                 <option value="code">教学班号</option>
@@ -341,19 +397,21 @@ function exportICS() {
                 <option value="department">开课院系</option>
               </select></label
             >
-            <button
-              class="text-button"
-              :aria-pressed="view === 'list'"
-              @click="view = 'list'"
-            >
-              <List :size="15" />查询列表</button
-            ><button
-              class="text-button"
-              :aria-pressed="view === 'week'"
-              @click="view = 'week'"
-            >
-              <CalendarDays :size="15" />候选周课表
-            </button>
+            <div class="view-switch" role="group" aria-label="教学班结果视图">
+              <button
+                class="text-button"
+                :aria-pressed="view === 'list'"
+                @click="view = 'list'"
+              >
+                <List :size="15" />查询列表</button
+              ><button
+                class="text-button"
+                :aria-pressed="view === 'week'"
+                @click="view = 'week'"
+              >
+                <CalendarDays :size="15" />候选周课表
+              </button>
+            </div>
           </div>
         </div>
         <template v-if="view === 'list'"
@@ -369,7 +427,11 @@ function exportICS() {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="lesson in visible" :key="lesson.id">
+                <tr
+                  v-for="lesson in visible"
+                  :key="lesson.id"
+                  :class="{ 'is-candidate': candidateIds.has(lesson.id) }"
+                >
                   <td>
                     <span class="course-code mono">{{ lesson.code }}</span
                     ><button
@@ -384,36 +446,34 @@ function exportICS() {
                     </p>
                   </td>
                   <td>
-                    <span>{{ lesson.teachers.join("、") || "未提供" }}</span>
+                    <span
+                      ><span class="lesson-mobile-label">教师：</span
+                      >{{ lesson.teachers.join("、") || "未提供" }}</span
+                    >
                     <p class="course-en">{{ lesson.department }}</p>
                   </td>
                   <td>
-                    <p class="schedule-text">
-                      {{ lesson.schedule.text || "未提供安排" }}
-                    </p>
-                    <span v-if="lesson.schedule.unknown" class="tag warning"
-                      >部分时间无法判断</span
-                    >
+                    <LessonSchedule :schedule="lesson.schedule" />
                   </td>
                   <td>
-                    {{ lesson.count ?? "未提供" }} /
+                    <span class="lesson-mobile-label">公开人数 / 容量：</span
+                    >{{ lesson.count ?? "未提供" }} /
                     {{ lesson.capacity ?? "未提供" }}
                   </td>
                   <td>
                     <button
-                      class="icon-button"
-                      :aria-label="`${planner.lessons.value.some((l) => l.id === lesson.id) ? '移除' : '加入'} ${lesson.course.name} 候选清单`"
-                      :aria-pressed="
-                        planner.lessons.value.some((l) => l.id === lesson.id)
-                      "
-                      @click="planner.toggle(lesson)"
+                      class="button secondary small candidate-button"
+                      :class="{ 'is-selected': candidateIds.has(lesson.id) }"
+                      :aria-label="`${candidateIds.has(lesson.id) ? '移除' : '加入'} ${lesson.course.name} 候选清单`"
+                      :aria-pressed="candidateIds.has(lesson.id)"
+                      @click="toggleCandidate(lesson)"
                     >
                       <Check
-                        v-if="
-                          planner.lessons.value.some((l) => l.id === lesson.id)
-                        "
+                        v-if="candidateIds.has(lesson.id)"
                         :size="18"
-                      /><Plus v-else :size="18" />
+                      /><Plus v-else :size="18" />{{
+                        candidateIds.has(lesson.id) ? "已加入" : "候选"
+                      }}
                     </button>
                   </td>
                 </tr>
@@ -451,17 +511,20 @@ function exportICS() {
       </div>
       <section class="planner-panel panel">
         <div class="section-heading">
-          <h2>
+          <h2 ref="plannerHeading" class="planner-heading" tabindex="-1">
             本机候选清单
             <span class="muted">{{ planner.lessons.value.length }}</span>
           </h2>
-          <button
-            v-if="planner.lessons.value.length"
-            class="text-button"
-            @click="planner.clear"
-          >
-            <Trash2 :size="15" />清空本学期
-          </button>
+          <div class="flex-actions">
+            <button class="text-button" @click="showResults">继续查找</button>
+            <button
+              v-if="planner.lessons.value.length"
+              class="text-button"
+              @click="planner.clear"
+            >
+              <Trash2 :size="15" />清空本学期
+            </button>
+          </div>
         </div>
         <p class="muted planner-note">
           仅保存在此浏览器。{{
@@ -485,13 +548,13 @@ function exportICS() {
           ><button
             class="icon-button"
             :aria-label="`移除候选 ${lesson.course.name}`"
-            @click="planner.toggle(lesson)"
+            @click="toggleCandidate(lesson)"
           >
             <Trash2 :size="16" />
           </button>
         </div>
         <p v-if="!planner.lessons.value.length" class="muted planner-note">
-          点击教学班旁的 +，开始整理候选清单。
+          点击教学班旁的“候选”按钮，开始整理清单；加入后可在结果上方直接进入管理。
         </p>
         <template v-if="planner.lessons.value.length"
           ><button
@@ -628,7 +691,7 @@ function exportICS() {
         <p>{{ lessonInfo.data.value[0].references }}</p>
       </section>
       <div class="flex-actions">
-        <button class="button" @click="planner.toggle(detail)">
+        <button class="button" @click="toggleCandidate(detail)">
           {{
             planner.lessons.value.some((l) => l.id === detail!.id)
               ? "移除候选"

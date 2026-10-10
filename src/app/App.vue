@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { onErrorCaptured, ref, watch } from "vue";
+import {
+  onErrorCaptured,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  ref,
+  watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   BookOpen,
@@ -19,7 +26,45 @@ const route = useRoute(),
   router = useRouter(),
   { theme, toggleTheme } = usePreferences();
 const menuOpen = ref(false),
-  renderError = ref(false);
+  renderError = ref(false),
+  header = ref<HTMLElement>(),
+  mobileMenuButton = ref<HTMLButtonElement>(),
+  mobileNavigation = ref<HTMLElement>(),
+  moreMenu = ref<HTMLDetailsElement>();
+function closeMenus(event: PointerEvent) {
+  const target = event.target as Node;
+  if (!header.value?.contains(target)) menuOpen.value = false;
+  if (!moreMenu.value?.contains(target))
+    moreMenu.value?.removeAttribute("open");
+}
+function escapeMenus(event: KeyboardEvent) {
+  if (event.key !== "Escape") return;
+  if (menuOpen.value) {
+    menuOpen.value = false;
+    mobileMenuButton.value?.focus();
+  }
+  if (moreMenu.value?.open) {
+    moreMenu.value.open = false;
+    moreMenu.value.querySelector<HTMLElement>("summary")?.focus();
+  }
+}
+onMounted(() => {
+  document.addEventListener("pointerdown", closeMenus);
+  document.addEventListener("keydown", escapeMenus);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("pointerdown", closeMenus);
+  document.removeEventListener("keydown", escapeMenus);
+});
+watch(menuOpen, async (open) => {
+  if (open) {
+    await nextTick();
+    const current =
+      mobileNavigation.value?.querySelector<HTMLElement>("a.is-current") ??
+      mobileNavigation.value?.querySelector<HTMLElement>("a");
+    current?.focus();
+  }
+});
 const navigation = [
   { path: "/courses", name: "课程目录" },
   { path: "/programs", name: "培养方案" },
@@ -39,18 +84,31 @@ watch(
   () => route.fullPath,
   () => {
     menuOpen.value = false;
+    if (moreMenu.value) moreMenu.value.open = false;
     renderError.value = false;
+  },
+);
+watch(
+  () => route.path,
+  async () => {
+    await nextTick();
+    document.getElementById("main")?.focus({ preventScroll: true });
   },
 );
 onErrorCaptured(() => {
   renderError.value = true;
   return false;
 });
+function skipToMain() {
+  const main = document.getElementById("main");
+  main?.scrollIntoView({ block: "start" });
+  main?.focus({ preventScroll: true });
+}
 </script>
 
 <template>
-  <a class="skip-link" href="#main">跳到主要内容</a>
-  <header class="site-header">
+  <a class="skip-link" href="#main" @click.prevent="skipToMain">跳到主要内容</a>
+  <header ref="header" class="site-header">
     <div class="header-inner">
       <RouterLink to="/" class="brand" aria-label="USTC-catalog-Next 首页"
         ><span class="brand-icon"><BookOpen :size="23" /></span
@@ -65,6 +123,7 @@ onErrorCaptured(() => {
           :key="item.path"
           :to="item.path"
           :class="{ 'is-current': isCurrent(item.path) }"
+          :aria-current="isCurrent(item.path) ? 'page' : undefined"
           >{{ item.name }}</RouterLink
         >
       </nav>
@@ -79,7 +138,7 @@ onErrorCaptured(() => {
         >
           <Sun v-if="theme === 'dark'" :size="19" /><Moon v-else :size="19" />
         </button>
-        <details class="more-menu">
+        <details ref="moreMenu" class="more-menu">
           <summary>更多<ChevronDown :size="14" /></summary>
           <div>
             <RouterLink to="/archives">历史归档</RouterLink
@@ -88,6 +147,7 @@ onErrorCaptured(() => {
           </div>
         </details>
         <button
+          ref="mobileMenuButton"
           class="icon-button mobile-menu-button"
           :aria-expanded="menuOpen"
           aria-controls="mobile-navigation"
@@ -100,16 +160,17 @@ onErrorCaptured(() => {
     </div>
     <nav
       v-if="menuOpen"
+      ref="mobileNavigation"
       id="mobile-navigation"
       class="mobile-nav"
       aria-label="移动端导航"
-      @keydown.esc="menuOpen = false"
     >
       <RouterLink
         v-for="item in navigation"
         :key="item.path"
         :to="item.path"
         :class="{ 'is-current': isCurrent(item.path) }"
+        :aria-current="isCurrent(item.path) ? 'page' : undefined"
         >{{ item.name }}</RouterLink
       ><RouterLink to="/archives">历史归档</RouterLink
       ><RouterLink to="/program-compare">计划对比</RouterLink

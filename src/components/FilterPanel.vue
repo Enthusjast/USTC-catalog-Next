@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, watch, onMounted, onBeforeUnmount, nextTick, useId } from "vue";
 import { SlidersHorizontal, X } from "@lucide/vue";
 withDefaults(
   defineProps<{
@@ -10,54 +10,71 @@ withDefaults(
   { activeCount: 0, resultLabel: "条结果" },
 );
 const open = ref(false),
+  mobile = ref(false),
   panel = ref<HTMLElement>(),
-  toggle = ref<HTMLButtonElement>();
-let previousOverflow = "";
+  toggle = ref<HTMLButtonElement>(),
+  headingId = useId();
+let previousOverflow: string | undefined;
 let desktop: MediaQueryList | undefined;
-function closeOnDesktop() {
+function updateLayout() {
   if (desktop?.matches) open.value = false;
+  mobile.value = !desktop?.matches;
+}
+function restoreScroll() {
+  if (previousOverflow === undefined) return;
+  document.body.style.overflow = previousOverflow;
+  previousOverflow = undefined;
 }
 onMounted(() => {
   desktop = matchMedia("(min-width: 768px)");
-  desktop.addEventListener("change", closeOnDesktop);
+  updateLayout();
+  desktop.addEventListener("change", updateLayout);
 });
-watch(open, async (value) => {
-  if (value) {
-    previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    await nextTick();
-    panel.value?.querySelector<HTMLElement>("button,input,select")?.focus();
+watch([open, mobile], async () => {
+  await nextTick();
+  const dialog = panel.value;
+  if (mobile.value && open.value && dialog instanceof HTMLDialogElement) {
+    if (previousOverflow === undefined) {
+      previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    if (!dialog.open) dialog.showModal();
   } else {
-    document.body.style.overflow = previousOverflow;
-    toggle.value?.focus();
+    if (dialog instanceof HTMLDialogElement && dialog.open) dialog.close();
+    restoreScroll();
   }
 });
-function trap(event: KeyboardEvent) {
-  if (!open.value || event.key !== "Tab") return;
-  const items = panel.value?.querySelectorAll<HTMLElement>(
-    "button,input,select,a[href]",
-  );
-  if (!items?.length) return;
-  const first = items[0],
-    last = items[items.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last?.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first?.focus();
-  }
+function close() {
+  open.value = false;
+  void nextTick(() => {
+    if (mobile.value) toggle.value?.focus();
+  });
+}
+function closeOnBackdrop(event: MouseEvent) {
+  if (!mobile.value || event.target !== panel.value) return;
+  const bounds = panel.value.getBoundingClientRect();
+  if (
+    event.clientX < bounds.left ||
+    event.clientX > bounds.right ||
+    event.clientY < bounds.top ||
+    event.clientY > bounds.bottom
+  )
+    close();
 }
 onBeforeUnmount(() => {
-  desktop?.removeEventListener("change", closeOnDesktop);
-  if (open.value) document.body.style.overflow = previousOverflow;
+  desktop?.removeEventListener("change", updateLayout);
+  if (panel.value instanceof HTMLDialogElement) panel.value.close();
+  restoreScroll();
 });
 </script>
 <template>
   <button
     ref="toggle"
+    type="button"
     class="button secondary filter-toggle"
     :aria-expanded="open"
+    :aria-controls="`${headingId}-panel`"
+    aria-haspopup="dialog"
     @click="open = true"
   >
     <SlidersHorizontal :size="16" />筛选条件<span
@@ -66,25 +83,17 @@ onBeforeUnmount(() => {
       >{{ activeCount }}</span
     >
   </button>
-  <button
-    v-if="open"
-    type="button"
-    class="filter-backdrop"
-    tabindex="-1"
-    aria-label="关闭筛选条件"
-    @click="open = false"
-  />
-  <aside
+  <component
+    :is="mobile ? 'dialog' : 'aside'"
+    :id="`${headingId}-panel`"
     ref="panel"
     class="filter-panel panel"
     :class="{ 'is-open': open }"
-    :role="open ? 'dialog' : undefined"
-    :aria-modal="open ? true : undefined"
-    aria-label="筛选条件"
-    @keydown.esc="open = false"
-    @keydown="trap"
+    :aria-labelledby="headingId"
+    @cancel.prevent="close"
+    @click="closeOnBackdrop"
   >
-    <h2>
+    <h2 :id="headingId">
       <span
         ><SlidersHorizontal :size="15" />筛选条件<span
           v-if="activeCount"
@@ -92,16 +101,17 @@ onBeforeUnmount(() => {
           >{{ activeCount }}</span
         ></span
       ><button
+        type="button"
         class="icon-button filter-close"
         aria-label="关闭筛选"
-        @click="open = false"
+        @click="close"
       >
         <X :size="20" />
       </button>
     </h2>
-    <slot />
+    <div class="filter-panel-body"><slot /></div>
     <div class="filter-panel-footer">
-      <button type="button" class="button" @click="open = false">
+      <button type="button" class="button" @click="close">
         {{
           resultCount === undefined
             ? "查看查询结果"
@@ -109,5 +119,5 @@ onBeforeUnmount(() => {
         }}
       </button>
     </div>
-  </aside>
+  </component>
 </template>
