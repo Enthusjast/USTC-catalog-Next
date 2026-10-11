@@ -21,6 +21,7 @@ import {
 import { usePreferences } from "../features/usePreferences";
 import { filterStorageError } from "../features/filterPreferences";
 import { DEMO_MODE } from "../api/environment";
+import PwaUpdate from "../components/PwaUpdate.vue";
 
 const route = useRoute(),
   router = useRouter(),
@@ -200,6 +201,7 @@ function skipToMain() {
     </div>
     <RouterView v-else />
   </main>
+  <PwaUpdate />
   <footer class="site-footer">
     <div class="footer-inner">
       <div>

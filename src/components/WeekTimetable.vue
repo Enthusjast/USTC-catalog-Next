@@ -266,7 +266,7 @@ function position(
   overflow-wrap: anywhere;
   font-size: 13px;
 }
-:global([data-theme="dark"]) .tt-block:not(.tt-dense) {
+[data-theme="dark"] .tt-block:not(.tt-dense) {
   background: hsl(var(--course-hue) 30% 22%);
   color: hsl(var(--course-hue) 55% 86%);
   border-color: hsl(var(--course-hue) 25% 45%);

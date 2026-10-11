@@ -1,23 +1,39 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { Trash2 } from "@lucide/vue";
+import { Trash2, Download, RefreshCw } from "@lucide/vue";
 import { clearCache } from "../api/cache";
-import { clearWorkspace } from "../features/useWorkspace";
+import { clearAllLocalData } from "../features/clearLocalData";
+import { usePWA } from "../features/usePWA";
 import WorkspaceBackup from "../components/WorkspaceBackup.vue";
-import { usePreferences } from "../features/usePreferences";
-import { clearFilterPreferences } from "../features/filterPreferences";
 import PageHeading from "../components/PageHeading.vue";
 const message = ref(""),
-  { theme } = usePreferences();
-async function clearLocal() {
+  clearing = ref(false),
+  confirmClear = ref(false);
+const {
+  installed,
+  installAvailable,
+  installing,
+  needRefresh,
+  updating,
+  install,
+  update,
+  message: pwaMessage,
+} = usePWA();
+async function clearLocal(all = false) {
+  if (clearing.value) return;
+  clearing.value = true;
+  message.value = "";
   try {
-    await clearCache();
-    clearWorkspace();
-    clearFilterPreferences();
-    theme.value = "light";
-    message.value = "本机查询缓存、候选清单、收藏、筛选和主题偏好已清除。";
+    if (all) await clearAllLocalData();
+    else await clearCache();
+    message.value = all
+      ? "全部本机查询资料、方案、收藏及偏好已清除。"
+      : "查询缓存已清除，方案和收藏已保留。";
   } catch (cause) {
-    message.value = (cause as Error).message;
+    message.value = `清除未完成：${(cause as Error).message}`;
+  } finally {
+    clearing.value = false;
+    confirmClear.value = false;
   }
 }
 </script>
@@ -72,23 +88,82 @@ async function clearLocal() {
       </li>
       <li>课程替代只展示直接关系与原始课程组合，不推导多跳替代资格。</li>
     </ul>
+    <h2>安装与离线使用</h2>
+    <p>
+      首次联网加载完成后，可以离线打开应用并阅读已查询的资料。未查询的内容仍需要联网，公开数据不会在后台自动更新。
+    </p>
+    <p v-if="installed">已作为应用安装。</p>
+    <button
+      v-else-if="installAvailable"
+      class="button secondary"
+      :disabled="installing"
+      @click="install"
+    >
+      <Download :size="16" />{{
+        installing ? "正在安装…" : "安装 USTC-catalog-Next"
+      }}
+    </button>
+    <p v-else>可通过浏览器菜单选择“安装应用”或“添加到主屏幕”。</p>
+    <button
+      v-if="needRefresh"
+      class="button secondary"
+      :disabled="updating"
+      @click="update"
+    >
+      <RefreshCw :size="16" />{{ updating ? "正在更新…" : "更新应用" }}
+    </button>
+    <p v-if="pwaMessage" role="status">{{ pwaMessage }}</p>
     <WorkspaceBackup />
     <h2>本机数据与隐私</h2>
     <p>
       查询缓存保存在 IndexedDB，筛选偏好、主题、课程收藏和候选清单保存在
-      localStorage。浏览器禁用存储时，仍可查询，但偏好和清单可能无法在重开页面后保留。本站不使用分析追踪脚本，API
+      localStorage，教室浏览位置保存在
+      sessionStorage。浏览器禁用存储时，仍可查询，但偏好和清单可能无法在重开页面后保留。本站不使用分析追踪脚本，API
       请求不发送 Cookie。
     </p>
     <p>
       打开没有查询参数的页面时恢复本机筛选；分享链接中的条件优先，清除筛选后不会自动恢复旧条件。
     </p>
     <p>
-      清除本机数据会移除此浏览器中的查询缓存、候选清单、收藏、筛选和主题偏好。清除前可导出
-      JSON 备份，也可在教学班或考试页导出 ICS。
+      清除查询缓存保留方案与收藏；清除全部本机数据还会移除新旧候选清单、收藏、筛选、主题及浏览位置。清除前可导出
+      JSON 备份。
     </p>
-    <button class="button secondary" @click="clearLocal">
-      <Trash2 :size="16" />清除本机数据
-    </button>
+    <div class="flex-actions">
+      <button
+        class="button secondary"
+        :disabled="clearing"
+        @click="clearLocal(false)"
+      >
+        <Trash2 :size="16" />清除查询缓存
+      </button>
+      <button
+        class="button secondary"
+        :disabled="clearing"
+        @click="confirmClear = true"
+      >
+        <Trash2 :size="16" />清除全部本机数据
+      </button>
+    </div>
+    <div
+      v-if="confirmClear"
+      class="notice"
+      role="group"
+      aria-label="确认清除全部本机数据"
+    >
+      <p>此浏览器中的方案与收藏也将被删除。</p>
+      <div class="flex-actions">
+        <button class="button" :disabled="clearing" @click="clearLocal(true)">
+          确认清除
+        </button>
+        <button
+          class="button secondary"
+          :disabled="clearing"
+          @click="confirmClear = false"
+        >
+          取消
+        </button>
+      </div>
+    </div>
     <p v-if="message" role="status" style="margin-top: 16px">{{ message }}</p>
     <h2>项目与许可证</h2>
     <p>

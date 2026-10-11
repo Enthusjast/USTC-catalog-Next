@@ -6,6 +6,7 @@ import {
 } from "./timetable";
 import type { Lesson } from "./models";
 import { weekdays } from "./schedule";
+import { escapeHTML as escape, printHTML } from "./print";
 export interface TimetableExportData {
   lessons: Lesson[];
   week: number;
@@ -195,14 +196,6 @@ export function renderTimetablePNG(
   page.lines.forEach((line, i) => ctx.fillText(line, MARGIN, start + i * LINE));
   return element.toDataURL("image/png");
 }
-const escape = (value: string) =>
-  value.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        c
-      ]!,
-  );
 export function printTimetable(data: TimetableExportData) {
   const { element, ctx } = canvas(BOARD_BOTTOM + MARGIN);
   paintBoard(ctx, data);
@@ -214,18 +207,9 @@ export function printTimetable(data: TimetableExportData) {
         `无法完整定位：${l.course.name} · ${l.code} | ${l.schedule.text || "安排未提供"}`,
       ),
     );
-  const frame = document.createElement("iframe");
-  frame.className = "print-frame";
-  frame.style.cssText =
-    "position:fixed;width:1px;height:1px;left:-9999px;border:0";
-  frame.onload = () => {
-    const target = frame.contentWindow;
-    if (!target) return;
-    target.onafterprint = () => frame.remove();
-    target.focus();
-    target.print();
-    setTimeout(() => frame.remove(), 60000);
-  };
-  frame.srcdoc = `<!doctype html><html lang="zh"><meta charset="utf-8"><title>${escape(data.title)}</title><style>@page{size:A4 landscape;margin:12mm}body{font:12px sans-serif;color:#192c40;background:white}h1{font-size:20px}img{width:100%;height:auto}li{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;break-inside:avoid}h2{break-after:avoid}</style><body><h1>${escape(data.title)} · 第 ${data.week} 周</h1><img src="${element.toDataURL("image/png")}" alt="课表"><h2>完整安排清单</h2><ol>${rows.map((row) => `<li>${escape(row)}</li>`).join("")}</ol></body></html>`;
-  document.body.append(frame);
+  printHTML(
+    data.title,
+    `<h1>${escape(data.title)} · 第 ${data.week} 周${data.mode === "day" ? ` · 周${weekdays[data.day - 1]}` : ""}</h1><img src="${element.toDataURL("image/png")}" alt="课表"><h2>完整安排清单</h2><ol>${rows.map((row) => `<li>${escape(row)}</li>`).join("")}</ol>`,
+    "landscape",
+  );
 }

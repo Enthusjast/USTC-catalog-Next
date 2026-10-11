@@ -41,17 +41,7 @@ const fields: Record<string, string[]> = {
     "week",
     "semester",
   ],
-  "/classrooms": [
-    "date",
-    "from",
-    "to",
-    "building",
-    "room",
-    "type",
-    "state",
-    "capacity",
-    "campus",
-  ],
+  "/classrooms": ["date", "building", "room", "type", "capacity", "campus"],
   "/substitutions": ["q", "side"],
   "/archives": ["q", "type", "department"],
 };
