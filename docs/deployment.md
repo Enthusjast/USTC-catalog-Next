@@ -2,6 +2,8 @@
 
 2026-10-10 本轮开发版本已发布到 https://catalog.enthusjast.cc。Pages 发布源为 GitHub Actions（`build_type=workflow`），自定义域和 HTTPS 已启用；[发布工作流](https://github.com/Enthusjast/USTC-catalog-Next/actions/runs/38031772381)的构建、API 检查与部署全部成功。正式 Origin 的 GET/JSON POST、精确 CORS、JSON 404 和未授权来源拒绝均通过；正式站 14 个页面在四种宽度下共 56 项检查通过，分享链接刷新通过，详见 [验证记录](verification.md)。
 
+2026-10-11 五批功能扩展全部发布。功能版本 `d9327cb` 的工作流 `38129287650` 包含单元、浏览器、离线产物与 API 门槛，全部成功；正式站的 140 项真实数据宽度/主题检查、离线重开与工作区保留均通过。逐批提交与发布记录见 [最终验收](verification.md#五批扩展的最终发布验收2026-10-11)。
+
 ## 仓库部署设置
 
 - Pages 发布源：GitHub Actions；允许 `github-pages` environment 从 main 部署。
