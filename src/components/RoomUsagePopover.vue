@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { RoomUsage } from "../domain/models";
+import type { RoomUsage, Lesson } from "../domain/models";
 import type { RoomSummary } from "../domain/roomAvailability";
 export interface UsageSelection {
   room: RoomSummary;
@@ -20,7 +20,7 @@ import {
   watch,
   type CSSProperties,
 } from "vue";
-import { X } from "@lucide/vue";
+import { X, ArrowRight } from "@lucide/vue";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { isISODate } from "../domain/dates";
@@ -35,14 +35,15 @@ const card = ref<HTMLElement>(),
 const position = shallowRef<CSSProperties>({ visibility: "hidden" });
 const lessonClassesKey = computed(() => {
   const selection = props.selection;
-  return selection?.record.type === "lessons" &&
+  return selection &&
+    ["lessons", "tmpLessons"].includes(selection.record.type) &&
     selection.record.courseId &&
     isISODate(selection.date)
     ? `${selection.date}:${selection.record.courseId}`
     : "";
 });
-const { data: lessonClasses, loading: classesLoading } = useQuery<
-  string[] | undefined
+const { data: lessonContext, loading: classesLoading } = useQuery<
+  { semester: string; lesson?: Lesson } | undefined
 >(
   async (signal, force) => {
     const selection = props.selection!;
@@ -56,11 +57,25 @@ const { data: lessonClasses, loading: classesLoading } = useQuery<
     const lesson = lessons.data.find(
       (l) => l.code === selection.record.courseId,
     );
-    return { data: lesson?.adminClasses, meta: lessons.meta };
+    return { data: { semester: semester.id, lesson }, meta: lessons.meta };
   },
   lessonClassesKey,
   () => !!lessonClassesKey.value,
 );
+const lessonClasses = computed(() => lessonContext.value?.lesson?.adminClasses);
+const lessonRoute = computed(() => {
+  const context = lessonContext.value;
+  return context?.lesson
+    ? {
+        path: "/lessons",
+        query: {
+          semester: context.semester,
+          q: context.lesson.code,
+          lesson: context.lesson.code,
+        },
+      }
+    : undefined;
+});
 const host = computed(
   () => props.selection?.anchor.closest("dialog") ?? document.body,
 );
@@ -100,7 +115,7 @@ function scrollOrResize(event: Event) {
   close();
 }
 watch(
-  [() => props.selection, lessonClasses, classesLoading],
+  [() => props.selection, lessonContext, classesLoading],
   async ([selection], [previousSelection]) => {
     if (!selection) return;
     const selectionChanged = selection !== previousSelection;
@@ -199,6 +214,13 @@ onBeforeUnmount(() => {
             usageTypes[selection.record.type] ?? selection.record.type
           }}</span
         >
+        <RouterLink
+          v-if="lessonRoute"
+          class="button small secondary usage-lesson-link"
+          :to="lessonRoute"
+          @click="close()"
+          >查看教学班详情<ArrowRight :size="14" aria-hidden="true"
+        /></RouterLink>
         <dl class="usage-detail-fields">
           <div>
             <dt>日期</dt>
@@ -263,3 +285,8 @@ onBeforeUnmount(() => {
     </section>
   </Teleport>
 </template>
+<style scoped>
+.usage-lesson-link {
+  margin-top: 8px;
+}
+</style>
