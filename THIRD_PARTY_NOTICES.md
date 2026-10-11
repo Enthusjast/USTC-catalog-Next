@@ -51,6 +51,32 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+## Icourse page index
+
+The factual page index in `src/data/icourseLinks.ts` is derived from
+`icourse_spider/course_rating.json` in RaymondzyLei/class-arrange:
+https://github.com/RaymondzyLei/class-arrange
+(initial source commit `4de5d04`, 2026-07-04; imported 2026-10-11).
+The source records originate from https://www.icourse.club/.
+Only course names, complete teacher names and page identifiers are retained.
+The generated file records the source SHA-256 and import date, not a live
+community update time. Ratings, reviews, the crawler and reference application
+code are not included. Matching and generation code were independently written.
+
+The reference project's original-material license states:
+
+Copyright (c) 2026 RaymondzyLei and contributors.
+
+- A free, non-exclusive, non-transferable license to use, copy and modify
+  the material for personal, non-commercial USTC course-planning and academic
+  purposes only.
+- Commercial use requires prior written permission from the copyright holder.
+- All rights not explicitly granted are reserved by the copyright holder.
+
+These source terms are retained for the derived index; the project's MIT
+license does not relicense that source material. The reference project's
+AGPL-3.0 crawler is not redistributed or executed by this application.
+
 ## Offline application libraries
 
 The application bundles the vite-plugin-pwa registration helper and Workbox

@@ -16,7 +16,9 @@
     "test:browser": "tsc --noEmit -p tsconfig.browser.json && playwright test",
     "check:pwa": "node scripts/check-pwa.mjs",
     "rooms:check": "node scripts/sync-rooms.mjs --check",
-    "rooms:sync": "node scripts/sync-rooms.mjs --write"
+    "rooms:sync": "node scripts/sync-rooms.mjs --write",
+    "icourse:sync": "node scripts/sync-icourse.mjs",
+    "icourse:check": "node scripts/sync-icourse.mjs --check"
   },
   "dependencies": {
     "@lucide/vue": "^1.54.0",

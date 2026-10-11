@@ -2,6 +2,7 @@
 import { Check, Plus } from "@lucide/vue";
 import type { Lesson } from "../domain/models";
 import LessonSchedule from "./LessonSchedule.vue";
+import IcourseLink from "./IcourseLink.vue";
 defineProps<{
   lessons: Lesson[];
   candidateIds: Set<string>;
@@ -36,6 +37,7 @@ defineEmits<{
             ><button class="course-name" @click="$emit('detail', lesson.code)">
               {{ lesson.course.name }}
             </button>
+            <IcourseLink :lesson="lesson" />
             <p class="course-en">
               {{ lesson.credits ?? "未提供" }} 学分 ·
               {{ lesson.hours ?? "未提供" }} 学时

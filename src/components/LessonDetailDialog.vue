@@ -7,6 +7,7 @@ import DisclosureDialog from "./DisclosureDialog.vue";
 import QueryState from "./QueryState.vue";
 import EmptyState from "./EmptyState.vue";
 import CourseContent from "./CourseContent.vue";
+import IcourseLink from "./IcourseLink.vue";
 const props = defineProps<{
   code: string;
   semester: string;
@@ -99,6 +100,7 @@ const detailCourse = computed(() =>
         :loading="lessonInfo.loading.value"
       />
       <div class="flex-actions">
+        <IcourseLink :lesson="detail" variant="button" />
         <button class="button" @click="$emit('candidate', detail)">
           {{ selected ? "移除候选" : "加入候选清单" }}</button
         ><RouterLink
