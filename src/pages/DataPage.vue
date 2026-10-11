@@ -44,10 +44,10 @@ async function clearLocal(all = false) {
     eyebrow="ABOUT / 关于本站"
   />
   <article class="panel prose">
-    <h2>独立公共查询工具</h2>
+    <h2>新一代公共查询工具</h2>
     <p>
       USTC-catalog-Next
-      非中国科学技术大学官方系统。本站查询公开只读资料，提供浏览器内的检索与规划辅助；不要求账号，不读取学生身份、成绩或个人选课关系。
+      是新一代的中国科学技术大学教务公共查询工具。我们查询公开只读资料，并提供浏览器内的检索与一系列辅助功能。
     </p>
     <h2>公开资料</h2>
     <p>
@@ -56,38 +56,16 @@ async function clearLocal(all = false) {
         target="_blank"
         rel="noopener noreferrer"
         >中国科大教务目录</a
-      >。历史培养方案和官方汇总文件可通过相应页面打开。
+      >。
     </p>
     <p>
-      公开教学班、考试和替代关系可能次日更新。最终排课、考试与选课结果以<a
+      公开教学班、考试和替代关系可能次日更新。部分结果请以<a
         href="https://jw.ustc.edu.cn/"
         target="_blank"
         rel="noopener noreferrer"
         >综合教务系统</a
       >为准。
     </p>
-    <h2>课程、计划与时间判断</h2>
-    <ul>
-      <li>
-        课程目录中的“当前有效”不保证每学期开课。历史静态培养方案与 API
-        执行计划分别展示。
-      </li>
-      <li>
-        候选教学班与收藏只表示本机规划，不表示选课成功、已修学分、完成进度或毕业资格。
-      </li>
-      <li>
-        冲突提示仅表示公开安排存在时间重叠。无法识别的周次、课节或日期会标为未知。
-      </li>
-      <li>
-        教学班 ICS 需要使用者确认第 1
-        教学周周一日期。默认导出含课节说明的全天提醒；钟点模式使用明确选定的课节表，须对照实际校区与校历核对。考试
-        ICS 只导出有准确日期和时间的记录。
-      </li>
-      <li>
-        教室时段状态仅根据公开记录推算，不代表可预约、可进入或已获批准。缺少定位、时间或记录覆盖范围时，状态为未知。
-      </li>
-      <li>课程替代只展示直接关系与原始课程组合，不推导多跳替代资格。</li>
-    </ul>
     <h2>安装与离线使用</h2>
     <p>
       首次联网加载完成后，可以离线打开应用并阅读已查询的资料。未查询的内容仍需要联网，公开数据不会在后台自动更新。
@@ -115,15 +93,7 @@ async function clearLocal(all = false) {
     <p v-if="pwaMessage" role="status">{{ pwaMessage }}</p>
     <WorkspaceBackup />
     <h2>本机数据与隐私</h2>
-    <p>
-      查询缓存保存在 IndexedDB，筛选偏好、主题、课程收藏和候选清单保存在
-      localStorage，教室浏览位置保存在
-      sessionStorage。浏览器禁用存储时，仍可查询，但偏好和清单可能无法在重开页面后保留。本站不使用分析追踪脚本，API
-      请求不发送 Cookie。
-    </p>
-    <p>
-      打开没有查询参数的页面时恢复本机筛选；分享链接中的条件优先，清除筛选后不会自动恢复旧条件。
-    </p>
+    <p>本站缓存部分查询结果数据至本地，我们不会收集提交您的任何数据。</p>
     <p>
       清除查询缓存保留方案与收藏；清除全部本机数据还会移除新旧候选清单、收藏、筛选、主题及浏览位置。清除前可导出
       JSON 备份。
@@ -167,17 +137,14 @@ async function clearLocal(all = false) {
     <p v-if="message" role="status" style="margin-top: 16px">{{ message }}</p>
     <h2>项目与许可证</h2>
     <p>
-      源码：<a
+      本项目按 MIT 许可证在
+      <a
         href="https://github.com/Enthusjast/USTC-catalog-Next"
         target="_blank"
         rel="noopener noreferrer"
-        >USTC-catalog-Next</a
-      >。接口模型和课节表参考<a
-        href="https://github.com/Enthusjast/USTC-catalog-CLI"
-        target="_blank"
-        rel="noopener noreferrer"
-        >USTC-catalog-CLI</a
-      >，按 MIT 许可证保留许可声明。
+        >GitHub</a
+      >
+      开源。
     </p>
   </article>
 </template>

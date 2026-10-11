@@ -118,8 +118,7 @@ function skipToMain() {
       <RouterLink to="/" class="brand" aria-label="USTC-catalog-Next 首页"
         ><span class="brand-icon"><BookOpen :size="23" /></span
         ><span
-          ><strong>USTC-catalog-Next</strong
-          ><small>新一代公共查询</small></span
+          ><strong>USTC-catalog-Next</strong><small>新一代公共查询</small></span
         ></RouterLink
       >
       <nav class="desktop-nav" aria-label="主要导航">
@@ -148,7 +147,7 @@ function skipToMain() {
           <div>
             <RouterLink to="/archives">历史归档</RouterLink
             ><RouterLink to="/program-compare">计划对比</RouterLink
-            ><RouterLink to="/about/data">数据说明</RouterLink>
+            ><RouterLink to="/about/data">站点说明</RouterLink>
           </div>
         </details>
         <button
@@ -179,7 +178,7 @@ function skipToMain() {
         >{{ item.name }}</RouterLink
       ><RouterLink to="/archives">历史归档</RouterLink
       ><RouterLink to="/program-compare">计划对比</RouterLink
-      ><RouterLink to="/about/data">数据说明</RouterLink>
+      ><RouterLink to="/about/data">站点说明</RouterLink>
     </nav>
   </header>
   <main id="main" class="main-container" tabindex="-1">
@@ -226,9 +225,6 @@ function skipToMain() {
           >综合教务系统<ArrowUpRight :size="13" /></a
         ><RouterLink to="/about/data">站点说明</RouterLink>
       </nav>
-    </div>
-    <div class="footer-bottom">
-      USTC-catalog-Next <span>公开数据 · 本地规划 · 无需账号</span>
     </div>
   </footer>
 </template>

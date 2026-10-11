@@ -8,7 +8,6 @@ import {
   MapPin,
   ArrowLeftRight,
   Archive,
-  ShieldCheck,
 } from "@lucide/vue";
 import { computed } from "vue";
 import { useQuery } from "../features/useQuery";
@@ -129,19 +128,5 @@ const tasks = [
       <div><strong>历史归档</strong></div>
       <ArrowRight :size="17"
     /></RouterLink>
-  </section>
-  <section class="home-data panel">
-    <div class="home-data-title">
-      <ShieldCheck :size="22" />
-      <div>
-        <h2>查询前了解数据边界</h2>
-        <p>
-          课程有效不代表每学期开课；公开安排可能次日更新，实际安排以综合教务系统为准。
-        </p>
-      </div>
-      <RouterLink to="/about/data"
-        >了解数据说明<ArrowRight :size="16"
-      /></RouterLink>
-    </div>
   </section>
 </template>
