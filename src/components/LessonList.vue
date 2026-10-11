@@ -2,8 +2,16 @@
 import { Check, Plus } from "@lucide/vue";
 import type { Lesson } from "../domain/models";
 import LessonSchedule from "./LessonSchedule.vue";
-defineProps<{ lessons: Lesson[]; candidateIds: Set<string> }>();
-defineEmits<{ detail: [code: string]; candidate: [lesson: Lesson] }>();
+defineProps<{
+  lessons: Lesson[];
+  candidateIds: Set<string>;
+  compareCodes: string[];
+}>();
+defineEmits<{
+  detail: [code: string];
+  candidate: [lesson: Lesson];
+  compare: [lesson: Lesson];
+}>();
 </script>
 <template>
   <div v-if="lessons.length" class="table-scroll">
@@ -60,6 +68,13 @@ defineEmits<{ detail: [code: string]; candidate: [lesson: Lesson] }>();
                 v-else
                 :size="18"
               />{{ candidateIds.has(lesson.id) ? "已加入" : "候选" }}
+            </button>
+            <button
+              class="text-button"
+              :aria-pressed="compareCodes.includes(lesson.code)"
+              @click="$emit('compare', lesson)"
+            >
+              {{ compareCodes.includes(lesson.code) ? "已对比" : "对比" }}
             </button>
           </td>
         </tr>

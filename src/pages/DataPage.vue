@@ -2,19 +2,17 @@
 import { ref } from "vue";
 import { Trash2 } from "@lucide/vue";
 import { clearCache } from "../api/cache";
-import { clearPlanner } from "../features/usePlanner";
-import { useFavorites } from "../features/useFavorites";
+import { clearWorkspace } from "../features/useWorkspace";
+import WorkspaceBackup from "../components/WorkspaceBackup.vue";
 import { usePreferences } from "../features/usePreferences";
 import { clearFilterPreferences } from "../features/filterPreferences";
 import PageHeading from "../components/PageHeading.vue";
 const message = ref(""),
-  { clear } = useFavorites(),
   { theme } = usePreferences();
 async function clearLocal() {
   try {
     await clearCache();
-    clearPlanner();
-    clear();
+    clearWorkspace();
     clearFilterPreferences();
     theme.value = "light";
     message.value = "本机查询缓存、候选清单、收藏、筛选和主题偏好已清除。";
@@ -74,6 +72,7 @@ async function clearLocal() {
       </li>
       <li>课程替代只展示直接关系与原始课程组合，不推导多跳替代资格。</li>
     </ul>
+    <WorkspaceBackup />
     <h2>本机数据与隐私</h2>
     <p>
       查询缓存保存在 IndexedDB，筛选偏好、主题、课程收藏和候选清单保存在
@@ -84,8 +83,8 @@ async function clearLocal() {
       打开没有查询参数的页面时恢复本机筛选；分享链接中的条件优先，清除筛选后不会自动恢复旧条件。
     </p>
     <p>
-      清除本机数据会移除此浏览器中的查询缓存、候选清单、收藏、筛选和主题偏好。清除前可在教学班或考试页导出
-      ICS。
+      清除本机数据会移除此浏览器中的查询缓存、候选清单、收藏、筛选和主题偏好。清除前可导出
+      JSON 备份，也可在教学班或考试页导出 ICS。
     </p>
     <button class="button secondary" @click="clearLocal">
       <Trash2 :size="16" />清除本机数据

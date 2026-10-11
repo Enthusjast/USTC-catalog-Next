@@ -14,6 +14,7 @@ import { examConflicts } from "../domain/examConflicts";
 import { examCalendar, downloadCalendar } from "../domain/calendar";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
+import SchemeSelector from "../components/SchemeSelector.vue";
 import FilterPanel from "../components/FilterPanel.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
@@ -191,7 +192,12 @@ function exportICS() {
         savedOnly = ($event.target as HTMLInputElement).checked ? '1' : ''
       "
     />仅看本学期候选教学班关联考试</label
-  ><QueryState :loading="loading" :error="error" :meta="meta" @retry="reload" />
+  ><SchemeSelector v-if="savedOnly === '1'" :planner="planner" /><QueryState
+    :loading="loading"
+    :error="error"
+    :meta="meta"
+    @retry="reload"
+  />
   <FilterSummary
     :filters="filterSummary.filters.value"
     @remove="filterSummary.remove"

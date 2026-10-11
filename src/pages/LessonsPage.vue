@@ -1,15 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import {
-  Trash2,
-  Download,
-  AlertTriangle,
-  List,
-  CalendarDays,
-  ClipboardList,
-  ArrowDown,
-} from "@lucide/vue";
+import { List, CalendarDays, ClipboardList, ArrowDown } from "@lucide/vue";
 import type { Lesson } from "../domain/models";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
@@ -25,20 +17,19 @@ import {
   missingValue,
 } from "../domain/lessonFilters";
 import { rankLessons } from "../domain/search";
-import { lessonConflicts, weekdays, formatClock } from "../domain/schedule";
-import { lessonCalendar, downloadCalendar } from "../domain/calendar";
-import { periodLayouts } from "../domain/periods";
+import { lessonConflicts, weekdays } from "../domain/schedule";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import FilterPanel from "../components/FilterPanel.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
+import PlannerPanel from "../components/PlannerPanel.vue";
+import LessonComparison from "../components/LessonComparison.vue";
 import LessonDetailDialog from "../components/LessonDetailDialog.vue";
 import WeekTimetable from "../components/WeekTimetable.vue";
 import LessonFilterFields from "../components/LessonFilterFields.vue";
 import LessonList from "../components/LessonList.vue";
-import { clockMinutes } from "../domain/schedule";
 const router = useRouter(),
   semesterQuery = useSemester(),
   semester = semesterQuery.selected;
@@ -61,7 +52,8 @@ const q = useFilter("q"),
   view = useFilter("view", "list"),
   week = useFilter("week", "1"),
   detailCode = useFilter("lesson"),
-  sort = useFilter("sort", "code");
+  sort = useFilter("sort", "code"),
+  compare = useFilter("compare");
 const { data, meta, loading, error, reload } = useQuery(
   (signal, force) => catalog.lessons(semester.value, { signal, force }),
   semester,
@@ -128,7 +120,7 @@ const planner = usePlanner(semester),
 const candidateIds = computed(
     () => new Set(planner.lessons.value.map((lesson) => lesson.id)),
   ),
-  plannerHeading = ref<HTMLElement>(),
+  plannerPanel = ref<InstanceType<typeof PlannerPanel>>(),
   resultsHeading = ref<HTMLElement>(),
   candidateMessage = ref("");
 function toggleCandidate(lesson: Lesson) {
@@ -140,17 +132,13 @@ function toggleCandidate(lesson: Lesson) {
       : planner.storageError.value;
 }
 function showPlanner() {
-  plannerHeading.value?.scrollIntoView({ block: "start" });
-  plannerHeading.value?.focus({ preventScroll: true });
+  plannerPanel.value?.focus();
 }
 function showResults() {
   view.value = "list";
   resultsHeading.value?.scrollIntoView({ block: "start" });
   resultsHeading.value?.focus({ preventScroll: true });
 }
-const firstMonday = ref(""),
-  layout = ref(""),
-  exportMessage = ref("");
 const departments = computed(() =>
   [
     ...new Map(
@@ -338,6 +326,38 @@ const detail = computed(
     data.value?.find((l) => l.code === detailCode.value) ??
     planner.lessons.value.find((l) => l.code === detailCode.value),
 );
+const compareCodes = computed(() =>
+  [...new Set(compare.value.split(",").filter(Boolean))].slice(0, 4),
+);
+const compared = computed(() => {
+  const selected = compareCodes.value.flatMap((code) => {
+    const lesson = data.value?.find((l) => l.code === code);
+    return lesson ? [lesson] : [];
+  });
+  return selected.filter((l) => l.course.code === selected[0]?.course.code);
+});
+const compareMessage = ref("");
+function toggleCompare(lesson: Lesson) {
+  if (compareCodes.value.includes(lesson.code)) {
+    compare.value = compareCodes.value
+      .filter((code) => code !== lesson.code)
+      .join(",");
+    return;
+  }
+  if (
+    compared.value.length &&
+    compared.value[0]!.course.code !== lesson.course.code
+  ) {
+    compareMessage.value = "只能对比同一课程的教学班。";
+    return;
+  }
+  if (compareCodes.value.length >= 4) {
+    compareMessage.value = "最多对比四个教学班。";
+    return;
+  }
+  compareMessage.value = "";
+  compare.value = [...compareCodes.value, lesson.code].join(",");
+}
 const currentWeek = computed(() =>
   Math.min(53, Math.max(1, Number(week.value) || 1)),
 );
@@ -346,20 +366,6 @@ function reset() {
     path: "/lessons",
     query: { semester: semester.value, view: view.value, week: week.value },
   });
-}
-function exportICS() {
-  try {
-    const result = lessonCalendar(
-      planner.lessons.value,
-      firstMonday.value,
-      layout.value,
-    );
-    if (result.count)
-      downloadCalendar(result.content, `ustc-lessons-${semester.value}.ics`);
-    exportMessage.value = `已导出 ${result.count} 个事件${result.skipped.length ? `；跳过无法识别的安排：${result.skipped.join("、")}` : ""}。`;
-  } catch (cause) {
-    exportMessage.value = (cause as Error).message;
-  }
 }
 </script>
 <template>
@@ -555,8 +561,10 @@ function exportICS() {
           ><LessonList
             :lessons="visible"
             :candidate-ids="candidateIds"
+            :compare-codes="compareCodes"
             @detail="detailCode = $event"
-            @candidate="toggleCandidate" />
+            @candidate="toggleCandidate"
+            @compare="toggleCompare" />
           <EmptyState
             v-if="data && !metadataFiltersPending && !filtered.length"
             message="尝试切换学期、修改关键词或清除时间与院系筛选。"
@@ -597,113 +605,26 @@ function exportICS() {
             message="在查询列表中选择教学班，再切换到周课表。"
         /></template>
       </div>
-      <section class="planner-panel panel">
-        <div class="section-heading">
-          <h2 ref="plannerHeading" class="planner-heading" tabindex="-1">
-            本机候选清单
-            <span class="muted">{{ planner.lessons.value.length }}</span>
-          </h2>
-          <div class="flex-actions">
-            <button class="text-button" @click="showResults">继续查找</button>
-            <button
-              v-if="planner.lessons.value.length"
-              class="text-button"
-              @click="planner.clear"
-            >
-              <Trash2 :size="15" />清空本学期
-            </button>
-          </div>
-        </div>
-        <p v-if="planner.storageError.value" class="notice warning">
-          {{ planner.storageError.value }}
-        </p>
-        <div
-          v-for="lesson in planner.lessons.value"
-          :key="lesson.id"
-          class="candidate-row"
-        >
-          <button class="course-name" @click="detailCode = lesson.code">
-            {{ lesson.course.name
-            }}<span class="mono">{{ lesson.code }}</span></button
-          ><span class="muted">{{ lesson.teachers.join("、") }}</span
-          ><button
-            class="icon-button"
-            :aria-label="`移除候选 ${lesson.course.name}`"
-            @click="toggleCandidate(lesson)"
-          >
-            <Trash2 :size="16" />
-          </button>
-        </div>
-        <p v-if="!planner.lessons.value.length" class="muted planner-note">
-          点击教学班旁的“候选”按钮，开始整理清单；加入后可在结果上方直接进入管理。
-        </p>
-        <template v-if="planner.lessons.value.length"
-          ><button
-            v-if="data"
-            class="text-button"
-            @click="planner.refresh(data)"
-          >
-            使用当前查询结果更新候选安排
-          </button>
-          <div
-            v-for="overlap in conflicts.overlaps"
-            :key="`${overlap.left.id}:${overlap.right.id}`"
-            class="notice error"
-          >
-            <AlertTriangle :size="18" />
-            <p>
-              公开安排存在时间重叠：{{ overlap.left.course.name }} 与
-              {{ overlap.right.course.name }}，第
-              {{ overlap.weeks.join("、") }} 周。
-            </p>
-          </div>
-          <p v-if="conflicts.unknown.length" class="notice warning">
-            无法判断完整冲突：{{
-              conflicts.unknown.map((l) => l.code).join("、")
-            }}。周课表仅展示其中已识别的时间。
-          </p>
-          <p
-            v-if="!conflicts.overlaps.length && !conflicts.unknown.length"
-            class="notice"
-          >
-            已识别的公开安排中未发现时间重叠。
-          </p>
-          <div class="ics-settings">
-            <div class="filter-field">
-              <label for="planner-start">第 1 教学周的周一日期</label
-              ><input id="planner-start" v-model="firstMonday" type="date" />
-            </div>
-            <div class="filter-field">
-              <label for="planner-layout">日历时间方式</label
-              ><select id="planner-layout" v-model="layout">
-                <option value="">全天提醒（含课节说明）</option>
-                <option value="1">课节表 1（第 1 节 07:50）</option>
-                <option value="2">课节表 2（第 1 节 08:00）</option>
-              </select>
-            </div>
-            <button
-              class="button secondary"
-              :disabled="!firstMonday"
-              @click="exportICS"
-            >
-              <Download :size="16" />导出 ICS
-            </button>
-          </div>
-          <details v-if="layout" class="period-preview">
-            <summary>核对所选课节表</summary>
-            <p v-for="(times, i) in periodLayouts[layout]" :key="i">
-              第 {{ i }} 节：{{ formatClock(clockMinutes(times[0])) }}–{{
-                formatClock(clockMinutes(times[1]))
-              }}
-            </p>
-          </details>
-          <p v-if="exportMessage" class="notice" role="status">
-            {{ exportMessage }}
-          </p></template
-        >
-      </section>
+      <PlannerPanel
+        ref="plannerPanel"
+        :planner="planner"
+        :data="data"
+        :semester="semester"
+        :conflicts="conflicts"
+        @results="showResults"
+        @detail="detailCode = $event"
+        @candidate="toggleCandidate"
+      />
     </div>
   </div>
+  <p v-if="compareMessage" class="notice" role="status">{{ compareMessage }}</p>
+  <LessonComparison
+    :lessons="compared"
+    :candidates="planner.lessons.value"
+    @remove="compare = compareCodes.filter((code) => code !== $event).join(',')"
+    @close="compare = ''"
+    @detail="detailCode = $event"
+  />
   <LessonDetailDialog
     :code="detailCode"
     :semester="semester"
