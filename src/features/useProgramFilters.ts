@@ -1,5 +1,6 @@
 import { computed, toValue, type MaybeRefOrGetter } from "vue";
 import type { ProgramSummary } from "../domain/models";
+import { programMatches } from "../domain/search";
 import { useFilter } from "./useFilters";
 
 export function useProgramFilters(
@@ -25,10 +26,7 @@ export function useProgramFilters(
   const filtered = computed(() =>
     source.value.filter(
       (p) =>
-        (!q.value ||
-          `${p.name} ${p.major} ${p.department}`
-            .toLowerCase()
-            .includes(q.value.toLowerCase())) &&
+        programMatches(p, q.value) &&
         (!dept.value || p.department === dept.value) &&
         (!type.value || p.trainType === type.value) &&
         (!grade.value || p.grade === grade.value),

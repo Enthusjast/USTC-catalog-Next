@@ -7,6 +7,7 @@ import { useFavorites } from "../features/useFavorites";
 import type { Course } from "../domain/models";
 import DisclosureDialog from "./DisclosureDialog.vue";
 import QueryState from "./QueryState.vue";
+import CourseContent from "./CourseContent.vue";
 import CourseRelations from "./CourseRelations.vue";
 const props = defineProps<{ code: string; initial?: Course }>();
 defineEmits<{ close: [] }>();
@@ -77,18 +78,7 @@ const course = computed(() => data.value?.[0] ?? props.initial);
         <dd>{{ course.language }}</dd>
       </div>
     </dl>
-    <section v-if="course?.description" class="detail-section">
-      <h3>课程说明</h3>
-      <p>{{ course.description }}</p>
-    </section>
-    <section v-if="course?.prerequisites" class="detail-section">
-      <h3>先修要求</h3>
-      <p>{{ course.prerequisites }}</p>
-    </section>
-    <section v-if="course?.references" class="detail-section">
-      <h3>参考资料</h3>
-      <p>{{ course.references }}</p>
-    </section>
+    <CourseContent :course="course" :loading="loading" />
     <p v-if="data && !data.length" class="notice">
       接口未提供该课程的详情。可通过课程目录和公开教学班继续查询。
     </p>

@@ -7,6 +7,14 @@ import { useQuery } from "../features/useQuery";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import EmptyState from "../components/EmptyState.vue";
+import {
+  courseMatches,
+  lessonMatches,
+  programMatches,
+  rankCourses,
+  rankLessons,
+  rankPrograms,
+} from "../domain/search";
 import CatalogSearch from "../components/CatalogSearch.vue";
 const q = useFilter("q"),
   keyword = useDebounced(q),
@@ -35,23 +43,23 @@ const lessons = useQuery(
   () => semester.value?.id,
   () => enabled.value && !!semester.value,
 );
+const courseResults = computed(() =>
+  rankCourses(
+    (courses.data.value ?? []).filter((c) => courseMatches(c, keyword.value)),
+    keyword.value,
+  ).slice(0, 6),
+);
 const planResults = computed(() =>
-  (programs.data.value ?? [])
-    .filter((p) =>
-      `${p.name} ${p.major} ${p.department} ${p.trainType}`
-        .toLowerCase()
-        .includes(keyword.value.toLowerCase()),
-    )
-    .slice(0, 6),
+  rankPrograms(
+    (programs.data.value ?? []).filter((p) => programMatches(p, keyword.value)),
+    keyword.value,
+  ).slice(0, 6),
 );
 const lessonResults = computed(() =>
-  (lessons.data.value ?? [])
-    .filter((l) =>
-      `${l.code} ${l.course.name} ${l.course.englishName ?? ""} ${l.department} ${l.teachers.join(" ")} ${l.schedule.text}`
-        .toLowerCase()
-        .includes(keyword.value.toLowerCase()),
-    )
-    .slice(0, 6),
+  rankLessons(
+    (lessons.data.value ?? []).filter((l) => lessonMatches(l, keyword.value)),
+    keyword.value,
+  ).slice(0, 6),
 );
 </script>
 <template>
@@ -77,7 +85,7 @@ const lessonResults = computed(() =>
           :meta="courses.meta.value"
           @retry="courses.reload"
         /><RouterLink
-          v-for="course in courses.data.value?.slice(0, 6)"
+          v-for="course in courseResults"
           :key="course.code"
           class="search-result-item"
           :to="{
@@ -124,7 +132,11 @@ const lessonResults = computed(() =>
           class="search-result-item"
           :to="{
             path: '/lessons',
-            query: { q: lesson.code, semester: semester?.id },
+            query: {
+              q: lesson.code,
+              semester: semester?.id,
+              lesson: lesson.code,
+            },
           }"
           ><span class="mono muted">{{ lesson.code }}</span
           ><strong>{{ lesson.course.name }}</strong

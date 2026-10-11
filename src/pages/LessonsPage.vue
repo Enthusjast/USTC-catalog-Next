@@ -2,8 +2,6 @@
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Plus,
-  Check,
   Trash2,
   Download,
   AlertTriangle,
@@ -11,9 +9,8 @@ import {
   CalendarDays,
   ClipboardList,
   ArrowDown,
-  ExternalLink,
 } from "@lucide/vue";
-import type { CourseTextbook, Lesson } from "../domain/models";
+import type { Lesson } from "../domain/models";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useSemester } from "../features/useSemester";
@@ -22,6 +19,12 @@ import { usePlanner } from "../features/usePlanner";
 import { usePagination } from "../features/usePagination";
 import { useFilterSummary } from "../features/useFilterSummary";
 import { useLessonFilterInfo } from "../features/useLessonFilterInfo";
+import {
+  matchesLessonFilters,
+  matchesOption,
+  missingValue,
+} from "../domain/lessonFilters";
+import { rankLessons } from "../domain/search";
 import { lessonConflicts, weekdays, formatClock } from "../domain/schedule";
 import { lessonCalendar, downloadCalendar } from "../domain/calendar";
 import { periodLayouts } from "../domain/periods";
@@ -31,9 +34,10 @@ import FilterPanel from "../components/FilterPanel.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
-import DisclosureDialog from "../components/DisclosureDialog.vue";
+import LessonDetailDialog from "../components/LessonDetailDialog.vue";
 import WeekTimetable from "../components/WeekTimetable.vue";
-import LessonSchedule from "../components/LessonSchedule.vue";
+import LessonFilterFields from "../components/LessonFilterFields.vue";
+import LessonList from "../components/LessonList.vue";
 import { clockMinutes } from "../domain/schedule";
 const router = useRouter(),
   semesterQuery = useSemester(),
@@ -82,10 +86,30 @@ watch(
   },
   { immediate: true },
 );
+const metadataOpen = ref(false);
+const baseFiltered = computed(() =>
+  (data.value ?? []).filter((l) =>
+    matchesLessonFilters(l, {
+      q: keyword.value,
+      dept: dept.value,
+      teacher: teacher.value,
+      day: day.value,
+      period: period.value,
+      location: location.value,
+      education: education.value,
+      type: type.value,
+      courseType: courseType.value,
+      category: category.value,
+      campus: campus.value,
+      language: language.value,
+      exam: examMode.value,
+    }),
+  ),
+);
 const lessonFilterInfo = useLessonFilterInfo(
   semester,
-  data,
-  () => advancedOpen.value || !!discipline.value || !!grading.value,
+  baseFiltered,
+  () => metadataOpen.value || !!discipline.value || !!grading.value,
 );
 const filterInfoByCode = computed(
   () =>
@@ -95,17 +119,10 @@ const filterInfoByCode = computed(
 );
 const metadataFiltersPending = computed(
   () =>
-    !!data.value?.length &&
+    !!baseFiltered.value.length &&
     !!(discipline.value || grading.value) &&
     !lessonFilterInfo.data.value,
 );
-const missingValue = "__missing__";
-function matchesOption(value: string | undefined, selected: string) {
-  return !selected || (selected === missingValue ? !value : value === selected);
-}
-function isDetailFilter(key: string) {
-  return key === "discipline" || key === "grading";
-}
 const planner = usePlanner(semester),
   conflicts = computed(() => lessonConflicts(planner.lessons.value));
 const candidateIds = computed(
@@ -131,12 +148,6 @@ function showResults() {
   resultsHeading.value?.scrollIntoView({ block: "start" });
   resultsHeading.value?.focus({ preventScroll: true });
 }
-const lessonInfo = useQuery(
-  (signal, force) =>
-    catalog.lessonDetails(detailCode.value, semester.value, { signal, force }),
-  () => `${semester.value}:${detailCode.value}`,
-  () => !!semester.value && !!detailCode.value,
-);
 const firstMonday = ref(""),
   layout = ref(""),
   exportMessage = ref("");
@@ -236,9 +247,7 @@ const options = (
 function detailOptions(field: "discipline" | "grading") {
   if (!lessonFilterInfo.data.value) return [];
   return distinctOptions(
-    (data.value ?? []).map(
-      (lesson) => filterInfoByCode.value.get(lesson.code)?.[field],
-    ),
+    (lessonFilterInfo.data.value ?? []).map((info) => info[field]),
     true,
   );
 }
@@ -289,28 +298,9 @@ const advanced = computed(() => [
   },
 ]);
 const filtered = computed(() =>
-  (metadataFiltersPending.value ? [] : (data.value ?? []))
+  (metadataFiltersPending.value ? [] : baseFiltered.value)
     .filter(
       (l) =>
-        (!keyword.value ||
-          `${l.code} ${l.course.code} ${l.course.name} ${l.course.englishName ?? ""} ${l.teachers.join(" ")} ${l.department} ${l.schedule.text}`
-            .toLowerCase()
-            .includes(keyword.value.toLowerCase())) &&
-        (!dept.value ||
-          l.department === dept.value ||
-          l.departmentCode === dept.value) &&
-        (!teacher.value || l.teachers.some((t) => t.includes(teacher.value))) &&
-        ((!day.value && !period.value) ||
-          l.schedule.slots.some(
-            (s) =>
-              (!day.value || s.day === Number(day.value)) &&
-              (!period.value || s.periods.includes(Number(period.value))),
-          )) &&
-        (!location.value || l.schedule.text.includes(location.value)) &&
-        (!education.value || l.education === education.value) &&
-        (!type.value || l.classType === type.value) &&
-        matchesOption(l.courseType, courseType.value) &&
-        (!category.value || l.category === category.value) &&
         matchesOption(
           filterInfoByCode.value.get(l.code)?.discipline,
           discipline.value,
@@ -318,26 +308,28 @@ const filtered = computed(() =>
         matchesOption(
           filterInfoByCode.value.get(l.code)?.grading,
           grading.value,
-        ) &&
-        matchesOption(l.campus, campus.value) &&
-        (!language.value || l.language === language.value) &&
-        (!examMode.value || l.examMode === examMode.value),
+        ),
     )
-    .sort((a, b) =>
-      (sort.value === "name"
-        ? a.course.name
-        : sort.value === "department"
-          ? a.department
-          : a.code
-      ).localeCompare(
-        sort.value === "name"
-          ? b.course.name
+    .sort(
+      (a, b) =>
+        (keyword.value.trim() && sort.value === "code"
+          ? rankLessons([a, b], keyword.value).findIndex((l) => l === a) -
+            rankLessons([a, b], keyword.value).findIndex((l) => l === b)
+          : 0) ||
+        (sort.value === "name"
+          ? a.course.name
           : sort.value === "department"
-            ? b.department
-            : b.code,
-        "zh-CN",
-        { numeric: true },
-      ),
+            ? a.department
+            : a.code
+        ).localeCompare(
+          sort.value === "name"
+            ? b.course.name
+            : sort.value === "department"
+              ? b.department
+              : b.code,
+          "zh-CN",
+          { numeric: true },
+        ),
     ),
 );
 const { page, visible, change } = usePagination(filtered);
@@ -346,30 +338,6 @@ const detail = computed(
     data.value?.find((l) => l.code === detailCode.value) ??
     planner.lessons.value.find((l) => l.code === detailCode.value),
 );
-const detailCourse = computed(() =>
-  lessonInfo.data.value?.find((course) => course.code === detailCode.value),
-);
-const additionalCourseFields = computed(() => [
-  {
-    label: "课程类型",
-    value: detailCourse.value?.courseType ?? detail.value?.courseType,
-  },
-  {
-    label: "课程范畴",
-    value: detailCourse.value?.category ?? detail.value?.category,
-  },
-  { label: "学科类别", value: detailCourse.value?.discipline },
-  { label: "评分制", value: detailCourse.value?.grading },
-]);
-function textbookFields(book: CourseTextbook) {
-  return [
-    { label: "作者", value: book.author },
-    { label: "出版社", value: book.publisher },
-    { label: "版次", value: book.edition },
-    { label: "出版日期", value: book.publicationDate },
-    { label: "ISBN", value: book.isbn },
-  ].filter((field) => !!field.value);
-}
 const currentWeek = computed(() =>
   Math.min(53, Math.max(1, Number(week.value) || 1)),
 );
@@ -473,39 +441,30 @@ function exportICS() {
             placeholder="教室或楼宇"
           />
         </div>
-        <div v-for="field in advanced" :key="field.key" class="filter-field">
-          <label :for="`lesson-${field.key}`">{{ field.label }}</label
-          ><select
-            :id="`lesson-${field.key}`"
-            :value="field.model.value"
-            :disabled="
-              isDetailFilter(field.key) && !lessonFilterInfo.data.value
-            "
-            :aria-busy="
-              isDetailFilter(field.key) && lessonFilterInfo.loading.value
-            "
-            @change="
-              field.model.value = ($event.target as HTMLSelectElement).value
-            "
-          >
-            <option value="">
-              {{
-                isDetailFilter(field.key) && lessonFilterInfo.loading.value
-                  ? "正在读取…"
-                  : "不限"
-              }}
-            </option>
-            <option v-for="value in field.values" :key="value" :value="value">
-              {{ value === missingValue ? "未提供" : value }}
-            </option>
-          </select>
-        </div>
-        <QueryState
-          v-if="!metadataFiltersPending"
-          :loading="lessonFilterInfo.loading.value"
-          :error="lessonFilterInfo.error.value"
-          @retry="lessonFilterInfo.reload"
+        <LessonFilterFields
+          :fields="
+            advanced.filter((f) => !['discipline', 'grading'].includes(f.key))
+          "
         />
+        <details
+          :open="metadataOpen || !!discipline || !!grading"
+          @toggle="metadataOpen = ($event.target as HTMLDetailsElement).open"
+        >
+          <summary>学科与评分制</summary>
+          <LessonFilterFields
+            :fields="
+              advanced.filter((f) => ['discipline', 'grading'].includes(f.key))
+            "
+            :disabled="!lessonFilterInfo.data.value"
+            :busy="lessonFilterInfo.loading.value"
+          />
+          <QueryState
+            v-if="!metadataFiltersPending"
+            :loading="lessonFilterInfo.loading.value"
+            :error="lessonFilterInfo.error.value"
+            @retry="lessonFilterInfo.reload"
+          />
+        </details>
       </details>
       <button class="text-button" @click="reset">清除筛选</button></FilterPanel
     >
@@ -593,71 +552,11 @@ function exportICS() {
           </div>
         </div>
         <template v-if="view === 'list'"
-          ><div v-if="visible.length" class="table-scroll">
-            <table class="lesson-table">
-              <thead>
-                <tr>
-                  <th>课程 / 教学班</th>
-                  <th>教师与院系</th>
-                  <th>时间与地点</th>
-                  <th>人数 / 容量</th>
-                  <th>候选</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="lesson in visible"
-                  :key="lesson.id"
-                  :class="{ 'is-candidate': candidateIds.has(lesson.id) }"
-                >
-                  <td>
-                    <span class="course-code mono">{{ lesson.code }}</span
-                    ><button
-                      class="course-name"
-                      @click="detailCode = lesson.code"
-                    >
-                      {{ lesson.course.name }}
-                    </button>
-                    <p class="course-en">
-                      {{ lesson.credits ?? "未提供" }} 学分 ·
-                      {{ lesson.hours ?? "未提供" }} 学时
-                    </p>
-                  </td>
-                  <td>
-                    <span
-                      ><span class="lesson-mobile-label">教师：</span
-                      >{{ lesson.teachers.join("、") || "未提供" }}</span
-                    >
-                    <p class="course-en">{{ lesson.department }}</p>
-                  </td>
-                  <td>
-                    <LessonSchedule :schedule="lesson.schedule" />
-                  </td>
-                  <td>
-                    <span class="lesson-mobile-label">公开人数 / 容量：</span
-                    >{{ lesson.count ?? "未提供" }} /
-                    {{ lesson.capacity ?? "未提供" }}
-                  </td>
-                  <td>
-                    <button
-                      class="button secondary small candidate-button"
-                      :class="{ 'is-selected': candidateIds.has(lesson.id) }"
-                      :aria-label="`${candidateIds.has(lesson.id) ? '移除' : '加入'} ${lesson.course.name} 候选清单`"
-                      :aria-pressed="candidateIds.has(lesson.id)"
-                      @click="toggleCandidate(lesson)"
-                    >
-                      <Check
-                        v-if="candidateIds.has(lesson.id)"
-                        :size="18"
-                      /><Plus v-else :size="18" />{{
-                        candidateIds.has(lesson.id) ? "已加入" : "候选"
-                      }}
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          ><LessonList
+            :lessons="visible"
+            :candidate-ids="candidateIds"
+            @detail="detailCode = $event"
+            @candidate="toggleCandidate" />
           <EmptyState
             v-if="data && !metadataFiltersPending && !filtered.length"
             message="尝试切换学期、修改关键词或清除时间与院系筛选。"
@@ -805,168 +704,12 @@ function exportICS() {
       </section>
     </div>
   </div>
-  <DisclosureDialog
-    :open="!!detailCode"
-    title="公开教学班详情"
+  <LessonDetailDialog
+    :code="detailCode"
+    :semester="semester"
+    :detail="detail"
+    :selected="!!detail && candidateIds.has(detail.id)"
     @close="detailCode = ''"
-    ><template v-if="detail"
-      ><QueryState
-        :loading="lessonInfo.loading.value"
-        :error="lessonInfo.error.value"
-        :meta="lessonInfo.meta.value"
-        @retry="lessonInfo.reload"
-      /><span class="mono muted">{{ detail.code }}</span>
-      <div class="detail-title">
-        <h3>{{ detail.course.name }}</h3>
-        <p>{{ detailCourse?.englishName ?? detail.course.englishName }}</p>
-      </div>
-      <dl class="detail-grid">
-        <div>
-          <dt>教师</dt>
-          <dd>{{ detail.teachers.join("、") || "未提供" }}</dd>
-        </div>
-        <div>
-          <dt>开课院系</dt>
-          <dd>{{ detail.department }}</dd>
-        </div>
-        <div>
-          <dt>课程编号</dt>
-          <dd class="mono">{{ detail.course.code }}</dd>
-        </div>
-        <div>
-          <dt>学分 / 学时</dt>
-          <dd>
-            {{ detailCourse?.credits ?? detail.credits ?? "未提供" }} /
-            {{ detailCourse?.hours ?? detail.hours ?? "未提供" }}
-          </dd>
-        </div>
-        <div>
-          <dt>学历层次</dt>
-          <dd>{{ detail.education ?? "未提供" }}</dd>
-        </div>
-        <div>
-          <dt>课堂类型</dt>
-          <dd>{{ detail.classType ?? "未提供" }}</dd>
-        </div>
-        <div v-for="field in additionalCourseFields" :key="field.label">
-          <dt>{{ field.label }}</dt>
-          <dd>
-            {{
-              field.value ?? (lessonInfo.loading.value ? "正在读取…" : "未提供")
-            }}
-          </dd>
-        </div>
-        <div>
-          <dt>授课语言</dt>
-          <dd>{{ detailCourse?.language ?? detail.language ?? "未提供" }}</dd>
-        </div>
-        <div>
-          <dt>考核方式</dt>
-          <dd>{{ detailCourse?.examMode ?? detail.examMode ?? "未提供" }}</dd>
-        </div>
-        <div>
-          <dt>开课校区</dt>
-          <dd>{{ detail.campus ?? "未提供" }}</dd>
-        </div>
-        <div>
-          <dt>选课人数 / 上限</dt>
-          <dd>
-            {{ detail.count ?? "未提供" }} / {{ detail.capacity ?? "未提供" }}
-          </dd>
-        </div>
-      </dl>
-      <section class="detail-section">
-        <h3>原始公开时间安排</h3>
-        <p>{{ detail.schedule.text || "未提供" }}</p>
-      </section>
-      <p v-if="detail.schedule.unknown" class="notice warning">
-        部分时间无法识别，完整冲突状态未知。
-      </p>
-      <div v-if="!lessonInfo.loading.value" class="lesson-course-details">
-        <section class="detail-section">
-          <h3>预修要求</h3>
-          <p>{{ detailCourse?.prerequisites ?? "未提供" }}</p>
-        </section>
-        <section class="detail-section">
-          <h3>教材</h3>
-          <p v-if="detailCourse?.textbook">{{ detailCourse.textbook }}</p>
-          <ul
-            v-if="detailCourse?.textbooks?.length"
-            class="lesson-textbook-list"
-          >
-            <li v-for="(book, index) in detailCourse.textbooks" :key="index">
-              <h4>{{ book.name ?? book.englishName ?? "未提供书名" }}</h4>
-              <p v-if="book.name && book.englishName" lang="en">
-                {{ book.englishName }}
-              </p>
-              <dl
-                v-if="textbookFields(book).length"
-                class="lesson-textbook-fields"
-              >
-                <div v-for="field in textbookFields(book)" :key="field.label">
-                  <dt>{{ field.label }}</dt>
-                  <dd>{{ field.value }}</dd>
-                </div>
-              </dl>
-              <div v-if="book.isbn" class="lesson-textbook-actions">
-                <a
-                  class="button small secondary"
-                  :href="`http://opac.lib.ustc.edu.cn/opac/openlink.php?t=isbn&q=${encodeURIComponent(book.isbn)}`"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="图书馆馆藏检索"
-                  :aria-label="`${book.name ?? book.englishName ?? '教材'}：OPAC 图书馆馆藏查询（新窗口打开）`"
-                  >OPAC<ExternalLink :size="14" aria-hidden="true" />
-                </a>
-                <a
-                  class="button small secondary"
-                  :href="`https://book.douban.com/isbn/${encodeURIComponent(book.isbn)}/`"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="豆瓣检索"
-                  :aria-label="`${book.name ?? book.englishName ?? '教材'}：豆瓣查询（新窗口打开）`"
-                  >豆瓣<ExternalLink :size="14" aria-hidden="true" />
-                </a>
-              </div>
-            </li>
-          </ul>
-          <p v-else-if="!detailCourse?.textbook">未提供</p>
-        </section>
-        <section class="detail-section">
-          <h3>参考书</h3>
-          <p>{{ detailCourse?.references ?? "未提供" }}</p>
-        </section>
-        <section class="detail-section">
-          <h3>中文简介</h3>
-          <p>{{ detailCourse?.description ?? "未提供" }}</p>
-        </section>
-        <section class="detail-section">
-          <h3>英文简介</h3>
-          <p :lang="detailCourse?.englishDescription ? 'en' : undefined">
-            {{ detailCourse?.englishDescription ?? "未提供" }}
-          </p>
-        </section>
-      </div>
-      <div class="flex-actions">
-        <button class="button" @click="toggleCandidate(detail)">
-          {{
-            planner.lessons.value.some((l) => l.id === detail!.id)
-              ? "移除候选"
-              : "加入候选清单"
-          }}</button
-        ><RouterLink
-          class="button secondary"
-          :to="{
-            path: '/courses',
-            query: {
-              q: detail.course.code,
-              course: detail.course.code,
-              history: '1',
-            },
-          }"
-          >查看课程详情</RouterLink
-        >
-      </div></template
-    ><EmptyState v-else title="未找到该教学班" message="请确认学期和教学班号。"
-  /></DisclosureDialog>
+    @candidate="toggleCandidate"
+  />
 </template>

@@ -14,6 +14,7 @@ import { examConflicts } from "../domain/examConflicts";
 import { examCalendar, downloadCalendar } from "../domain/calendar";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
+import FilterPanel from "../components/FilterPanel.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
@@ -155,7 +156,12 @@ function exportICS() {
       通识类考试
     </button>
   </nav>
-  <div class="panel inline-filters">
+  <FilterPanel
+    layout="inline"
+    :active-count="filterSummary.count.value"
+    :result-count="data ? filtered.length : undefined"
+    result-label="场考试"
+  >
     <div class="filter-field">
       <label for="exam-q">课程名称或编号</label
       ><input id="exam-q" v-model="q" type="search" placeholder="课程关键词" />
@@ -176,7 +182,7 @@ function exportICS() {
       ><input id="exam-room" v-model="room" placeholder="教室编号" />
     </div>
     <button class="text-button" @click="reset">清除筛选</button>
-  </div>
+  </FilterPanel>
   <label class="checkbox-label"
     ><input
       type="checkbox"

@@ -9,6 +9,7 @@ import { useFilter, useDebounced } from "../features/useFilters";
 import { useFavorites } from "../features/useFavorites";
 import { useFilterSummary } from "../features/useFilterSummary";
 import { publicCourseCatalogues } from "../domain/courseCatalog";
+import { courseMatches, rankCourses } from "../domain/search";
 import { usePagination } from "../features/usePagination";
 import PageHeading from "../components/PageHeading.vue";
 import FilterPanel from "../components/FilterPanel.vue";
@@ -98,11 +99,7 @@ const filtered = computed(() =>
     .filter(
       (c) =>
         (history.value === "1" || c.valid !== false) &&
-        (!keyword.value.trim() ||
-          (scope.value === "search" && !selectedDepartment.value) ||
-          `${c.code} ${c.name} ${c.englishName ?? ""} ${c.department ?? ""}`
-            .toLowerCase()
-            .includes(keyword.value.trim().toLowerCase())) &&
+        courseMatches(c, keyword.value) &&
         (!selectedDepartment.value ||
           scope.value === "search" ||
           flattenDepartments([selectedDepartment.value]).some(
@@ -112,25 +109,30 @@ const filtered = computed(() =>
           category.value === (c.classification ?? c.category)) &&
         (saved.value !== "1" || favorites.value.includes(c.code)),
     )
-    .sort((a, b) =>
-      (sort.value === "name"
-        ? a.name
-        : sort.value === "department"
-          ? scope.value === "public"
-            ? (a.category ?? "")
-            : (a.department ?? "")
-          : a.code
-      ).localeCompare(
-        sort.value === "name"
-          ? b.name
+    .sort(
+      (a, b) =>
+        (keyword.value.trim() && sort.value === "code"
+          ? rankCourses([a, b], keyword.value).findIndex((c) => c === a) -
+            rankCourses([a, b], keyword.value).findIndex((c) => c === b)
+          : 0) ||
+        (sort.value === "name"
+          ? a.name
           : sort.value === "department"
             ? scope.value === "public"
-              ? (b.category ?? "")
-              : (b.department ?? "")
-            : b.code,
-        "zh-CN",
-        { numeric: true },
-      ),
+              ? (a.category ?? "")
+              : (a.department ?? "")
+            : a.code
+        ).localeCompare(
+          sort.value === "name"
+            ? b.name
+            : sort.value === "department"
+              ? scope.value === "public"
+                ? (b.category ?? "")
+                : (b.department ?? "")
+              : b.code,
+          "zh-CN",
+          { numeric: true },
+        ),
     ),
 );
 const filterSummary = useFilterSummary({
