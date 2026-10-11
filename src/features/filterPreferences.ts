@@ -26,6 +26,9 @@ const fields: Record<string, string[]> = {
     "view",
     "week",
     "semester",
+    "source",
+    "ttMode",
+    "ttDay",
   ],
   "/exams": [
     "kind",

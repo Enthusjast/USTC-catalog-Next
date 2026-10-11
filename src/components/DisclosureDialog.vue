@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, watch } from "vue";
+import { onMounted, onBeforeUnmount, ref, watch, useId } from "vue";
 import { X } from "@lucide/vue";
 const props = defineProps<{ open: boolean; title: string }>();
 const emit = defineEmits<{ close: [] }>();
-const dialog = ref<HTMLDialogElement>();
+const dialog = ref<HTMLDialogElement>(),
+  titleId = useId();
 let previous: HTMLElement | null = null;
 function sync(open: boolean) {
   if (open && !dialog.value?.open) {
@@ -25,7 +26,7 @@ onBeforeUnmount(() => {
   <dialog
     ref="dialog"
     class="detail-dialog"
-    aria-labelledby="dialog-title"
+    :aria-labelledby="titleId"
     @cancel.prevent="emit('close')"
     @click="
       (event) => {
@@ -34,7 +35,7 @@ onBeforeUnmount(() => {
     "
   >
     <header>
-      <h2 id="dialog-title">{{ title }}</h2>
+      <h2 :id="titleId">{{ title }}</h2>
       <button class="icon-button" aria-label="关闭详情" @click="emit('close')">
         <X :size="20" />
       </button>

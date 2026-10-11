@@ -24,6 +24,8 @@ import FilterPanel from "../components/FilterPanel.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
+import TimetableExport from "../components/TimetableExport.vue";
+import SchemeSelector from "../components/SchemeSelector.vue";
 import PlannerPanel from "../components/PlannerPanel.vue";
 import LessonComparison from "../components/LessonComparison.vue";
 import LessonDetailDialog from "../components/LessonDetailDialog.vue";
@@ -53,7 +55,10 @@ const q = useFilter("q"),
   week = useFilter("week", "1"),
   detailCode = useFilter("lesson"),
   sort = useFilter("sort", "code"),
-  compare = useFilter("compare");
+  compare = useFilter("compare"),
+  timetableSource = useFilter("source", "candidates"),
+  timetableMode = useFilter("ttMode", "week"),
+  timetableDay = useFilter("ttDay", "1");
 const { data, meta, loading, error, reload } = useQuery(
   (signal, force) => catalog.lessons(semester.value, { signal, force }),
   semester,
@@ -358,13 +363,35 @@ function toggleCompare(lesson: Lesson) {
   compareMessage.value = "";
   compare.value = [...compareCodes.value, lesson.code].join(",");
 }
+const timetableLessons = computed(() =>
+  timetableSource.value === "results" ? filtered.value : planner.lessons.value,
+);
+const timetableExportData = computed(() => ({
+  lessons: timetableLessons.value,
+  week: currentWeek.value,
+  mode: timetableMode.value === "day" ? ("day" as const) : ("week" as const),
+  day: Math.min(7, Math.max(1, Number(timetableDay.value) || 1)),
+  title:
+    timetableSource.value === "results"
+      ? teacher.value
+        ? `${teacher.value}的查询课表`
+        : "查询结果课表"
+      : (planner.active.value?.name ?? "默认方案"),
+}));
 const currentWeek = computed(() =>
   Math.min(53, Math.max(1, Number(week.value) || 1)),
 );
 function reset() {
   void router.replace({
     path: "/lessons",
-    query: { semester: semester.value, view: view.value, week: week.value },
+    query: {
+      semester: semester.value,
+      view: view.value,
+      week: week.value,
+      source: timetableSource.value,
+      ttMode: timetableMode.value,
+      ttDay: timetableDay.value,
+    },
   });
 }
 </script>
@@ -552,7 +579,7 @@ function reset() {
                 :aria-pressed="view === 'week'"
                 @click="view = 'week'"
               >
-                <CalendarDays :size="15" />候选周课表
+                <CalendarDays :size="15" />周课表
               </button>
             </div>
           </div>
@@ -593,17 +620,52 @@ function reset() {
                 >Raymond 的排课工具</a
               >
             </p>
-            <span class="muted">显示本机候选清单中已识别的安排</span>
+            <label for="timetable-source">课表来源</label
+            ><select
+              id="timetable-source"
+              v-model="timetableSource"
+              class="field-input"
+            >
+              <option value="candidates">候选方案</option>
+              <option value="results">查询结果</option>
+            </select>
+            <label for="timetable-mode">视图</label
+            ><select
+              id="timetable-mode"
+              v-model="timetableMode"
+              class="field-input"
+            >
+              <option value="week">完整周</option>
+              <option value="day">单日</option>
+            </select>
+            <select
+              v-if="timetableMode === 'day'"
+              v-model="timetableDay"
+              class="field-input"
+              aria-label="课表星期"
+            >
+              <option
+                v-for="(d, i) in weekdays"
+                :key="d"
+                :value="String(i + 1)"
+              >
+                周{{ d }}
+              </option>
+            </select>
           </div>
+          <SchemeSelector
+            v-if="timetableSource !== 'results'"
+            :planner="planner"
+          />
+          <TimetableExport :data="timetableExportData" />
           <WeekTimetable
-            v-if="planner.lessons.value.length"
-            :lessons="planner.lessons.value"
+            :lessons="timetableLessons"
             :week="currentWeek"
-            @select="detailCode = $event" /><EmptyState
-            v-else
-            title="先加入候选教学班"
-            message="在查询列表中选择教学班，再切换到周课表。"
-        /></template>
+            :mode="timetableExportData.mode"
+            :day="timetableExportData.day"
+            @select="detailCode = $event"
+          />
+        </template>
       </div>
       <PlannerPanel
         ref="plannerPanel"
