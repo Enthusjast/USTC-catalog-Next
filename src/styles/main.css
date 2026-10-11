@@ -2126,6 +2126,11 @@ tbody tr:hover {
 .week-controls > span {
   font-size: 12px;
 }
+.week-planner-link a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .timetable table {
   table-layout: fixed;
   min-width: 780px;

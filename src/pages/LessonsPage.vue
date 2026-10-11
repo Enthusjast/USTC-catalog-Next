@@ -674,15 +674,18 @@ function exportICS() {
             ><select id="planner-week" v-model="week" class="field-input">
               <option v-for="w in 53" :key="w" :value="String(w)">
                 第 {{ w }} 周
-              </option></select
-            ><a
-              class="button secondary small"
-              href="https://class-arrange.raymondzylei.me/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="详细课程安排（新窗口打开）"
-              >详细课程安排<ExternalLink :size="14" aria-hidden="true" />
-            </a>
+              </option>
+            </select>
+            <p class="week-planner-link">
+              欲进行详细排课, 请前往
+              <a
+                href="https://class-arrange.raymondzylei.me/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Raymond 的排课工具（新窗口打开）"
+                >Raymond 的排课工具</a
+              >
+            </p>
             <span class="muted">显示本机候选清单中已识别的安排</span>
           </div>
           <WeekTimetable
