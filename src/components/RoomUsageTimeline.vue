@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 import { ClockAlert } from "@lucide/vue";
 import type { RoomSummary } from "../domain/roomAvailability";
 import { roomKey, usageTypes } from "../domain/roomAvailability";
-import { formatClock } from "../domain/schedule";
+import { formatClock, weekdays } from "../domain/schedule";
 import {
   hasUsageTime,
   classroomDay,
@@ -24,6 +24,10 @@ const emit = defineEmits<{
     anchor: HTMLElement,
   ];
 }>();
+function weekday(date: string) {
+  const day = new Date(`${date}T12:00:00Z`).getUTCDay();
+  return `周${weekdays[(day + 6) % 7]}`;
+}
 function selectUsage(
   room: RoomSummary,
   record: RoomSummary["records"][number],
@@ -88,19 +92,25 @@ watch(
             <button
               type="button"
               class="room-label"
-              :aria-label="`查看 ${column.date ? column.date + ' · ' : ''}${column.room.room} 全天记录，共 ${column.room.records.length} 条${column.unplotted ? `，其中 ${column.unplotted} 项时刻未知或在教学日显示范围外` : ''}`"
+              :class="{ 'has-weekday': !!column.date }"
+              :aria-label="`查看 ${column.date ? column.date + ' · ' + weekday(column.date) + ' · ' : ''}${column.room.room} 全天记录，共 ${column.room.records.length} 条${column.unplotted ? `，其中 ${column.unplotted} 项时刻未知或在教学日显示范围外` : ''}`"
               @click="$emit('select', column.room, column.date)"
             >
-              <strong class="mono">{{
-                column.date ? column.date.slice(5) : column.room.room
-              }}</strong>
-              <span
-                v-if="column.unplotted"
-                class="room-unplotted-indicator"
-                :title="`${column.unplotted} 项时刻未知或在教学日显示范围外，点击教室查看完整记录`"
-                aria-hidden="true"
-              >
-                <ClockAlert :size="13" />
+              <span v-if="column.date" class="room-weekday">{{
+                weekday(column.date)
+              }}</span>
+              <span class="room-date-line">
+                <strong class="mono">{{
+                  column.date ? column.date.slice(5) : column.room.room
+                }}</strong>
+                <span
+                  v-if="column.unplotted"
+                  class="room-unplotted-indicator"
+                  :title="`${column.unplotted} 项时刻未知或在教学日显示范围外，点击教室查看完整记录`"
+                  aria-hidden="true"
+                >
+                  <ClockAlert :size="13" />
+                </span>
               </span>
             </button>
           </div>
@@ -141,3 +151,25 @@ watch(
     </div>
   </figure>
 </template>
+<style scoped>
+.room-label.has-weekday {
+  flex-direction: column;
+  gap: 0;
+}
+.room-weekday {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+.room-date-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.has-weekday .room-date-line {
+  line-height: 18px;
+}
+</style>
