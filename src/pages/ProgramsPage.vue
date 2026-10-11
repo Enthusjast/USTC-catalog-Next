@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { ArrowRight, ArrowLeftRight } from "@lucide/vue";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
-import { useFilter } from "../features/useFilters";
+import { useProgramFilters } from "../features/useProgramFilters";
 import { usePagination } from "../features/usePagination";
 import { useFilterSummary } from "../features/useFilterSummary";
 import PageHeading from "../components/PageHeading.vue";
@@ -14,11 +13,12 @@ import FilterSummary from "../components/FilterSummary.vue";
 import ProgramCollectionTabs from "../components/ProgramCollectionTabs.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
-const router = useRouter(),
-  q = useFilter("q"),
-  dept = useFilter("dept"),
-  type = useFilter("type"),
-  grade = useFilter("grade");
+const router = useRouter();
+const { data, meta, loading, error, reload } = useQuery((signal, force) =>
+  catalog.programs({ signal, force }),
+);
+const { q, dept, type, grade, departments, types, grades, filtered } =
+  useProgramFilters(data);
 const filterSummary = useFilterSummary({
   q: { label: "关键词", model: q },
   type: { label: "培养类型", model: type },
@@ -29,28 +29,6 @@ const filterSummary = useFilterSummary({
     display: () => `${grade.value} 级`,
   },
 });
-const { data, meta, loading, error, reload } = useQuery((signal, force) =>
-  catalog.programs({ signal, force }),
-);
-const departments = computed(() => [
-  ...new Set(data.value?.map((p) => p.department)),
-]);
-const types = computed(() => [...new Set(data.value?.map((p) => p.trainType))]);
-const grades = computed(() =>
-  [...new Set(data.value?.map((p) => p.grade))].sort().reverse(),
-);
-const filtered = computed(() =>
-  (data.value ?? []).filter(
-    (p) =>
-      (!q.value ||
-        `${p.name} ${p.major} ${p.department}`
-          .toLowerCase()
-          .includes(q.value.toLowerCase())) &&
-      (!dept.value || p.department === dept.value) &&
-      (!type.value || p.trainType === type.value) &&
-      (!grade.value || p.grade === grade.value),
-  ),
-);
 const { page, visible, change } = usePagination(filtered, 12);
 function clear() {
   void router.replace({ path: "/programs", query: {} });

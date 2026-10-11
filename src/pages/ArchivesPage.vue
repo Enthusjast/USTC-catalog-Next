@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowUpRight, Archive, ArrowRight } from "@lucide/vue";
+import { ArrowUpRight, ArrowRight } from "@lucide/vue";
 import { archives } from "../api/archives";
 import { useQuery } from "../features/useQuery";
 import { useFilter } from "../features/useFilters";
@@ -53,10 +53,7 @@ function reset() {
 }
 </script>
 <template>
-  <PageHeading
-    title="历史培养方案归档"
-    description="浏览 2013 级静态方案的正文与课程表，查阅历年官方 PDF 附件。历史资料的版本不代表当前安排。"
-    eyebrow="ARCHIVES / 历史资料"
+  <PageHeading title="历史培养方案归档"
     ><a
       class="button secondary"
       href="https://www.teach.ustc.edu.cn/education/241.html"
@@ -65,13 +62,6 @@ function reset() {
       >官方历史归档<ArrowUpRight :size="16" /></a
   ></PageHeading>
   <ProgramCollectionTabs current="archives" />
-  <div class="notice">
-    <Archive :size="19" />
-    <p>
-      本页资料依据原站明确标注的 2013
-      级目录归档。课程表保留原表的列、合并单元格与备注；完整正文从官方静态文档阅读区打开。
-    </p>
-  </div>
   <QueryState :loading="loading" :error="error" :meta="meta" @retry="reload" />
   <div class="query-layout">
     <FilterPanel
@@ -169,9 +159,6 @@ function reset() {
         >官方归档来源<ArrowUpRight :size="14"
       /></a>
     </div>
-    <p class="muted">
-      版本标识来自官方归档表；链接指向原始 PDF 或官方专业设置页。
-    </p>
     <div class="table-scroll">
       <table>
         <thead>

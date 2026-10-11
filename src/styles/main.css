@@ -3149,6 +3149,52 @@ tbody tr:hover {
 .module-content > p {
   font-size: 13px;
 }
+.program-compare-selectors {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.program-compare-selector {
+  min-width: 0;
+  padding: 16px;
+}
+.program-compare-selector-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.program-compare-selector-heading h2 {
+  font-size: 18px;
+}
+.program-compare-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.program-compare-fields .filter-field {
+  min-width: 0;
+  margin: 0;
+}
+.program-compare-fields input,
+.program-compare-fields select {
+  min-width: 0;
+}
+.program-compare-plan-field {
+  grid-column: 1 / -1;
+}
+.program-compare-empty {
+  margin-top: 12px;
+  font-size: 13px;
+}
+@media (min-width: 768px) {
+  .program-compare-selectors {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .compare-section {
   padding: 24px;
   margin-bottom: 20px;
