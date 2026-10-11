@@ -194,8 +194,7 @@ function reset() {
   });
 }
 const pageElement = ref<HTMLElement>(),
-  dateControls = ref<HTMLElement>(),
-  jumpControls = ref<HTMLElement>();
+  dateControls = ref<HTMLElement>();
 const navigationStyle = ref<Record<string, string>>({});
 let resize: ResizeObserver | undefined;
 onMounted(() => {
@@ -204,21 +203,18 @@ onMounted(() => {
     navigationStyle.value = {
       "--room-header-height": `${header?.offsetHeight ?? 64}px`,
       "--room-date-height": `${dateControls.value?.offsetHeight ?? 44}px`,
-      "--room-jump-height": `${jumpControls.value?.offsetHeight ?? 44}px`,
     };
   };
   resize = new ResizeObserver(measure);
   watch(
-    [dateControls, jumpControls],
-    () => {
-      [dateControls.value, jumpControls.value].forEach((el) => {
-        if (el) resize!.observe(el);
-      });
+    dateControls,
+    (element) => {
+      if (element) resize!.observe(element);
       measure();
     },
     { flush: "post" },
   );
-  [header, dateControls.value, jumpControls.value].forEach((el) => {
+  [header, dateControls.value].forEach((el) => {
     if (el) resize!.observe(el);
   });
   measure();
@@ -353,7 +349,6 @@ useClassroomPositions(
     />
     <div
       v-if="validDate && buildingGroups.length"
-      ref="jumpControls"
       class="room-building-controls panel"
     >
       <label for="room-building-jump">跳转楼栋</label>
@@ -491,17 +486,9 @@ useClassroomPositions(
 .room-date-controls .flex-actions {
   gap: 8px;
 }
-.room-building-controls {
-  position: sticky;
-  top: calc(
-    var(--room-header-height, 64px) + var(--room-date-height, 60px) + 16px
-  );
-  z-index: 4;
-}
 .room-building-section {
   scroll-margin-top: calc(
-    var(--room-header-height, 64px) + var(--room-date-height, 60px) +
-      var(--room-jump-height, 60px) + 32px
+    var(--room-header-height, 64px) + var(--room-date-height, 60px) + 24px
   );
 }
 </style>
