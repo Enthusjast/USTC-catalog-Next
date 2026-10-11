@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useFilter } from "../features/useFilters";
+import { exportProgramComparison } from "../domain/tableExports";
 import { comparePrograms } from "../domain/programCompare";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
@@ -29,7 +30,15 @@ const comparison = computed(() =>
 );
 </script>
 <template>
-  <PageHeading title="培养计划对比" /><QueryState
+  <PageHeading title="培养计划对比"
+    ><button
+      class="button secondary"
+      :disabled="!comparison"
+      @click="exportProgramComparison(before.data.value!, after.data.value!)"
+    >
+      导出 CSV
+    </button></PageHeading
+  ><QueryState
     :loading="tree.loading.value"
     :error="tree.error.value"
     :meta="tree.meta.value"

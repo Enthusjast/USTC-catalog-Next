@@ -16,6 +16,7 @@ import {
   matchesOption,
   missingValue,
 } from "../domain/lessonFilters";
+import { exportLessons } from "../domain/tableExports";
 import { rankLessons } from "../domain/search";
 import { lessonConflicts, weekdays } from "../domain/schedule";
 import PageHeading from "../components/PageHeading.vue";
@@ -560,6 +561,13 @@ function reset() {
             }}</span></strong
           >
           <div class="lesson-result-controls">
+            <button
+              class="text-button"
+              :disabled="!filtered.length"
+              @click="exportLessons(filtered, filterInfoByCode)"
+            >
+              导出 CSV
+            </button>
             <label v-if="view === 'list'" class="sort-control"
               >排序<select v-model="sort">
                 <option value="code">教学班号</option>

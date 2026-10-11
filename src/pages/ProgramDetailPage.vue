@@ -9,17 +9,26 @@ import type { ProgramModule as Module } from "../domain/models";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import ProgramModule from "../components/ProgramModule.vue";
+import ProgramTermCourses from "../components/ProgramTermCourses.vue";
+import { filterProgramModules } from "../domain/programView";
+import { exportProgram } from "../domain/tableExports";
+import { printProgram } from "../domain/programPrint";
 import CourseDetail from "../components/CourseDetail.vue";
 import ProgramSources from "../components/ProgramSources.vue";
 const route = useRoute(),
   expandedParam = useFilter("expanded"),
   code = useFilter("course"),
-  copied = ref("");
+  copied = ref(""),
+  q = useFilter("q"),
+  view = useFilter("view", "modules");
 const id = computed(() => String(route.params.id)),
   { data, meta, loading, error, reload } = useQuery(
     (signal, force) => catalog.expandedProgram(id.value, { signal, force }),
     id,
   );
+const filteredModules = computed(() =>
+  filterProgramModules(data.value?.modules ?? [], q.value),
+);
 const expanded = computed(() =>
   expandedParam.value
     ? expandedParam.value.split(",").filter((v) => v !== "none")
@@ -81,7 +90,38 @@ async function share() {
       </div>
       <p>下方为计划要求。本机候选清单不代表已修学分或毕业资格。</p>
     </div>
-    <div class="section-heading">
+    <div class="flex-actions program-view-controls">
+      <label for="program-module-q" class="sr-only">查找模块或课程</label
+      ><input
+        id="program-module-q"
+        v-model="q"
+        type="search"
+        placeholder="查找模块、课程或编号"
+      /><button
+        class="text-button"
+        :aria-pressed="view !== 'terms'"
+        @click="view = 'modules'"
+      >
+        按模块</button
+      ><button
+        class="text-button"
+        :aria-pressed="view === 'terms'"
+        @click="view = 'terms'"
+      >
+        按建议学期</button
+      ><button
+        class="text-button"
+        @click="exportProgram(data, filteredModules, view)"
+      >
+        导出 CSV</button
+      ><button
+        class="text-button"
+        @click="printProgram(data, filteredModules, view)"
+      >
+        打印 / PDF
+      </button>
+    </div>
+    <div v-if="view !== 'terms'" class="section-heading">
       <h2>课程模块</h2>
       <div class="flex-actions">
         <button
@@ -94,14 +134,33 @@ async function share() {
         </button>
       </div>
     </div>
-    <div class="panel module-tree">
+    <div v-if="view !== 'terms'" class="panel module-tree">
       <ProgramModule
-        v-for="module in data.modules"
+        v-for="module in filteredModules"
         :key="module.id"
         :module="module"
         :expanded="expanded"
         @toggle="toggle"
         @course="code = $event"
-      /></div></template
+      />
+    </div>
+    <ProgramTermCourses
+      v-else
+      :modules="filteredModules"
+      @course="code = $event"
+    />
+    <p v-if="q && !filteredModules.length" class="muted">
+      没有匹配的模块或课程。
+    </p></template
   ><CourseDetail :code="code" @close="code = ''" />
 </template>
+
+<style scoped>
+.program-view-controls {
+  margin: 16px 0;
+}
+.program-view-controls input {
+  width: 260px;
+  max-width: 100%;
+}
+</style>

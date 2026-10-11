@@ -10,6 +10,7 @@ import { usePlanner } from "../features/usePlanner";
 import { usePagination } from "../features/usePagination";
 import { useFilterSummary } from "../features/useFilterSummary";
 import { formatClock, weekdays } from "../domain/schedule";
+import { exportExams } from "../domain/tableExports";
 import { examConflicts } from "../domain/examConflicts";
 import { examCalendar, downloadCalendar } from "../domain/calendar";
 import PageHeading from "../components/PageHeading.vue";
@@ -212,6 +213,13 @@ function exportICS() {
         }}</span></strong
       >
       <div class="flex-actions">
+        <button
+          class="text-button"
+          :disabled="!filtered.length"
+          @click="exportExams(filtered)"
+        >
+          导出 CSV
+        </button>
         <button
           class="text-button"
           :aria-pressed="view === 'list'"

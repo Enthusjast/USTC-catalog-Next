@@ -12,7 +12,9 @@
     "archives:sync": "node scripts/sync-archives.mjs",
     "dev:fixtures": "vite --mode fixtures --host 127.0.0.1",
     "check:api": "node scripts/check-api.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "rooms:check": "node scripts/sync-rooms.mjs --check",
+    "rooms:sync": "node scripts/sync-rooms.mjs --write"
   },
   "dependencies": {
     "@lucide/vue": "^1.54.0",

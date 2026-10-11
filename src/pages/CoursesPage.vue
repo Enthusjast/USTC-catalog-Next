@@ -10,6 +10,7 @@ import { useFavorites } from "../features/useFavorites";
 import { useFilterSummary } from "../features/useFilterSummary";
 import { publicCourseCatalogues } from "../domain/courseCatalog";
 import { courseMatches, rankCourses } from "../domain/search";
+import { exportCourses } from "../domain/tableExports";
 import { usePagination } from "../features/usePagination";
 import PageHeading from "../components/PageHeading.vue";
 import FilterPanel from "../components/FilterPanel.vue";
@@ -324,6 +325,13 @@ function clear() {
       />
       <div class="panel">
         <div class="results-toolbar">
+          <button
+            class="text-button"
+            :disabled="!filtered.length"
+            @click="exportCourses(filtered)"
+          >
+            导出 CSV
+          </button>
           <div>
             <strong>{{
               scope === "public"

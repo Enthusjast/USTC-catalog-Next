@@ -26,7 +26,10 @@ export const roomKey = (
 ) =>
   room.directoryId !== undefined
     ? `directory:${room.directoryId}`
-    : JSON.stringify([room.building, room.room]);
+    : JSON.stringify([
+        room.building?.trim() || undefined,
+        room.room.trim().toUpperCase(),
+      ]);
 
 export function roomAvailability(
   records: RoomUsage[],

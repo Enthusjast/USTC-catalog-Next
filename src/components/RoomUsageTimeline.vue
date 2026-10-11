@@ -14,9 +14,10 @@ const props = defineProps<{
   rooms: RoomSummary[];
   type: string;
   label: string;
+  columnLabels?: string[];
 }>();
 const emit = defineEmits<{
-  select: [room: RoomSummary];
+  select: [room: RoomSummary, date?: string];
   usage: [
     room: RoomSummary,
     record: RoomSummary["records"][number],
@@ -32,7 +33,9 @@ function selectUsage(
 }
 const scroll = ref<HTMLElement>();
 const columns = computed(() =>
-  props.rooms.map((room) => ({
+  props.rooms.map((room, index) => ({
+    key: props.columnLabels?.[index] ?? roomKey(room),
+    date: props.columnLabels?.[index],
     room,
     blocks: layoutRoomUsage(
       room.records.filter(
@@ -77,17 +80,20 @@ watch(
       >
         <div
           v-for="column in columns"
-          :key="roomKey(column.room)"
+          :key="column.key"
+          :data-date="column.date"
           class="room-time-column"
         >
           <div class="room-column-header">
             <button
               type="button"
               class="room-label"
-              :aria-label="`查看 ${column.room.room} 全天记录，共 ${column.room.records.length} 条${column.unplotted ? `，其中 ${column.unplotted} 项时刻未知或在教学日显示范围外` : ''}`"
-              @click="$emit('select', column.room)"
+              :aria-label="`查看 ${column.date ? column.date + ' · ' : ''}${column.room.room} 全天记录，共 ${column.room.records.length} 条${column.unplotted ? `，其中 ${column.unplotted} 项时刻未知或在教学日显示范围外` : ''}`"
+              @click="$emit('select', column.room, column.date)"
             >
-              <strong class="mono">{{ column.room.room }}</strong>
+              <strong class="mono">{{
+                column.date ? column.date.slice(5) : column.room.room
+              }}</strong>
               <span
                 v-if="column.unplotted"
                 class="room-unplotted-indicator"
@@ -124,7 +130,7 @@ watch(
               }"
               aria-haspopup="dialog"
               @click="selectUsage(column.room, block.record, $event)"
-              :aria-label="`${column.room.room} · ${block.record.title} · ${formatClock(block.record.start)}–${formatClock(block.record.end)} · ${usageTypes[block.record.type] ?? block.record.type}`"
+              :aria-label="`${column.date ? column.date + ' · ' : ''}${column.room.room} · ${block.record.title} · ${formatClock(block.record.start)}–${formatClock(block.record.end)} · ${usageTypes[block.record.type] ?? block.record.type}`"
               :title="`${block.record.title} · ${usageTypes[block.record.type] ?? block.record.type}`"
             >
               <span>{{ block.record.title }}</span>

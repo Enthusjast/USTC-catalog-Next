@@ -7,17 +7,20 @@ layouts in `src/domain/periods.ts` are transcribed from that project's
 The public subject code mappings in `src/domain/courseCatalog.ts` are transcribed
 from its `src/data/course-catalog.ts` and checked against the official catalogue.
 
-The factual classroom directory in `src/domain/roomDirectory.ts` was independently
+The initial factual classroom directory in `src/domain/roomDirectory.ts` was independently
 transcribed from the public official catalogue configuration on 2026-10-10:
 https://catalog.ustc.edu.cn/query/classroom
 (bundle: https://catalog.ustc.edu.cn/assets/index-DeAsVxMB.js).
-It includes the 258 enabled rooms visible for borrowing or teaching scheduling,
+That initial snapshot includes the 258 enabled rooms visible for borrowing or teaching scheduling,
 their room identifiers, names, building identifiers and explicitly supplied floors.
 The directory was compared with the USTC-catalog-CLI room snapshot. The official
 catalogue's implementation code and graphical assets are not redistributed here;
 the MIT notice below applies to the referenced CLI materials, not to the official
 catalogue. Room metadata is a dated factual reference, not a guarantee of access,
 availability or complete usage coverage.
+Subsequent directory checks record their URL, bundle and verification date in
+`roomDirectorySource`. The synchronization tool reads factual literal records
+without executing or redistributing the official application code.
 
 The third teaching building's presentation groups were checked against the same
 official page and bundle on 2026-10-11: rooms prefixed 3A or 3B belong to Section

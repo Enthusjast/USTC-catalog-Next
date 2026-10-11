@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef, watch } from "vue";
-import { LoaderCircle } from "@lucide/vue";
+import {
+  computed,
+  ref,
+  shallowRef,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
+import { LoaderCircle, ChevronLeft, ChevronRight } from "@lucide/vue";
 import { useRouter } from "vue-router";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useFilter } from "../features/useFilters";
 import { useFilterSummary } from "../features/useFilterSummary";
-import { formatClock } from "../domain/schedule";
 import {
   roomAvailability,
   roomKey,
@@ -19,16 +25,15 @@ import {
   buildingLabel,
   roomBuildingCode,
 } from "../domain/roomDirectory";
-import {
-  classroomDay,
-  hasUsageTime,
-  usageCategory,
-} from "../domain/roomTimeline";
+import { classroomDay, hasUsageTime } from "../domain/roomTimeline";
 import type { RoomUsage } from "../domain/models";
-import { isISODate } from "../domain/dates";
+import { isISODate, addISODate } from "../domain/dates";
 import PageHeading from "../components/PageHeading.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import FilterPanel from "../components/FilterPanel.vue";
+import RoomRecordList from "../components/RoomRecordList.vue";
+import RoomWeekView from "../components/RoomWeekView.vue";
+import { useClassroomPositions } from "../features/useClassroomPositions";
 import RoomUsageTimeline from "../components/RoomUsageTimeline.vue";
 import DisclosureDialog from "../components/DisclosureDialog.vue";
 import EmptyState from "../components/EmptyState.vue";
@@ -42,7 +47,9 @@ const router = useRouter(),
   room = useFilter("room"),
   type = useFilter("type"),
   capacity = useFilter("capacity"),
-  campus = useFilter("campus");
+  campus = useFilter("campus"),
+  selectedKey = useFilter("roomKey"),
+  roomView = useFilter("roomView", "day");
 const filterSummary = useFilterSummary({
   building: {
     label: "楼宇",
@@ -115,7 +122,12 @@ function jumpToBuilding() {
     ?.querySelector<HTMLElement>(".room-building-title")
     ?.focus({ preventScroll: true });
 }
-function showUsage(entry: RoomSummary, record: RoomUsage, anchor: HTMLElement) {
+function showUsage(
+  entry: RoomSummary,
+  record: RoomUsage,
+  anchor: HTMLElement,
+  usageDate = date.value,
+) {
   if (
     activeUsage.value?.record.id === record.id &&
     activeUsage.value.anchor === anchor
@@ -123,7 +135,7 @@ function showUsage(entry: RoomSummary, record: RoomUsage, anchor: HTMLElement) {
     activeUsage.value = undefined;
     return;
   }
-  activeUsage.value = { room: entry, record, date: date.value, anchor };
+  activeUsage.value = { room: entry, record, date: usageDate, anchor };
 }
 watch(buildingGroups, (value) => {
   if (!value.some((group) => group.key === buildingJump.value))
@@ -132,11 +144,24 @@ watch(buildingGroups, (value) => {
 const advancedCount = computed(
     () => [capacity.value, campus.value].filter(Boolean).length,
   ),
-  advancedOpen = ref(!!advancedCount.value),
-  selectedKey = ref("");
-const selectedRoom = computed(() =>
-  rooms.value.find((entry) => roomKey(entry) === selectedKey.value),
+  advancedOpen = ref(!!advancedCount.value);
+const selectedSnapshot = shallowRef<RoomSummary>();
+function openRoom(entry: RoomSummary) {
+  selectedSnapshot.value = entry;
+  roomView.value = "day";
+  selectedKey.value = roomKey(entry);
+}
+const selectedRoom = computed(
+  () =>
+    rooms.value.find((entry) => roomKey(entry) === selectedKey.value) ??
+    (selectedSnapshot.value &&
+    roomKey(selectedSnapshot.value) === selectedKey.value
+      ? selectedSnapshot.value
+      : undefined),
 );
+watch(selectedRoom, (entry) => {
+  if (entry) selectedSnapshot.value = entry;
+});
 const selectedRecords = computed(() =>
   [...(selectedRoom.value?.records ?? [])].sort(
     (a, b) =>
@@ -148,46 +173,110 @@ const selectedRecords = computed(() =>
 watch(advancedCount, (count) => {
   if (count) advancedOpen.value = true;
 });
-watch([date, building, room, type, capacity, campus, loading], () => {
+watch([building, room, type, capacity, campus], () => {
   selectedKey.value = "";
+  activeUsage.value = undefined;
+});
+watch(date, () => {
+  if (roomView.value !== "week") selectedKey.value = "";
+  activeUsage.value = undefined;
+});
+watch(loading, () => {
   activeUsage.value = undefined;
 });
 watch(selectedKey, () => {
   activeUsage.value = undefined;
 });
-function inQueryRange(record: RoomUsage) {
-  return (
-    hasUsageTime(record) &&
-    record.start < classroomDay.to &&
-    record.end > classroomDay.from
-  );
-}
 function reset() {
   void router.replace({
     path: "/classrooms",
     query: { date: date.value },
   });
 }
+const pageElement = ref<HTMLElement>(),
+  dateControls = ref<HTMLElement>(),
+  jumpControls = ref<HTMLElement>();
+const navigationStyle = ref<Record<string, string>>({});
+let resize: ResizeObserver | undefined;
+onMounted(() => {
+  const header = document.querySelector<HTMLElement>(".site-header");
+  const measure = () => {
+    navigationStyle.value = {
+      "--room-header-height": `${header?.offsetHeight ?? 64}px`,
+      "--room-date-height": `${dateControls.value?.offsetHeight ?? 44}px`,
+      "--room-jump-height": `${jumpControls.value?.offsetHeight ?? 44}px`,
+    };
+  };
+  resize = new ResizeObserver(measure);
+  watch(
+    [dateControls, jumpControls],
+    () => {
+      [dateControls.value, jumpControls.value].forEach((el) => {
+        if (el) resize!.observe(el);
+      });
+      measure();
+    },
+    { flush: "post" },
+  );
+  [header, dateControls.value, jumpControls.value].forEach((el) => {
+    if (el) resize!.observe(el);
+  });
+  measure();
+});
+onBeforeUnmount(() => resize?.disconnect());
+useClassroomPositions(
+  () =>
+    JSON.stringify([
+      date.value,
+      building.value,
+      room.value,
+      type.value,
+      capacity.value,
+      campus.value,
+    ]),
+  () => !loading.value && validDate.value,
+  pageElement,
+);
 </script>
 <template>
-  <div class="compact-query-page classroom-page">
+  <div
+    ref="pageElement"
+    class="compact-query-page classroom-page"
+    :style="navigationStyle"
+  >
     <PageHeading
       title="教室使用情况"
       description=""
       eyebrow="CLASSROOMS / 教室使用"
     />
+    <div ref="dateControls" class="room-date-controls panel">
+      <label for="room-date" class="sr-only">查询日期</label
+      ><input id="room-date" v-model="date" type="date" />
+      <div class="flex-actions">
+        <button
+          class="icon-button"
+          :disabled="!validDate"
+          aria-label="前一天"
+          @click="date = addISODate(date, -1)"
+        >
+          <ChevronLeft :size="18" /></button
+        ><button class="text-button" @click="date = today">今天</button
+        ><button
+          class="icon-button"
+          :disabled="!validDate"
+          aria-label="后一天"
+          @click="date = addISODate(date, 1)"
+        >
+          <ChevronRight :size="18" />
+        </button>
+      </div>
+    </div>
     <FilterPanel
       layout="inline"
       :active-count="filterSummary.count.value"
       :result-count="data ? filtered.length : undefined"
       result-label="间教室"
     >
-      <template #primary>
-        <div class="filter-field room-date-field">
-          <label for="room-date">查询日期</label
-          ><input id="room-date" v-model="date" type="date" />
-        </div>
-      </template>
       <div class="filter-field">
         <label for="room-building">楼宇编号</label
         ><select id="room-building" v-model="building">
@@ -264,6 +353,7 @@ function reset() {
     />
     <div
       v-if="validDate && buildingGroups.length"
+      ref="jumpControls"
       class="room-building-controls panel"
     >
       <label for="room-building-jump">跳转楼栋</label>
@@ -300,6 +390,7 @@ function reset() {
           <section
             v-for="floor in group.floors"
             :key="floor.key"
+            :data-floor-key="floor.key"
             class="room-floor-section"
             :aria-label="floor.title"
           >
@@ -308,7 +399,7 @@ function reset() {
               :rooms="floor.rooms"
               :type="type"
               :label="floor.title"
-              @select="selectedKey = roomKey($event)"
+              @select="openRoom"
               @usage="showUsage"
             />
           </section>
@@ -324,82 +415,52 @@ function reset() {
     </EmptyState>
     <DisclosureDialog
       :open="!!selectedRoom"
-      :title="`${selectedRoom?.room ?? ''} · 全天公开记录`"
+      :title="`${selectedRoom?.room ?? ''} · ${roomView === 'week' ? '本周' : '全天'}公开记录`"
       @close="selectedKey = ''"
     >
-      <template v-if="selectedRoom">
-        <div class="room-detail-summary">
-          <strong>{{ date }}</strong>
-          <span class="muted">完整教学日</span>
+      <template v-if="selectedRoom"
+        ><div class="flex-actions">
+          <button
+            class="text-button"
+            :aria-pressed="roomView !== 'week'"
+            @click="roomView = 'day'"
+          >
+            单日记录</button
+          ><button
+            class="text-button"
+            :aria-pressed="roomView === 'week'"
+            @click="roomView = 'week'"
+          >
+            本周使用
+          </button>
         </div>
-        <p class="muted room-detail-caption">
-          {{ buildingLabel(roomBuildingCode(selectedRoom))
-          }}<span v-if="selectedRoom.capacity !== undefined">
-            · 容量 {{ selectedRoom.capacity }}</span
-          ><span v-if="selectedRoom.campus"> · {{ selectedRoom.campus }}</span
-          >。下列为全天全部类型的记录，包含当前图中隐藏的安排。
-        </p>
-        <p v-if="!selectedRecords.length" class="notice">暂无记录。</p>
-        <div
-          v-if="selectedRecords.length"
-          class="table-scroll room-record-table"
-        >
-          <table>
-            <thead>
-              <tr>
-                <th>时间安排</th>
-                <th>公开记录</th>
-                <th>使用类型</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="record in selectedRecords"
-                :key="record.id"
-                :class="{ 'is-in-range': inQueryRange(record) }"
-              >
-                <td>
-                  <span class="mono"
-                    >{{ formatClock(record.start) }}–{{
-                      formatClock(record.end)
-                    }}</span
-                  ><span v-if="!hasUsageTime(record)" class="tag warning">{{
-                    record.start !== undefined && record.end !== undefined
-                      ? "起止时刻无效"
-                      : "时刻未知"
-                  }}</span>
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    class="room-record-detail-button"
-                    aria-haspopup="dialog"
-                    @click="
-                      showUsage(
-                        selectedRoom,
-                        record,
-                        $event.currentTarget as HTMLElement,
-                      )
-                    "
-                  >
-                    <strong>{{ record.title }}</strong>
-                    <span>查看占用详情</span>
-                  </button>
-                  <span v-if="inQueryRange(record)" class="room-record-match"
-                    >与教学日显示范围重叠</span
-                  >
-                </td>
-                <td>
-                  <span
-                    class="room-usage-type"
-                    :class="usageCategory(record.type)"
-                    >{{ usageTypes[record.type] ?? record.type }}</span
-                  >
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <RoomWeekView
+          v-if="roomView === 'week'"
+          :date="date"
+          :entry="selectedRoom"
+          :type="type"
+          @navigate="date = $event"
+          @usage="showUsage"
+        /><template v-else>
+          <div class="room-detail-summary">
+            <strong>{{ date }}</strong>
+            <span class="muted">完整教学日</span>
+          </div>
+          <p class="muted room-detail-caption">
+            {{ buildingLabel(roomBuildingCode(selectedRoom))
+            }}<span v-if="selectedRoom.capacity !== undefined">
+              · 容量 {{ selectedRoom.capacity }}</span
+            ><span v-if="selectedRoom.campus"> · {{ selectedRoom.campus }}</span
+            >。下列为全天全部类型的记录，包含当前图中隐藏的安排。
+          </p>
+          <p v-if="!selectedRecords.length" class="notice">暂无记录。</p>
+          <RoomRecordList
+            :room="selectedRoom"
+            :records="selectedRecords"
+            :date="date"
+            @usage="showUsage"
+          />
+        </template>
       </template>
     </DisclosureDialog>
     <RoomUsagePopover
@@ -408,3 +469,39 @@ function reset() {
     />
   </div>
 </template>
+
+<style scoped>
+.room-date-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  position: sticky;
+  top: calc(var(--room-header-height, 64px) + 8px);
+  z-index: 5;
+  margin-bottom: 12px;
+}
+.room-date-controls input {
+  width: 170px;
+  min-height: 44px;
+  max-width: 100%;
+}
+.room-date-controls .flex-actions {
+  gap: 8px;
+}
+.room-building-controls {
+  position: sticky;
+  top: calc(
+    var(--room-header-height, 64px) + var(--room-date-height, 60px) + 16px
+  );
+  z-index: 4;
+}
+.room-building-section {
+  scroll-margin-top: calc(
+    var(--room-header-height, 64px) + var(--room-date-height, 60px) +
+      var(--room-jump-height, 60px) + 32px
+  );
+}
+</style>
