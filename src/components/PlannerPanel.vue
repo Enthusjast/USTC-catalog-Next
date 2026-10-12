@@ -7,6 +7,8 @@ import { lessonConflicts, formatClock, clockMinutes } from "../domain/schedule";
 import { lessonCalendar, downloadCalendar } from "../domain/calendar";
 import { periodLayouts } from "../domain/periods";
 import SchemeSelector from "./SchemeSelector.vue";
+import CandidateUpdatePreview from "./CandidateUpdatePreview.vue";
+import { workspaceBusy } from "../features/useWorkspace";
 const props = defineProps<{
   planner: ReturnType<typeof usePlanner>;
   data?: Lesson[];
@@ -56,8 +58,9 @@ function exportICS() {
           v-if="planner.lessons.value.length"
           class="text-button"
           @click="planner.clear"
+          :disabled="workspaceBusy"
         >
-          <Trash2 :size="15" />清空本学期
+          <Trash2 :size="15" />清空当前方案
         </button>
       </div>
     </div>
@@ -86,9 +89,7 @@ function exportICS() {
       点击教学班旁的“候选”按钮，开始整理清单；加入后可在结果上方直接进入管理。
     </p>
     <template v-if="planner.lessons.value.length"
-      ><button v-if="data" class="text-button" @click="planner.refresh(data)">
-        使用当前查询结果更新候选安排
-      </button>
+      ><CandidateUpdatePreview :planner="planner" :semester="semester" />
       <div
         v-for="overlap in conflicts.overlaps"
         :key="`${overlap.left.id}:${overlap.right.id}`"

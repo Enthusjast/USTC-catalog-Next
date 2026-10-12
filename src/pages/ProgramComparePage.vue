@@ -10,6 +10,8 @@ import QueryState from "../components/QueryState.vue";
 import EmptyState from "../components/EmptyState.vue";
 import ProgramSources from "../components/ProgramSources.vue";
 import ProgramCompareSelector from "../components/ProgramCompareSelector.vue";
+import CourseDetail from "../components/CourseDetail.vue";
+const course = useFilter("course");
 const left = useFilter("left"),
   right = useFilter("right");
 const tree = useQuery((signal, force) => catalog.programs({ signal, force }));
@@ -109,7 +111,8 @@ const comparison = computed(() =>
         class="compare-row"
       >
         <span class="mono">{{ row.entry.course.code }}</span
-        ><strong>{{ row.entry.course.name }}</strong
+        ><button class="course-name" @click="course = row.entry.course.code">
+          {{ row.entry.course.name }}</button
         ><span class="muted">{{ row.module }}</span>
       </div>
       <p v-if="!section.rows.length" class="muted">没有此类变化。</p>
@@ -124,7 +127,9 @@ const comparison = computed(() =>
         :key="change.code"
         class="compare-row"
       >
-        <strong class="mono">{{ change.code }}</strong>
+        <button class="course-name mono" @click="course = change.code">
+          {{ change.code }}
+        </button>
         <div
           v-for="(rows, index) in [change.before, change.after]"
           :key="index"
@@ -242,4 +247,5 @@ const comparison = computed(() =>
       </p>
     </section></template
   >
+  <CourseDetail v-if="course" :code="course" @close="course = ''" />
 </template>

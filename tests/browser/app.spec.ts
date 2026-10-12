@@ -315,13 +315,13 @@ test("all pages at five widths in both themes", async ({ browser }) => {
           )
           .toBe(true);
         await expect(page.getByRole("alert")).toHaveCount(0);
-        expect(
-          await page
-            .locator("h1")
-            .first()
-            .evaluate((element) => getComputedStyle(element).color),
+        await expect(
+          page.locator("h1").first(),
           `${path}: ${width}px ${theme} heading contrast`,
-        ).toBe(theme === "dark" ? "rgb(237, 243, 250)" : "rgb(25, 44, 64)");
+        ).toHaveCSS(
+          "color",
+          theme === "dark" ? "rgb(237, 243, 250)" : "rgb(25, 44, 64)",
+        );
       }
       expect(errors).toEqual([]);
       if (width === 375)

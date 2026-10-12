@@ -4,10 +4,12 @@ import type { Lesson } from "../domain/models";
 import LessonSchedule from "./LessonSchedule.vue";
 import IcourseLink from "./IcourseLink.vue";
 import { workspaceBusy } from "../features/useWorkspace";
+import { teacherLink } from "../domain/queryLinks";
 defineProps<{
   lessons: Lesson[];
   candidateIds: Set<string>;
   compareCodes: string[];
+  semester?: string;
 }>();
 defineEmits<{
   detail: [code: string];
@@ -47,7 +49,20 @@ defineEmits<{
           <td>
             <span
               ><span class="lesson-mobile-label">教师：</span
-              >{{ lesson.teachers.join("、") || "未提供" }}</span
+              ><template v-if="semester && lesson.teachers.length"
+                ><template
+                  v-for="(teacher, index) in lesson.teachers"
+                  :key="teacher"
+                  ><span v-if="index">、</span
+                  ><RouterLink
+                    class="text-button"
+                    :to="teacherLink(semester, teacher)"
+                    >{{ teacher }}</RouterLink
+                  ></template
+                ></template
+              ><template v-else>{{
+                lesson.teachers.join("、") || "未提供"
+              }}</template></span
             >
             <p class="course-en">{{ lesson.department }}</p>
           </td>

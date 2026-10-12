@@ -9,11 +9,15 @@ import EmptyState from "./EmptyState.vue";
 import CourseContent from "./CourseContent.vue";
 import IcourseLink from "./IcourseLink.vue";
 import { workspaceBusy } from "../features/useWorkspace";
+import { teacherLink } from "../domain/queryLinks";
+import LessonSchedule from "./LessonSchedule.vue";
 const props = defineProps<{
   code: string;
   semester: string;
   detail?: Lesson;
   selected: boolean;
+  weekStart?: string;
+  week?: number;
 }>();
 defineEmits<{ close: []; candidate: [lesson: Lesson] }>();
 const lessonInfo = useQuery(
@@ -45,7 +49,16 @@ const detailCourse = computed(() =>
       <dl class="detail-grid">
         <div>
           <dt>教师</dt>
-          <dd>{{ detail.teachers.join("、") || "未提供" }}</dd>
+          <dd>
+            <template v-for="(teacher, index) in detail.teachers" :key="teacher"
+              ><span v-if="index">、</span
+              ><RouterLink
+                class="text-button"
+                :to="teacherLink(semester, teacher)"
+                >{{ teacher }}</RouterLink
+              ></template
+            ><span v-if="!detail.teachers.length">未提供</span>
+          </dd>
         </div>
         <div>
           <dt>开课院系</dt>
@@ -92,6 +105,11 @@ const detailCourse = computed(() =>
       <section class="detail-section">
         <h3>原始公开时间安排</h3>
         <p>{{ detail.schedule.text || "未提供" }}</p>
+        <LessonSchedule
+          :schedule="detail.schedule"
+          :week-start="weekStart"
+          :week="week"
+        />
       </section>
       <p v-if="detail.schedule.unknown" class="notice warning">
         部分时间无法识别，完整冲突状态未知。

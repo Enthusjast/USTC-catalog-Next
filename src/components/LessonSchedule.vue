@@ -1,7 +1,22 @@
 <script setup lang="ts">
 import type { Schedule } from "../domain/models";
 import { weekdays } from "../domain/schedule";
-defineProps<{ schedule: Schedule }>();
+import { roomLink } from "../domain/queryLinks";
+import { addISODate, isISODate } from "../domain/dates";
+const props = defineProps<{
+  schedule: Schedule;
+  date?: string;
+  weekStart?: string;
+  week?: number;
+}>();
+function slotDate(weeks: number[], day: number) {
+  return props.weekStart &&
+    isISODate(props.weekStart) &&
+    props.week &&
+    weeks.includes(props.week)
+    ? addISODate(props.weekStart, day - 1)
+    : props.date;
+}
 function ranges(values: number[]) {
   const sorted = [...new Set(values)].sort((a, b) => a - b);
   const result: string[] = [];
@@ -21,7 +36,12 @@ function ranges(values: number[]) {
         <div class="lesson-slot-time">
           <strong>周{{ weekdays[slot.day - 1] }}</strong>
           <span>第 {{ ranges(slot.periods) }} 节</span>
-          <span class="lesson-slot-location">{{ slot.location }}</span>
+          <RouterLink
+            v-if="roomLink(slot.location, slotDate(slot.weeks, slot.day))"
+            class="lesson-slot-location text-button"
+            :to="roomLink(slot.location, slotDate(slot.weeks, slot.day))!"
+            >{{ slot.location }}</RouterLink
+          ><span v-else class="lesson-slot-location">{{ slot.location }}</span>
           <span class="lesson-slot-weeks muted"
             >第 {{ ranges(slot.weeks) }} 周</span
           >

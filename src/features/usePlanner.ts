@@ -6,6 +6,7 @@ import {
   MAX_SCHEMES,
   MAX_CANDIDATES,
   type CandidateScheme,
+  type Workspace,
 } from "../domain/workspace";
 import {
   workspace,
@@ -13,6 +14,8 @@ import {
   workspaceStorageError,
   workspaceReady,
 } from "./useWorkspace";
+import { rememberWorkspaceUndo } from "./useWorkspaceUndo";
+type WorkspaceTerm = Workspace["semesters"][string];
 export function usePlanner(semester: { value: string }) {
   const term = computed(() => workspace.value.semesters[semester.value]);
   const schemes = computed(() => term.value?.schemes ?? []);
@@ -20,12 +23,20 @@ export function usePlanner(semester: { value: string }) {
     schemes.value.find((s) => s.id === term.value?.activeId),
   );
   const lessons = computed(() => active.value?.lessons ?? []);
-  async function edit(update: (scheme: CandidateScheme) => void) {
+  async function edit(
+    update: (scheme: CandidateScheme) => void,
+    undoLabel?: string,
+  ) {
     await workspaceReady;
     const termId = semester.value,
       schemeId = active.value?.id;
     if (!termId) return false;
-    return editWorkspace((next) => {
+    let before: WorkspaceTerm | undefined,
+      changed = false;
+    const ok = await editWorkspace((next) => {
+      before = next.semesters[termId]
+        ? structuredClone(next.semesters[termId])
+        : undefined;
       let stored = next.semesters[termId];
       if (!stored) {
         if (schemeId) throw new Error("方案已被删除，请重新选择。");
@@ -37,21 +48,33 @@ export function usePlanner(semester: { value: string }) {
         (s) => s.id === (schemeId ?? stored.activeId),
       );
       if (!scheme) throw new Error("方案已被删除，请重新选择。");
+      const original = JSON.stringify(scheme);
       update(scheme);
-      scheme.savedAt = new Date().toISOString();
+      changed = original !== JSON.stringify(scheme);
+      if (changed) scheme.savedAt = new Date().toISOString();
     });
+    if (ok && undoLabel && before && changed) {
+      const snapshot = before;
+      rememberWorkspaceUndo(undoLabel, (next) => {
+        next.semesters[termId] = structuredClone(snapshot);
+      });
+    }
+    return ok;
   }
   async function toggle(lesson: Lesson) {
     await workspaceReady;
     const desired = !lessons.value.some((l) => l.id === lesson.id);
-    return edit((s) => {
-      if (!desired) s.lessons = s.lessons.filter((l) => l.id !== lesson.id);
-      else if (!s.lessons.some((l) => l.id === lesson.id)) {
-        if (s.lessons.length >= MAX_CANDIDATES)
-          throw new Error("每个方案最多保存 100 个候选教学班。");
-        s.lessons.push(lesson);
-      }
-    });
+    return edit(
+      (s) => {
+        if (!desired) s.lessons = s.lessons.filter((l) => l.id !== lesson.id);
+        else if (!s.lessons.some((l) => l.id === lesson.id)) {
+          if (s.lessons.length >= MAX_CANDIDATES)
+            throw new Error("每个方案最多保存 100 个候选教学班。");
+          s.lessons.push(lesson);
+        }
+      },
+      desired ? undefined : `已移除 ${lesson.course.name}`,
+    );
   }
   async function addScheme(
     name: string,
@@ -103,14 +126,23 @@ export function usePlanner(semester: { value: string }) {
   async function removeScheme(id = active.value?.id) {
     await workspaceReady;
     const termId = semester.value;
-    return editWorkspace((next) => {
+    let before: WorkspaceTerm | undefined;
+    const ok = await editWorkspace((next) => {
       const stored = next.semesters[termId];
       if (!stored?.schemes.some((s) => s.id === id))
         throw new Error("方案已被删除。");
+      before = structuredClone(stored);
       stored.schemes = stored.schemes.filter((s) => s.id !== id);
       if (!stored.schemes.length) stored.schemes = [createScheme()];
       if (stored.activeId === id) stored.activeId = stored.schemes[0]!.id;
     });
+    if (ok && before) {
+      const snapshot = before;
+      rememberWorkspaceUndo("已删除方案", (next) => {
+        next.semesters[termId] = structuredClone(snapshot);
+      });
+    }
+    return ok;
   }
   async function renameScheme(name: string, expected = active.value) {
     await workspaceReady;
@@ -167,7 +199,7 @@ export function usePlanner(semester: { value: string }) {
     clear: () =>
       edit((s) => {
         s.lessons = [];
-      }),
+      }, "已清空当前方案"),
     savedAt: computed(() => active.value?.savedAt),
     storageError: workspaceStorageError,
   };

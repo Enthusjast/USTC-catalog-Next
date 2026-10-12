@@ -88,7 +88,12 @@ export const workspaceReady = (async () => {
     else {
       try {
         seed = legacy();
-      } catch {
+      } catch (error) {
+        if (
+          !(error instanceof SyntaxError) &&
+          (error as Error).name !== "ZodError"
+        )
+          throw new WorkspaceStorageError("无法读取旧存储");
         readable = false;
         throw new Error("旧规划数据无法读取，原存储已保留。");
       }
@@ -109,8 +114,10 @@ export const workspaceReady = (async () => {
       try {
         seed = legacy();
         workspace.value = seed;
-      } catch {
-        readable = false;
+      } catch (error) {
+        readable =
+          !(error instanceof SyntaxError) &&
+          (error as Error).name !== "ZodError";
       }
       workspaceStorageError.value =
         "无法保存到浏览器，原数据已保留；本次规划仅保留到页面关闭。";

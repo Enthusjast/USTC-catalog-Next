@@ -20,6 +20,7 @@ import FilterPanel from "../components/FilterPanel.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
+import { lessonLink } from "../domain/queryLinks";
 const router = useRouter(),
   semesterQuery = useSemester(),
   semester = semesterQuery.selected;
@@ -258,7 +259,12 @@ function exportICS() {
                 <span class="course-code mono">{{
                   exam.lessonCode ?? exam.courseCode
                 }}</span
-                ><strong>{{ exam.courseName }}</strong>
+                ><RouterLink
+                  v-if="exam.lessonCode"
+                  class="course-name"
+                  :to="lessonLink(semester, exam.lessonCode)"
+                  >{{ exam.courseName }}</RouterLink
+                ><strong v-else>{{ exam.courseName }}</strong>
               </td>
               <td>
                 {{ exam.date ?? "日期未提供" }}

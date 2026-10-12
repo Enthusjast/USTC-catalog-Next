@@ -22,6 +22,7 @@ import { usePreferences } from "../features/usePreferences";
 import { filterStorageError } from "../features/filterPreferences";
 import { DEMO_MODE } from "../api/environment";
 import PwaUpdate from "../components/PwaUpdate.vue";
+import WorkspaceUndo from "../components/WorkspaceUndo.vue";
 
 const route = useRoute(),
   router = useRouter(),
@@ -201,6 +202,7 @@ function skipToMain() {
     <RouterView v-else />
   </main>
   <PwaUpdate />
+  <WorkspaceUndo />
   <footer class="site-footer">
     <div class="footer-inner">
       <div>

@@ -18,6 +18,7 @@ import {
 } from "../domain/lessonFilters";
 import { exportLessons } from "../domain/tableExports";
 import { rankLessons } from "../domain/search";
+import { addISODate, isISODate } from "../domain/dates";
 import { lessonConflicts, weekdays } from "../domain/schedule";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
@@ -382,6 +383,13 @@ const timetableExportData = computed(() => ({
 const currentWeek = computed(() =>
   Math.min(53, Math.max(1, Number(week.value) || 1)),
 );
+const detailWeekStart = computed(() =>
+  view.value === "week" &&
+  isISODate(planner.firstMonday.value) &&
+  new Date(`${planner.firstMonday.value}T12:00:00Z`).getUTCDay() === 1
+    ? addISODate(planner.firstMonday.value, (currentWeek.value - 1) * 7)
+    : undefined,
+);
 function reset() {
   void router.replace({
     path: "/lessons",
@@ -594,6 +602,7 @@ function reset() {
         </div>
         <template v-if="view === 'list'"
           ><LessonList
+            :semester="semester"
             :lessons="visible"
             :candidate-ids="candidateIds"
             :compare-codes="compareCodes"
@@ -700,6 +709,8 @@ function reset() {
     :semester="semester"
     :detail="detail"
     :selected="!!detail && candidateIds.has(detail.id)"
+    :week-start="detailWeekStart"
+    :week="currentWeek"
     @close="detailCode = ''"
     @candidate="toggleCandidate"
   />

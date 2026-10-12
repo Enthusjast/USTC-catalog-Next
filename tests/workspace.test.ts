@@ -149,6 +149,27 @@ describe("workspace persistence", () => {
     expect((await readWorkspace("test"))?.favorites).toEqual(["A", "B"]);
     expect((await readWorkspace("test"))?.revision).toBe(2);
   });
+  it("still permits temporary planning when both storage mechanisms are denied", async () => {
+    vi.stubGlobal("indexedDB", undefined);
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("denied");
+      },
+      setItem: () => {},
+      removeItem: () => {},
+    });
+    const store = await import("../src/features/useWorkspace");
+    await store.workspaceReady;
+    expect(
+      await store.editWorkspace((next) => {
+        next.favorites.push("MATH");
+      }),
+    ).toBe(true);
+    expect(store.workspace.value.favorites).toEqual(["MATH"]);
+    expect(
+      await store.importWorkspace(JSON.stringify(makeBackup(populated()))),
+    ).toBe(false);
+  });
   it("switches schemes and rejects deleted targets and old rename drafts", async () => {
     const { ref } = await import("vue"),
       { usePlanner } = await import("../src/features/usePlanner");
