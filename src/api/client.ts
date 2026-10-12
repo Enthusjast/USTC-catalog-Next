@@ -1,13 +1,17 @@
 import { z } from "zod";
 import type { QueryResult } from "../domain/models";
-import { readCache, writeCache, cacheGeneration } from "./cache";
+import {
+  readCache,
+  writeCache,
+  captureCacheToken,
+  isCacheTokenCurrent,
+} from "./cache";
 import { restrictedSchema } from "./schemas";
 import { createLimiter } from "../domain/concurrency";
 import { DEMO_MODE } from "./environment";
 
-export const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "https://api.catalog.enthusjast.cc"
-).replace(/\/$/, "");
+import { API_BASE } from "./config";
+export { API_BASE } from "./config";
 export const TTL = {
   reference: 24 * 60 * 60_000,
   search: 30 * 60_000,
@@ -127,9 +131,9 @@ async function request<T>(
   if (!flight) {
     const controller = new AbortController();
     const promise = (async (): Promise<QueryResult<T>> => {
-      const generation = cacheGeneration();
+      const token = await captureCacheToken();
       const cacheKey = `${url}:${JSON.stringify(options.body ?? null)}${variant}`;
-      const cached = await readCache(cacheKey),
+      const cached = await readCache(cacheKey, token),
         parsedCache = cached ? schema.safeParse(cached.payload) : undefined;
       const usable =
         cached && parsedCache?.success
@@ -137,7 +141,7 @@ async function request<T>(
           : undefined;
       if (
         usable &&
-        generation === cacheGeneration() &&
+        (await isCacheTokenCurrent(token)) &&
         !options.force &&
         Date.now() - Date.parse(usable.retrievedAt) >= 0 &&
         Date.now() - Date.parse(usable.retrievedAt) <
@@ -167,7 +171,7 @@ async function request<T>(
         const retrievedAt = new Date().toISOString();
         await writeCache(
           { key: cacheKey, retrievedAt, payload: parsed.data },
-          generation,
+          token,
         );
         return {
           data: parsed.data,
@@ -178,7 +182,7 @@ async function request<T>(
           error instanceof ApiError &&
           error.kind === "network" &&
           usable &&
-          generation === cacheGeneration()
+          (await isCacheTokenCurrent(token))
         )
           return {
             data: usable.payload,

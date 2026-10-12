@@ -63,7 +63,7 @@ const q = useFilter("q"),
   timetableSource = useFilter("source", "candidates"),
   timetableMode = useFilter("ttMode", "week"),
   timetableDay = useFilter("ttDay", "1");
-const { data, meta, loading, error, reload } = useQuery(
+const { data, meta, loading, error, resolved, reload } = useQuery(
   (signal, force) => catalog.lessons(semester.value, { signal, force }),
   semester,
   () => !!semester.value,
@@ -736,10 +736,14 @@ function reset() {
     :code="detailCode"
     :semester="semester"
     :detail="detail"
+    :list-loading="semesterQuery.loading.value || loading"
+    :list-error="semesterQuery.error.value || error"
+    :list-resolved="resolved"
     :selected="!!detail && candidateIds.has(detail.id)"
     :week-start="detailWeekStart"
     :week="currentWeek"
     @close="detailCode = ''"
     @candidate="toggleCandidate"
+    @retry="error ? reload() : semesterQuery.reload()"
   />
 </template>

@@ -158,13 +158,17 @@ const props = defineProps<{ modules: ProgramModule[] }>(),
     </article>
   </section>
   <LessonDetailDialog
-    v-if="code && !query.loading.value"
+    v-if="code"
     :code="code"
     :semester="semester"
     :detail="detail"
+    :list-loading="semesters.loading.value || query.loading.value"
+    :list-error="semesters.error.value || query.error.value"
+    :list-resolved="query.resolved.value"
     :selected="!!detail && candidateIds.has(detail.id)"
     @close="code = ''"
     @candidate="planner.toggle"
+    @retry="query.error.value ? query.reload() : semesters.reload()"
   />
 </template>
 <style scoped>

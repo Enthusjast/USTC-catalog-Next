@@ -9,16 +9,23 @@ let database: Promise<IDBDatabase> | undefined;
 async function open() {
   database ??= new Promise<IDBDatabase>((resolve, reject) => {
     try {
+      let abandoned = false;
       const request = indexedDB.open(WORKSPACE_DB, 1);
       request.onupgradeneeded = () =>
         request.result.createObjectStore("workspaces");
       request.onerror = () =>
         reject(new WorkspaceStorageError("无法打开本机规划存储"));
-      request.onblocked = () =>
+      request.onblocked = () => {
+        abandoned = true;
         reject(
           new WorkspaceStorageError("本机规划存储正在升级，请关闭旧标签页"),
         );
+      };
       request.onsuccess = () => {
+        if (abandoned) {
+          request.result.close();
+          return;
+        }
         request.result.onversionchange = () => {
           request.result.close();
           database = undefined;

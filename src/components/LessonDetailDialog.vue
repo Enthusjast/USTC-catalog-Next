@@ -19,13 +19,20 @@ const props = defineProps<{
   selected: boolean;
   weekStart?: string;
   week?: number;
+  listLoading: boolean;
+  listError?: Error;
+  listResolved: boolean;
 }>();
-defineEmits<{ close: []; candidate: [lesson: Lesson, desired: boolean] }>();
+defineEmits<{
+  close: [];
+  retry: [];
+  candidate: [lesson: Lesson, desired: boolean];
+}>();
 const lessonInfo = useQuery(
   (signal, force) =>
     catalog.lessonDetails(props.code, props.semester, { signal, force }),
   () => `${props.semester}:${props.code}`,
-  () => !!props.semester && !!props.code,
+  () => !!props.semester && !!props.code && !!props.detail,
 );
 const detailCourse = computed(() =>
   lessonInfo.data.value?.find((c) => c.code === props.code),
@@ -36,7 +43,12 @@ const detailCourse = computed(() =>
     :open="!!code"
     title="公开教学班详情"
     @close="$emit('close')"
-    ><template v-if="detail"
+    ><QueryState
+      :loading="listLoading"
+      :error="listError"
+      @retry="$emit('retry')"
+    />
+    <template v-if="detail"
       ><QueryState
         :loading="lessonInfo.loading.value"
         :error="lessonInfo.error.value"
@@ -141,6 +153,11 @@ const detailCourse = computed(() =>
           >查看课程详情</RouterLink
         >
       </div></template
-    ><EmptyState v-else title="未找到该教学班" message="请确认学期和教学班号。"
-  /></DisclosureDialog>
+    ><EmptyState
+      v-else-if="listResolved && !listLoading && !listError"
+      title="未找到该教学班"
+      message="请确认学期和教学班号。"
+    />
+    <p v-else-if="!listLoading && !listError" class="muted">请选择查询学期。</p>
+  </DisclosureDialog>
 </template>

@@ -32,7 +32,7 @@ describe("query cache indexed eviction", () => {
     const { readCache } = await import("../src/api/cache");
     expect(await readCache("1")).toEqual(entry(1));
     const upgraded = await cacheDatabase();
-    expect(upgraded.version).toBe(2);
+    expect(upgraded.version).toBe(3);
     expect(
       upgraded
         .transaction("queries")
@@ -72,6 +72,95 @@ describe("query cache indexed eviction", () => {
     await writeCache(entry(2), old);
     expect(await readCache("1")).toBeUndefined();
     expect(await readCache("2")).toBeUndefined();
+  });
+  it("protects three essential records and still keeps at most 100 entries", async () => {
+    const { writeCache, readCache } = await import("../src/api/cache");
+    const paths = [
+      "/restricted",
+      "/teach/semester/list",
+      "/teach/department/college-tree",
+    ];
+    for (const path of paths)
+      await writeCache({
+        ...entry(0),
+        key: `https://api.catalog.enthusjast.cc${path}:null`,
+      });
+    for (let i = 1; i <= 130; i++) await writeCache(entry(i));
+    for (const path of paths)
+      expect(
+        await readCache(`https://api.catalog.enthusjast.cc${path}:null`),
+      ).toBeDefined();
+    expect(await readCache("33")).toBeUndefined();
+    expect(await readCache("34")).toBeDefined();
+    const db = await cacheDatabase();
+    const count = await new Promise<number>((resolve) => {
+      const request = db.transaction("queries").objectStore("queries").count();
+      request.onsuccess = () => resolve(request.result);
+    });
+    expect(count).toBe(100);
+    db.close();
+  });
+  it("can read cached API data offline after ordinary records were evicted", async () => {
+    const { writeCache } = await import("../src/api/cache");
+    await writeCache({
+      ...entry(0),
+      key: "https://api.catalog.enthusjast.cc/restricted:null",
+      payload: { restricted: false },
+    });
+    for (let i = 1; i <= 130; i++) await writeCache(entry(i));
+    await writeCache({
+      ...entry(131),
+      key: "https://api.catalog.enthusjast.cc/test:null",
+      payload: [42],
+    });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
+    const { query } = await import("../src/api/client");
+    expect(await query("/test", z.array(z.number()))).toMatchObject({
+      data: [42],
+      meta: { state: "stale" },
+    });
+  });
+  it("retries denied storage and never reports a failed clear as successful", async () => {
+    const factory = indexedDB;
+    vi.stubGlobal("indexedDB", undefined);
+    const { clearCache, writeCache, readCache } =
+      await import("../src/api/cache");
+    await writeCache(entry(1));
+    expect(await readCache("1")).toBeDefined();
+    await expect(clearCache()).rejects.toThrow("缓存");
+    vi.stubGlobal("indexedDB", factory);
+    await writeCache(entry(2));
+    expect(await readCache("2")).toBeDefined();
+    await clearCache();
+    expect(await readCache("2")).toBeUndefined();
+  });
+  it("recovers a blocked upgrade after the old tab releases the database", async () => {
+    const old = await cacheDatabase(2);
+    const { clearCache, writeCache, readCache } =
+      await import("../src/api/cache");
+    await expect(clearCache()).rejects.toThrow("旧标签页");
+    old.close();
+    await writeCache(entry(1));
+    expect(await readCache("1")).toBeDefined();
+    await clearCache();
+    expect(await readCache("1")).toBeUndefined();
+  });
+  it("checks the persisted clear revision even if another tab notification is delayed", async () => {
+    const { captureCacheToken, writeCache, readCache } =
+      await import("../src/api/cache");
+    await writeCache(entry(1));
+    const token = await captureCacheToken(),
+      db = await cacheDatabase();
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction(["queries", "metadata"], "readwrite");
+      tx.objectStore("queries").clear();
+      tx.objectStore("metadata").put(1, "clearRevision");
+      tx.oncomplete = () => resolve();
+    });
+    await writeCache(entry(2), token);
+    expect(await readCache("1")).toBeUndefined();
+    expect(await readCache("2")).toBeUndefined();
+    db.close();
   });
   it.each(["network", "http", "content", "schema"])(
     "preserves network-only stale fallback: %s",
