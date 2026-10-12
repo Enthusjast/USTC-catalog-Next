@@ -57,4 +57,12 @@ describe("program semester offerings", () => {
       programOfferings(modules, [lesson("AB", "1")])[0]?.entries[0]?.lessons,
     ).toEqual([]);
   });
+  it("keeps occurrence keys stable while sibling courses are filtered", () => {
+    const second = { course: { code: "B", name: "乙" }, terms: [] };
+    const whole = [{ ...modules[0]!, courses: [second, entry] }],
+      filtered = [{ ...modules[0]!, courses: [entry] }];
+    expect(programOfferings(whole, [])[0]?.entries[1]?.key).toBe(
+      programOfferings(filtered, [])[0]?.entries[0]?.key,
+    );
+  });
 });

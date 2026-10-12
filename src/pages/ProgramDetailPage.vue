@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ArrowLeft, ArrowLeftRight, Link } from "@lucide/vue";
 import { catalog } from "../api/catalog";
@@ -30,12 +30,24 @@ const id = computed(() => String(route.params.id)),
 const filteredModules = computed(() =>
   filterProgramModules(data.value?.modules ?? [], q.value),
 );
+const searchOverrides = ref(new Map<string, boolean>());
+watch(q, () => {
+  searchOverrides.value = new Map();
+});
 const expanded = computed(() =>
-  expandedParam.value
-    ? expandedParam.value.split(",").filter((v) => v !== "none")
-    : (data.value?.modules.map((m) => m.id) ?? []),
+  q.value.trim()
+    ? all(filteredModules.value).filter(
+        (id) => searchOverrides.value.get(id) !== false,
+      )
+    : expandedParam.value
+      ? expandedParam.value.split(",").filter((v) => v !== "none")
+      : (data.value?.modules.map((m) => m.id) ?? []),
 );
 function toggle(moduleId: string, open: boolean) {
+  if (q.value.trim()) {
+    searchOverrides.value.set(moduleId, open);
+    return;
+  }
   const next = new Set(expanded.value);
   if (open) next.add(moduleId);
   else next.delete(moduleId);
@@ -136,10 +148,25 @@ async function share() {
       <div class="flex-actions">
         <button
           class="text-button"
-          @click="expandedParam = all(data.modules).join(',')"
+          @click="
+            q.trim()
+              ? all(filteredModules).forEach((id) =>
+                  searchOverrides.set(id, true),
+                )
+              : (expandedParam = all(data.modules).join(','))
+          "
         >
           全部展开</button
-        ><button class="text-button" @click="expandedParam = 'none'">
+        ><button
+          class="text-button"
+          @click="
+            q.trim()
+              ? all(filteredModules).forEach((id) =>
+                  searchOverrides.set(id, false),
+                )
+              : (expandedParam = 'none')
+          "
+        >
           全部收起
         </button>
       </div>
@@ -165,6 +192,7 @@ async function share() {
     <ProgramOfferings
       v-else
       :modules="filteredModules"
+      :search="q"
       @course="code = $event"
     />
     <p v-if="q && !filteredModules.length" class="muted">

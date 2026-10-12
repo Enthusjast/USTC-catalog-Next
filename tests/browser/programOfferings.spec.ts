@@ -29,8 +29,23 @@ test("program offerings load once per semester and preserve every matching class
   });
   await page.goto("/#/programs/demo-new?view=offerings&semester=demo-current");
   await expect(
+    page.locator(".program-offering-course summary").first(),
+  ).toHaveText("130 个教学班");
+  await expect(
     page.locator(".program-offering-course .lesson-table tbody tr"),
-  ).toHaveCount(130);
+  ).toHaveCount(0);
+  await page.locator(".program-offering-course summary").first().click();
+  await expect(
+    page.locator(".program-offering-course .lesson-table tbody tr"),
+  ).toHaveCount(25);
+  await page
+    .getByRole("spinbutton", { name: "跳转页码", exact: true })
+    .fill("6");
+  await page.getByRole("button", { name: "跳转", exact: true }).click();
+  await expect(
+    page.locator(".program-offering-course .lesson-table tbody tr"),
+  ).toHaveCount(5);
+
   expect(loads).toBe(1);
   await expect(page.locator(".program-offering-course").last()).toContainText(
     "未找到公开开课",
@@ -49,7 +64,7 @@ test("program offerings load once per semester and preserve every matching class
   await page.locator("#program-module-q").fill("DEMO101");
   await expect(
     page.locator(".program-offering-course .lesson-table tbody tr"),
-  ).toHaveCount(130);
+  ).toHaveCount(5);
   expect(loads).toBe(1);
   await page
     .locator("#program-offering-semester")
@@ -96,6 +111,7 @@ test("failed offering query is unknown and responsive controls fit both themes",
         await expect(page.locator("main")).toContainText("开课状态未知");
         await expect(page.locator("main")).not.toContainText("未找到公开开课");
       } else {
+        await page.locator(".program-offering-course summary").first().click();
         await expect(page.locator(".lesson-table").first()).toBeVisible();
         await page.locator(".lesson-table .course-name").first().click();
         const box = await page.locator("dialog[open]").boundingBox();

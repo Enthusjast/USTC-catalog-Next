@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import { restoredFilters, saveFilters } from "../features/filterPreferences";
+import { normalizeQuery } from "../domain/queryParams";
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -90,11 +91,17 @@ router.beforeEach((to, from) => {
   // An explicit query is a complete shared filter snapshot. Same-page resets stay empty.
   if (
     !Object.keys(to.query).length &&
+    !to.redirectedFrom &&
     (to.path !== from.path || !from.matched.length)
   ) {
-    const query = restoredFilters(to.path);
-    if (query) return { path: to.path, query, hash: to.hash, replace: true };
+    const saved = restoredFilters(to.path);
+    const query = saved && normalizeQuery(to.path, saved as typeof to.query);
+    if (query && Object.keys(query).length)
+      return { path: to.path, query, hash: to.hash, replace: true };
   }
+  const query = normalizeQuery(to.path, to.query);
+  if (JSON.stringify(query) !== JSON.stringify(to.query))
+    return { path: to.path, query, hash: to.hash, replace: true };
 });
 router.afterEach((to, _from, failure) => {
   if (failure) return;

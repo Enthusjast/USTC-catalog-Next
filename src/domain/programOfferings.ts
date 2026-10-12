@@ -13,12 +13,20 @@ export function lessonsByCourse(lessons: Lesson[]) {
 }
 export function programOfferings(modules: ProgramModule[], lessons: Lesson[]) {
   const index = lessonsByCourse(lessons);
-  return programModuleRows(modules).map((row) => ({
-    ...row,
-    entries: row.module.courses.map((entry, i) => ({
-      key: JSON.stringify([row.path, row.module.id, i]),
-      entry,
-      lessons: index.get(entry.course.code) ?? [],
-    })),
-  }));
+  return programModuleRows(modules).map((row) => {
+    const copies = new Map<string, number>();
+    return {
+      ...row,
+      entries: row.module.courses.map((entry) => {
+        const identity = JSON.stringify(entry),
+          ordinal = copies.get(identity) ?? 0;
+        copies.set(identity, ordinal + 1);
+        return {
+          key: JSON.stringify([row.path, row.module.id, identity, ordinal]),
+          entry,
+          lessons: index.get(entry.course.code) ?? [],
+        };
+      }),
+    };
+  });
 }

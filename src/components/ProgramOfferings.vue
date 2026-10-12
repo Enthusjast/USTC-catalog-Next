@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import type { ProgramModule } from "../domain/models";
 import { catalog } from "../api/catalog";
 import { programOfferings } from "../domain/programOfferings";
@@ -8,11 +8,11 @@ import { useQuery } from "../features/useQuery";
 import { useFilter } from "../features/useFilters";
 import { usePlanner } from "../features/usePlanner";
 import QueryState from "./QueryState.vue";
-import LessonList from "./LessonList.vue";
+import ProgramOfferingCourse from "./ProgramOfferingCourse.vue";
 import LessonDetailDialog from "./LessonDetailDialog.vue";
 import SchemeSelector from "./SchemeSelector.vue";
 defineEmits<{ course: [code: string] }>();
-const props = defineProps<{ modules: ProgramModule[] }>(),
+const props = defineProps<{ modules: ProgramModule[]; search: string }>(),
   semesters = useSemester(),
   semester = semesters.selected,
   code = useFilter("lesson"),
@@ -33,6 +33,40 @@ const props = defineProps<{ modules: ProgramModule[] }>(),
       query.data.value?.find((l) => l.code === code.value) ??
       planner.lessons.value.find((l) => l.code === code.value),
   );
+const openKeys = ref(new Set<string>()),
+  searchOverrides = ref(new Map<string, boolean>());
+watch(
+  () => props.search,
+  () => {
+    searchOverrides.value = new Map();
+  },
+);
+function isOpen(key: string) {
+  return props.search.trim()
+    ? (searchOverrides.value.get(key) ?? true)
+    : openKeys.value.has(key);
+}
+function toggle(key: string, open: boolean) {
+  if (props.search.trim()) searchOverrides.value.set(key, open);
+  else if (open) openKeys.value.add(key);
+  else openKeys.value.delete(key);
+}
+function all(open: boolean) {
+  rows.value
+    .flatMap((row) => row.entries)
+    .forEach((item) => toggle(item.key, open));
+}
+watch(
+  [code, rows],
+  () => {
+    if (!code.value) return;
+    rows.value
+      .flatMap((row) => row.entries)
+      .filter((item) => item.lessons.some((l) => l.code === code.value))
+      .forEach((item) => toggle(item.key, true));
+  },
+  { immediate: true },
+);
 </script>
 <template>
   <div class="program-offering-controls panel">
@@ -56,6 +90,10 @@ const props = defineProps<{ modules: ProgramModule[] }>(),
     :error="semesters.error.value || query.error.value"
     @retry="query.error.value ? query.reload() : semesters.reload()"
   />
+  <div v-if="rows.length" class="flex-actions offering-expand-controls">
+    <button class="text-button" @click="all(true)">全部展开</button
+    ><button class="text-button" @click="all(false)">全部收起</button>
+  </div>
   <section
     v-for="row in rows"
     :key="JSON.stringify([row.path, row.module.id])"
@@ -114,48 +152,22 @@ const props = defineProps<{ modules: ProgramModule[] }>(),
     <p v-if="row.module.referenceState === 'incomplete'" class="notice warning">
       公共模块未完整读取，相关课程及开课状态未知。
     </p>
-    <article
+    <ProgramOfferingCourse
       v-for="item in row.entries"
       :key="item.key"
-      class="program-offering-course"
-    >
-      <h3>
-        <span class="mono">{{ item.entry.course.code }}</span>
-        <button
-          class="course-name"
-          @click="$emit('course', item.entry.course.code)"
-        >
-          {{ item.entry.course.name }}
-        </button>
-      </h3>
-      <p class="muted">
-        {{
-          item.entry.compulsory === undefined
-            ? "课程属性未提供"
-            : item.entry.compulsory
-              ? "必修"
-              : "选修"
-        }}
-        · {{ item.entry.terms.join("、") || "建议学期未提供" }}
-      </p>
-      <p v-if="item.entry.remark">{{ item.entry.remark }}</p>
-      <LessonList
-        v-if="query.data.value"
-        :lessons="item.lessons"
-        :candidate-ids="candidateIds"
-        :semester="semester"
-        :compare-codes="[]"
-        :show-compare="false"
-        @detail="code = $event"
-        @candidate="planner.toggle"
-      />
-      <p v-if="query.data.value && !item.lessons.length" class="muted">
-        未找到公开开课
-      </p>
-      <p v-else-if="query.error.value || semesters.error.value" class="muted">
-        开课状态未知
-      </p>
-    </article>
+      :entry="item.entry"
+      :lessons="item.lessons"
+      :candidate-ids="candidateIds"
+      :semester="semester"
+      :open="isOpen(item.key)"
+      :resolved="query.resolved.value"
+      :error="query.error.value || semesters.error.value"
+      :detail-code="code"
+      @toggle="toggle(item.key, $event)"
+      @course="$emit('course', $event)"
+      @detail="code = $event"
+      @candidate="planner.toggle"
+    />
   </section>
   <LessonDetailDialog
     v-if="code"
