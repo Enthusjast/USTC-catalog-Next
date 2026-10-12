@@ -5,12 +5,16 @@ import LessonSchedule from "./LessonSchedule.vue";
 import IcourseLink from "./IcourseLink.vue";
 import { workspaceBusy } from "../features/useWorkspace";
 import { teacherLink } from "../domain/queryLinks";
-defineProps<{
-  lessons: Lesson[];
-  candidateIds: Set<string>;
-  compareCodes: string[];
-  semester?: string;
-}>();
+withDefaults(
+  defineProps<{
+    lessons: Lesson[];
+    candidateIds: Set<string>;
+    compareCodes: string[];
+    semester?: string;
+    showCompare?: boolean;
+  }>(),
+  { showCompare: true },
+);
 defineEmits<{
   detail: [code: string];
   candidate: [lesson: Lesson];
@@ -89,6 +93,7 @@ defineEmits<{
               />{{ candidateIds.has(lesson.id) ? "已加入" : "候选" }}
             </button>
             <button
+              v-if="showCompare"
               class="text-button"
               :aria-pressed="compareCodes.includes(lesson.code)"
               @click="$emit('compare', lesson)"

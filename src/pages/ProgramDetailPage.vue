@@ -10,6 +10,7 @@ import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
 import ProgramModule from "../components/ProgramModule.vue";
 import ProgramTermCourses from "../components/ProgramTermCourses.vue";
+import ProgramOfferings from "../components/ProgramOfferings.vue";
 import { filterProgramModules } from "../domain/programView";
 import { exportProgram } from "../domain/tableExports";
 import { printProgram } from "../domain/programPrint";
@@ -99,7 +100,7 @@ async function share() {
         placeholder="查找模块、课程或编号"
       /><button
         class="text-button"
-        :aria-pressed="view !== 'terms'"
+        :aria-pressed="view !== 'terms' && view !== 'offerings'"
         @click="view = 'modules'"
       >
         按模块</button
@@ -109,6 +110,12 @@ async function share() {
         @click="view = 'terms'"
       >
         按建议学期</button
+      ><button
+        class="text-button"
+        :aria-pressed="view === 'offerings'"
+        @click="view = 'offerings'"
+      >
+        本学期开课</button
       ><button
         class="text-button"
         @click="exportProgram(data, filteredModules, view)"
@@ -121,7 +128,10 @@ async function share() {
         打印 / PDF
       </button>
     </div>
-    <div v-if="view !== 'terms'" class="section-heading">
+    <div
+      v-if="view !== 'terms' && view !== 'offerings'"
+      class="section-heading"
+    >
       <h2>课程模块</h2>
       <div class="flex-actions">
         <button
@@ -134,7 +144,10 @@ async function share() {
         </button>
       </div>
     </div>
-    <div v-if="view !== 'terms'" class="panel module-tree">
+    <div
+      v-if="view !== 'terms' && view !== 'offerings'"
+      class="panel module-tree"
+    >
       <ProgramModule
         v-for="module in filteredModules"
         :key="module.id"
@@ -145,6 +158,11 @@ async function share() {
       />
     </div>
     <ProgramTermCourses
+      v-else-if="view === 'terms'"
+      :modules="filteredModules"
+      @course="code = $event"
+    />
+    <ProgramOfferings
       v-else
       :modules="filteredModules"
       @course="code = $event"
