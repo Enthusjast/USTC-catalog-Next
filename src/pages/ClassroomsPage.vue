@@ -35,13 +35,17 @@ import RoomRecordList from "../components/RoomRecordList.vue";
 import RoomWeekView from "../components/RoomWeekView.vue";
 import { useClassroomPositions } from "../features/useClassroomPositions";
 import RoomUsageTimeline from "../components/RoomUsageTimeline.vue";
+import RoomFavorites from "../components/RoomFavorites.vue";
+import { useRoomFavorites } from "../features/useRoomFavorites";
+import { useToday } from "../features/useToday";
+import { workspaceBusy } from "../features/useWorkspace";
 import DisclosureDialog from "../components/DisclosureDialog.vue";
 import EmptyState from "../components/EmptyState.vue";
 import RoomUsagePopover, {
   type UsageSelection,
 } from "../components/RoomUsagePopover.vue";
 const router = useRouter(),
-  today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }),
+  today = useToday(),
   date = useFilter("date", today),
   building = useFilter("building"),
   room = useFilter("room"),
@@ -50,6 +54,7 @@ const router = useRouter(),
   campus = useFilter("campus"),
   selectedKey = useFilter("roomKey"),
   roomView = useFilter("roomView", "day");
+const roomFavorites = useRoomFavorites();
 const filterSummary = useFilterSummary({
   building: {
     label: "楼宇",
@@ -347,6 +352,7 @@ useClassroomPositions(
       @remove="filterSummary.remove"
       @clear="reset"
     />
+    <RoomFavorites v-if="validDate" :date="date" />
     <div
       v-if="validDate && buildingGroups.length"
       class="room-building-controls panel"
@@ -427,6 +433,18 @@ useClassroomPositions(
             @click="roomView = 'week'"
           >
             本周使用
+          </button>
+          <button
+            v-if="selectedRoom.directoryId !== undefined"
+            class="text-button"
+            :disabled="workspaceBusy"
+            @click="roomFavorites.toggle(selectedRoom)"
+          >
+            {{
+              roomFavorites.includes(selectedRoom.directoryId)
+                ? "已收藏教室"
+                : "收藏教室"
+            }}
           </button>
         </div>
         <RoomWeekView

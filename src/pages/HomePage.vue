@@ -14,6 +14,7 @@ import { useQuery } from "../features/useQuery";
 import { catalog } from "../api/catalog";
 import HomeSemesterCard from "../components/HomeSemesterCard.vue";
 import CatalogSearch from "../components/CatalogSearch.vue";
+import HomeAgenda from "../components/HomeAgenda.vue";
 
 const { data, meta, loading, error, reload } = useQuery((signal, force) =>
   catalog.semesters({ signal, force }),
@@ -114,6 +115,7 @@ const tasks = [
     :meta="meta"
     @retry="reload"
   />
+  <HomeAgenda v-if="currentSemester" :semester="currentSemester" />
   <section class="secondary-tasks">
     <RouterLink to="/classrooms"
       ><MapPin :size="21" />

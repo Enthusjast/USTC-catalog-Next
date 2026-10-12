@@ -1,4 +1,12 @@
-import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  watch,
+  toValue,
+  type Ref,
+  type MaybeRefOrGetter,
+} from "vue";
 import {
   useRoute,
   useRouter,
@@ -6,19 +14,22 @@ import {
   type Router,
 } from "vue-router";
 const pending = new WeakMap<Router, LocationQueryRaw>();
-export function useFilter(name: string, fallback = "") {
+export function useFilter(
+  name: string,
+  fallback: MaybeRefOrGetter<string> = "",
+) {
   const route = useRoute(),
     router = useRouter();
   return computed({
     get: () =>
       typeof route.query[name] === "string"
         ? (route.query[name] as string)
-        : fallback,
+        : toValue(fallback),
     set: (value) => {
       const first = !pending.has(router);
       pending.set(router, {
         ...(pending.get(router) ?? route.query),
-        [name]: value && value !== fallback ? value : undefined,
+        [name]: value && value !== toValue(fallback) ? value : undefined,
         page: name === "page" ? value : undefined,
       });
       if (first)

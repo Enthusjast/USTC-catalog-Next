@@ -9,6 +9,7 @@ import { periodLayouts } from "../domain/periods";
 import SchemeSelector from "./SchemeSelector.vue";
 import CandidateUpdatePreview from "./CandidateUpdatePreview.vue";
 import { workspaceBusy } from "../features/useWorkspace";
+import CalendarSettings from "./CalendarSettings.vue";
 const props = defineProps<{
   planner: ReturnType<typeof usePlanner>;
   data?: Lesson[];
@@ -114,18 +115,7 @@ function exportICS() {
         已识别的公开安排中未发现时间重叠。
       </p>
       <div class="ics-settings">
-        <div class="filter-field">
-          <label for="planner-start">第 1 教学周的周一日期</label
-          ><input id="planner-start" v-model="firstMonday" type="date" />
-        </div>
-        <div class="filter-field">
-          <label for="planner-layout">日历时间方式</label
-          ><select id="planner-layout" v-model="layout">
-            <option value="">全天提醒（含课节说明）</option>
-            <option value="1">课节表 1（第 1 节 07:50）</option>
-            <option value="2">课节表 2（第 1 节 08:00）</option>
-          </select>
-        </div>
+        <CalendarSettings :planner="planner" prefix="planner" />
         <button
           class="button secondary"
           :disabled="!firstMonday"

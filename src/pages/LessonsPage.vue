@@ -18,7 +18,9 @@ import {
 } from "../domain/lessonFilters";
 import { exportLessons } from "../domain/tableExports";
 import { rankLessons } from "../domain/search";
-import { addISODate, isISODate } from "../domain/dates";
+import { addISODate, teachingWeek, isFirstMonday } from "../domain/dates";
+import { useToday } from "../features/useToday";
+import CalendarSettings from "../components/CalendarSettings.vue";
 import { lessonConflicts, weekdays } from "../domain/schedule";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
@@ -383,10 +385,21 @@ const timetableExportData = computed(() => ({
 const currentWeek = computed(() =>
   Math.min(53, Math.max(1, Number(week.value) || 1)),
 );
+const today = useToday(),
+  thisWeek = computed(() =>
+    teachingWeek(planner.firstMonday.value, today.value),
+  );
+function jumpToday(dayOnly = false) {
+  if (!thisWeek.value) return;
+  week.value = String(thisWeek.value);
+  timetableMode.value = dayOnly ? "day" : "week";
+  if (dayOnly)
+    timetableDay.value = String(
+      ((new Date(`${today.value}T12:00:00Z`).getUTCDay() + 6) % 7) + 1,
+    );
+}
 const detailWeekStart = computed(() =>
-  view.value === "week" &&
-  isISODate(planner.firstMonday.value) &&
-  new Date(`${planner.firstMonday.value}T12:00:00Z`).getUTCDay() === 1
+  view.value === "week" && isFirstMonday(planner.firstMonday.value)
     ? addISODate(planner.firstMonday.value, (currentWeek.value - 1) * 7)
     : undefined,
 );
@@ -627,6 +640,19 @@ function reset() {
                 第 {{ w }} 周
               </option>
             </select>
+            <button
+              class="text-button"
+              :disabled="!thisWeek"
+              @click="jumpToday()"
+            >
+              跳到本周</button
+            ><button
+              class="text-button"
+              :disabled="!thisWeek"
+              @click="jumpToday(true)"
+            >
+              今天
+            </button>
             <p class="week-planner-link">
               欲进行详细排课, 请前往
               <a
@@ -674,6 +700,10 @@ function reset() {
             v-if="timetableSource !== 'results'"
             :planner="planner"
           />
+          <details class="calendar-control">
+            <summary>日历设置</summary>
+            <CalendarSettings :planner="planner" prefix="week-calendar" />
+          </details>
           <TimetableExport :data="timetableExportData" />
           <WeekTimetable
             :lessons="timetableLessons"

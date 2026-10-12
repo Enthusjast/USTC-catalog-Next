@@ -1,8 +1,6 @@
 import { roomDirectory } from "./roomDirectory";
-import { isISODate } from "./dates";
-export function todayISO() {
-  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
-}
+import { isISODate, todayISO } from "./dates";
+export { todayISO } from "./dates";
 export const lessonLink = (semester: string, code: string) => ({
   path: "/lessons",
   query: { semester, q: code, lesson: code },
