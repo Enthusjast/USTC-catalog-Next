@@ -20,6 +20,10 @@ it("rejects decimal, infinite, repeated and out-of-range query parameters", () =
   ).toEqual({ semester: "461", lesson: "MATH.01", q: "教师" });
 });
 it("validates dates and enums, preserving unknown identifiers and deprecated classroom arguments", () => {
+  expect(normalizeQuery("/classrooms", { capacity: "Infinity" })).toEqual({});
+  expect(normalizeQuery("/classrooms", { capacity: "0" })).toEqual({
+    capacity: "0",
+  });
   expect(dateParam("2026-02-30")).toBeUndefined();
   expect(dateParam("2028-02-29")).toBe("2028-02-29");
   expect(

@@ -35,7 +35,7 @@ function invalidate() {
   memory.clear();
 }
 function synchronize(revision: number) {
-  if (knownRevision !== undefined && revision <= knownRevision) return;
+  if (revision === knownRevision) return;
   if (knownRevision !== undefined || memory.size || revision > 0) invalidate();
   knownRevision = revision;
 }
@@ -120,6 +120,8 @@ function open() {
         db.onversionchange = () => {
           db.close();
           if (database === pending) database = undefined;
+          knownRevision = undefined;
+          invalidate();
         };
         void normalizeEssential(db)
           .then(() => resolve(db))
@@ -320,7 +322,8 @@ if (typeof window !== "undefined") {
     channel.onmessage = (event) => {
       if (event.data?.type === "clear") {
         try {
-          synchronize(revisionValue(event.data.revision));
+          revisionValue(event.data.revision);
+          void checkRevision();
         } catch {
           /* Ignore invalid notifications. */
         }

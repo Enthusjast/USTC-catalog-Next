@@ -46,6 +46,7 @@ const rules: Record<string, Record<string, Parser>> = {
   },
   "/classrooms": {
     date: dateParam,
+    capacity: integerParam(0, Number.MAX_SAFE_INTEGER),
     type: enumParam(
       "lessons",
       "tmpLessons",

@@ -185,6 +185,22 @@ describe("query cache indexed eviction", () => {
     expect(await readCache("1")).toBeUndefined();
     db.close();
   });
+  it("invalidates old memory and request tokens when the browser recreates the database", async () => {
+    const { writeCache, captureCacheToken, readCache } =
+      await import("../src/api/cache");
+    await writeCache(entry(1));
+    const token = await captureCacheToken();
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.deleteDatabase("ustc-catalog-cache");
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    expect(await readCache("1")).toBeUndefined();
+    await writeCache(entry(2), token);
+    expect(await readCache("2")).toBeUndefined();
+    await writeCache(entry(3));
+    expect(await readCache("3")).toEqual(entry(3));
+  });
   it.each(["network", "http", "content", "schema"])(
     "preserves network-only stale fallback: %s",
     async (kind) => {
