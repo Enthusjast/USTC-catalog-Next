@@ -162,6 +162,29 @@ describe("query cache indexed eviction", () => {
     expect(await readCache("2")).toBeUndefined();
     db.close();
   });
+  it("does not revive a response captured during storage denial after another tab cleared it", async () => {
+    const factory = indexedDB;
+    vi.stubGlobal("indexedDB", undefined);
+    const { captureCacheToken, writeCache, readCache } =
+        await import("../src/api/cache"),
+      token = await captureCacheToken();
+    vi.stubGlobal("indexedDB", factory);
+    const db = await new Promise<IDBDatabase>((resolve) => {
+      const request = indexedDB.open("ustc-catalog-cache", 3);
+      request.onupgradeneeded = () => {
+        const store = request.result.createObjectStore("queries", {
+          keyPath: "key",
+        });
+        store.createIndex("retrievedAt", "retrievedAt");
+        store.createIndex("byKindAndTime", ["kind", "retrievedAt"]);
+        request.result.createObjectStore("metadata").put(1, "clearRevision");
+      };
+      request.onsuccess = () => resolve(request.result);
+    });
+    await writeCache(entry(1), token);
+    expect(await readCache("1")).toBeUndefined();
+    db.close();
+  });
   it.each(["network", "http", "content", "schema"])(
     "preserves network-only stale fallback: %s",
     async (kind) => {

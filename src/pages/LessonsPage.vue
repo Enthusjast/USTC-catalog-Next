@@ -1,26 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { List, CalendarDays, ClipboardList, ArrowDown } from "@lucide/vue";
 import type { Lesson } from "../domain/models";
-import { catalog } from "../api/catalog";
-import { useQuery } from "../features/useQuery";
 import { useSemester } from "../features/useSemester";
-import { useFilter, useDebounced } from "../features/useFilters";
+import { useFilter } from "../features/useFilters";
 import { usePlanner } from "../features/usePlanner";
+import { useLessonResults } from "../features/useLessonResults";
+import { useLessonComparison } from "../features/useLessonComparison";
+import { useLessonTimetable } from "../features/useLessonTimetable";
+import LessonTimetable from "../components/LessonTimetable.vue";
 import { usePagination } from "../features/usePagination";
-import { useFilterSummary } from "../features/useFilterSummary";
-import { useLessonFilterInfo } from "../features/useLessonFilterInfo";
-import {
-  matchesLessonFilters,
-  matchesOption,
-  missingValue,
-} from "../domain/lessonFilters";
 import { exportLessons } from "../domain/tableExports";
-import { rankLessons } from "../domain/search";
-import { addISODate, teachingWeek, isFirstMonday } from "../domain/dates";
-import { useToday } from "../features/useToday";
-import CalendarSettings from "../components/CalendarSettings.vue";
 import { lessonConflicts, weekdays } from "../domain/schedule";
 import PageHeading from "../components/PageHeading.vue";
 import QueryState from "../components/QueryState.vue";
@@ -28,102 +19,42 @@ import FilterPanel from "../components/FilterPanel.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import EmptyState from "../components/EmptyState.vue";
 import Pagination from "../components/Pagination.vue";
-import TimetableExport from "../components/TimetableExport.vue";
-import SchemeSelector from "../components/SchemeSelector.vue";
 import PlannerPanel from "../components/PlannerPanel.vue";
 import LessonComparison from "../components/LessonComparison.vue";
 import LessonDetailDialog from "../components/LessonDetailDialog.vue";
-import WeekTimetable from "../components/WeekTimetable.vue";
 import LessonFilterFields from "../components/LessonFilterFields.vue";
 import LessonList from "../components/LessonList.vue";
 const router = useRouter(),
   semesterQuery = useSemester(),
   semester = semesterQuery.selected;
-const q = useFilter("q"),
-  keyword = useDebounced(q),
-  dept = useFilter("dept"),
-  teacher = useFilter("teacher"),
-  day = useFilter("day"),
-  period = useFilter("period"),
-  location = useFilter("location"),
-  education = useFilter("education"),
-  type = useFilter("type"),
-  courseType = useFilter("courseType"),
-  category = useFilter("category"),
-  discipline = useFilter("discipline"),
-  grading = useFilter("grading"),
-  campus = useFilter("campus"),
-  language = useFilter("language"),
-  examMode = useFilter("exam"),
-  view = useFilter("view", "list"),
-  week = useFilter("week", "1"),
-  detailCode = useFilter("lesson"),
-  sort = useFilter("sort", "code"),
-  compare = useFilter("compare"),
-  timetableSource = useFilter("source", "candidates"),
-  timetableMode = useFilter("ttMode", "week"),
-  timetableDay = useFilter("ttDay", "1");
-const { data, meta, loading, error, resolved, reload } = useQuery(
-  (signal, force) => catalog.lessons(semester.value, { signal, force }),
-  semester,
-  () => !!semester.value,
-);
-const advancedOpen = ref(false);
-watch(
-  () =>
-    [
-      education,
-      type,
-      courseType,
-      category,
-      discipline,
-      grading,
-      campus,
-      language,
-      examMode,
-    ].some((field) => !!field.value),
-  (active) => {
-    if (active) advancedOpen.value = true;
-  },
-  { immediate: true },
-);
-const metadataOpen = ref(false);
-const baseFiltered = computed(() =>
-  (data.value ?? []).filter((l) =>
-    matchesLessonFilters(l, {
-      q: keyword.value,
-      dept: dept.value,
-      teacher: teacher.value,
-      day: day.value,
-      period: period.value,
-      location: location.value,
-      education: education.value,
-      type: type.value,
-      courseType: courseType.value,
-      category: category.value,
-      campus: campus.value,
-      language: language.value,
-      exam: examMode.value,
-    }),
-  ),
-);
-const lessonFilterInfo = useLessonFilterInfo(
-  semester,
-  baseFiltered,
-  () => metadataOpen.value || !!discipline.value || !!grading.value,
-);
-const filterInfoByCode = computed(
-  () =>
-    new Map(
-      (lessonFilterInfo.data.value ?? []).map((info) => [info.code, info]),
-    ),
-);
-const metadataFiltersPending = computed(
-  () =>
-    !!baseFiltered.value.length &&
-    !!(discipline.value || grading.value) &&
-    !lessonFilterInfo.data.value,
-);
+const results = useLessonResults(semester);
+const {
+  data,
+  meta,
+  loading,
+  error,
+  resolved,
+  reload,
+  q,
+  teacher,
+  day,
+  period,
+  location,
+  discipline,
+  grading,
+  sort,
+  advancedOpen,
+  metadataOpen,
+  lessonFilterInfo,
+  filterInfoByCode,
+  metadataFiltersPending,
+  selectedDepartment,
+  departments,
+  filterSummary,
+  advanced,
+  filtered,
+} = results;
+const detailCode = useFilter("lesson");
 const planner = usePlanner(semester),
   conflicts = computed(() => lessonConflicts(planner.lessons.value));
 const candidateIds = computed(
@@ -146,261 +77,24 @@ function showResults() {
   resultsHeading.value?.scrollIntoView({ block: "start" });
   resultsHeading.value?.focus({ preventScroll: true });
 }
-const departments = computed(() =>
-  [
-    ...new Map(
-      (data.value ?? []).map((l) => [
-        l.departmentCode,
-        { code: l.departmentCode, name: l.department },
-      ]),
-    ).values(),
-  ].sort((a, b) => a.name.localeCompare(b.name, "zh")),
-);
-const selectedDepartment = computed({
-  get: () =>
-    departments.value.find((d) => d.name === dept.value)?.code ?? dept.value,
-  set: (value) => {
-    dept.value = value;
-  },
-});
-const filterSummary = useFilterSummary({
-  q: { label: "关键词", model: q },
-  dept: {
-    label: "院系",
-    model: dept,
-    display: () =>
-      departments.value.find(
-        (department) => department.code === selectedDepartment.value,
-      )?.name,
-  },
-  teacher: { label: "教师", model: teacher },
-  day: {
-    label: "星期",
-    model: day,
-    display: () =>
-      weekdays[Number(day.value) - 1]
-        ? `周${weekdays[Number(day.value) - 1]}`
-        : day.value,
-  },
-  period: {
-    label: "课节",
-    model: period,
-    display: () => `第 ${period.value} 节`,
-  },
-  location: { label: "地点", model: location },
-  education: { label: "学历层次", model: education },
-  type: { label: "课堂类型", model: type },
-  courseType: {
-    label: "课程类型",
-    model: courseType,
-    display: () => (courseType.value === missingValue ? "未提供" : undefined),
-  },
-  category: { label: "课程范畴", model: category },
-  discipline: {
-    label: "学科类别",
-    model: discipline,
-    display: () => (discipline.value === missingValue ? "未提供" : undefined),
-  },
-  grading: {
-    label: "评分制",
-    model: grading,
-    display: () => (grading.value === missingValue ? "未提供" : undefined),
-  },
-  campus: {
-    label: "校区",
-    model: campus,
-    display: () => (campus.value === missingValue ? "未提供" : undefined),
-  },
-  language: { label: "授课语言", model: language },
-  exam: { label: "考试方式", model: examMode },
-});
-function distinctOptions(
-  values: (string | undefined)[],
-  includeMissing = false,
-) {
-  const result = [...new Set(values.filter((v): v is string => !!v))].sort(
-    (a, b) => a.localeCompare(b, "zh-CN"),
-  );
-  if (includeMissing && values.some((value) => !value))
-    result.push(missingValue);
-  return result;
-}
-const options = (
-  field:
-    | "education"
-    | "classType"
-    | "courseType"
-    | "category"
-    | "language"
-    | "examMode"
-    | "campus",
-) =>
-  distinctOptions(
-    (data.value ?? []).map((l) => l[field]),
-    field === "courseType" || field === "campus",
-  );
-function detailOptions(field: "discipline" | "grading") {
-  if (!lessonFilterInfo.data.value) return [];
-  return distinctOptions(
-    (lessonFilterInfo.data.value ?? []).map((info) => info[field]),
-    true,
-  );
-}
-const advanced = computed(() => [
-  {
-    key: "education",
-    label: "学历层次",
-    model: education,
-    values: options("education"),
-  },
-  { key: "type", label: "课堂类型", model: type, values: options("classType") },
-  {
-    key: "courseType",
-    label: "课程类型",
-    model: courseType,
-    values: options("courseType"),
-  },
-  {
-    key: "category",
-    label: "课程范畴",
-    model: category,
-    values: options("category"),
-  },
-  {
-    key: "discipline",
-    label: "学科类别",
-    model: discipline,
-    values: detailOptions("discipline"),
-  },
-  {
-    key: "grading",
-    label: "评分制",
-    model: grading,
-    values: detailOptions("grading"),
-  },
-  { key: "campus", label: "校区", model: campus, values: options("campus") },
-  {
-    key: "language",
-    label: "授课语言",
-    model: language,
-    values: options("language"),
-  },
-  {
-    key: "exam",
-    label: "考试方式",
-    model: examMode,
-    values: options("examMode"),
-  },
-]);
-const filtered = computed(() =>
-  (metadataFiltersPending.value ? [] : baseFiltered.value)
-    .filter(
-      (l) =>
-        matchesOption(
-          filterInfoByCode.value.get(l.code)?.discipline,
-          discipline.value,
-        ) &&
-        matchesOption(
-          filterInfoByCode.value.get(l.code)?.grading,
-          grading.value,
-        ),
-    )
-    .sort(
-      (a, b) =>
-        (keyword.value.trim() && sort.value === "code"
-          ? rankLessons([a, b], keyword.value).findIndex((l) => l === a) -
-            rankLessons([a, b], keyword.value).findIndex((l) => l === b)
-          : 0) ||
-        (sort.value === "name"
-          ? a.course.name
-          : sort.value === "department"
-            ? a.department
-            : a.code
-        ).localeCompare(
-          sort.value === "name"
-            ? b.course.name
-            : sort.value === "department"
-              ? b.department
-              : b.code,
-          "zh-CN",
-          { numeric: true },
-        ),
-    ),
-);
 const { page, visible, change } = usePagination(filtered);
 const detail = computed(
   () =>
     data.value?.find((l) => l.code === detailCode.value) ??
     planner.lessons.value.find((l) => l.code === detailCode.value),
 );
-const compareCodes = computed(() =>
-  [...new Set(compare.value.split(",").filter(Boolean))].slice(0, 4),
-);
-const compared = computed(() => {
-  const selected = compareCodes.value.flatMap((code) => {
-    const lesson = data.value?.find((l) => l.code === code);
-    return lesson ? [lesson] : [];
-  });
-  return selected.filter((l) => l.course.code === selected[0]?.course.code);
-});
-const compareMessage = ref("");
-function toggleCompare(lesson: Lesson) {
-  if (compareCodes.value.includes(lesson.code)) {
-    compare.value = compareCodes.value
-      .filter((code) => code !== lesson.code)
-      .join(",");
-    return;
-  }
-  if (
-    compared.value.length &&
-    compared.value[0]!.course.code !== lesson.course.code
-  ) {
-    compareMessage.value = "只能对比同一课程的教学班。";
-    return;
-  }
-  if (compareCodes.value.length >= 4) {
-    compareMessage.value = "最多对比四个教学班。";
-    return;
-  }
-  compareMessage.value = "";
-  compare.value = [...compareCodes.value, lesson.code].join(",");
-}
-const timetableLessons = computed(() =>
-  timetableSource.value === "results" ? filtered.value : planner.lessons.value,
-);
-const timetableExportData = computed(() => ({
-  lessons: timetableLessons.value,
-  week: currentWeek.value,
-  mode: timetableMode.value === "day" ? ("day" as const) : ("week" as const),
-  day: Math.min(7, Math.max(1, Number(timetableDay.value) || 1)),
-  title:
-    timetableSource.value === "results"
-      ? teacher.value
-        ? `${teacher.value}的查询课表`
-        : "查询结果课表"
-      : (planner.active.value?.name ?? "默认方案"),
-}));
-const currentWeek = computed(() =>
-  Math.min(53, Math.max(1, Number(week.value) || 1)),
-);
-const today = useToday(),
-  thisWeek = computed(() =>
-    teachingWeek(planner.firstMonday.value, today.value),
-  );
-function jumpToday(dayOnly = false) {
-  if (!thisWeek.value) return;
-  week.value = String(thisWeek.value);
-  timetableMode.value = dayOnly ? "day" : "week";
-  if (dayOnly)
-    timetableDay.value = String(
-      ((new Date(`${today.value}T12:00:00Z`).getUTCDay() + 6) % 7) + 1,
-    );
-}
-const detailWeekStart = computed(() =>
-  view.value === "week" && isFirstMonday(planner.firstMonday.value)
-    ? addISODate(planner.firstMonday.value, (currentWeek.value - 1) * 7)
-    : undefined,
-);
+const { compare, compareCodes, compared, compareMessage, toggleCompare } =
+  useLessonComparison(data);
+const timetable = useLessonTimetable(filtered, planner, teacher);
+const {
+  view,
+  week,
+  timetableSource,
+  timetableMode,
+  timetableDay,
+  currentWeek,
+  detailWeekStart,
+} = timetable;
 function reset() {
   void router.replace({
     path: "/lessons",
@@ -631,84 +325,10 @@ function reset() {
             :page="page"
             @change="change" /></template
         ><template v-else
-          ><div class="week-controls">
-            <label for="planner-week">教学周</label
-            ><select id="planner-week" v-model="week" class="field-input">
-              <option v-for="w in 53" :key="w" :value="String(w)">
-                第 {{ w }} 周
-              </option>
-            </select>
-            <button
-              class="text-button"
-              :disabled="!thisWeek"
-              @click="jumpToday()"
-            >
-              跳到本周</button
-            ><button
-              class="text-button"
-              :disabled="!thisWeek"
-              @click="jumpToday(true)"
-            >
-              今天
-            </button>
-            <p class="week-planner-link">
-              欲进行详细排课, 请前往
-              <a
-                href="https://class-arrange.raymondzylei.me/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Raymond 的排课工具（新窗口打开）"
-                >Raymond 的排课工具</a
-              >
-            </p>
-            <label for="timetable-source">课表来源</label
-            ><select
-              id="timetable-source"
-              v-model="timetableSource"
-              class="field-input"
-            >
-              <option value="candidates">候选方案</option>
-              <option value="results">查询结果</option>
-            </select>
-            <label for="timetable-mode">视图</label
-            ><select
-              id="timetable-mode"
-              v-model="timetableMode"
-              class="field-input"
-            >
-              <option value="week">完整周</option>
-              <option value="day">单日</option>
-            </select>
-            <select
-              v-if="timetableMode === 'day'"
-              v-model="timetableDay"
-              class="field-input"
-              aria-label="课表星期"
-            >
-              <option
-                v-for="(d, i) in weekdays"
-                :key="d"
-                :value="String(i + 1)"
-              >
-                周{{ d }}
-              </option>
-            </select>
-          </div>
-          <SchemeSelector
-            v-if="timetableSource !== 'results'"
+          ><LessonTimetable
+            :state="timetable"
             :planner="planner"
-          />
-          <details class="calendar-control">
-            <summary>日历设置</summary>
-            <CalendarSettings :planner="planner" prefix="week-calendar" />
-          </details>
-          <TimetableExport :data="timetableExportData" />
-          <WeekTimetable
-            :lessons="timetableLessons"
-            :week="currentWeek"
-            :mode="timetableExportData.mode"
-            :day="timetableExportData.day"
-            @select="detailCode = $event"
+            @detail="detailCode = $event"
           />
         </template>
       </div>

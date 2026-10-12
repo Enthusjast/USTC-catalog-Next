@@ -247,7 +247,7 @@ export async function writeCache(
   )
     return;
   if (token.revision === undefined) {
-    remember(entry);
+    if (await isCacheTokenCurrent(token)) remember(entry);
     return;
   }
   try {
@@ -293,7 +293,7 @@ export async function writeCache(
       };
     });
   } catch {
-    if (token.generation === generation) remember(entry);
+    if (await isCacheTokenCurrent(token)) remember(entry);
   }
 }
 function announce(value: number) {
