@@ -2,8 +2,34 @@
 import { ref, shallowRef, useId } from "vue";
 import type { CandidateScheme } from "../domain/workspace";
 import { workspaceBusy } from "../features/useWorkspace";
+import { workspace } from "../features/useWorkspace";
+import { singleSchemeBackup, serializeBackup } from "../domain/workspace";
+import { downloadFile } from "../domain/download";
 import type { usePlanner } from "../features/usePlanner";
 const props = defineProps<{ planner: ReturnType<typeof usePlanner> }>();
+const exportMessage = ref("");
+function exportScheme() {
+  try {
+    const term = Object.entries(workspace.value.semesters).find(([, term]) =>
+      term.schemes.some((s) => s.id === props.planner.active.value?.id),
+    );
+    if (!term) return;
+    downloadFile(
+      serializeBackup(
+        singleSchemeBackup(
+          workspace.value,
+          term[0],
+          props.planner.activeSchemeId.value,
+        ),
+      ),
+      `ustc-scheme-${term[0]}.json`,
+      "application/json",
+    );
+    exportMessage.value = "";
+  } catch (error) {
+    exportMessage.value = (error as Error).message;
+  }
+}
 const action = ref<"" | "new" | "copy" | "rename">(""),
   name = ref(""),
   id = useId();
@@ -90,6 +116,13 @@ function remove() {
       >
         删除
       </button>
+      <button
+        class="text-button"
+        :disabled="workspaceBusy || !planner.active.value"
+        @click="exportScheme"
+      >
+        导出当前方案
+      </button>
     </div>
     <form v-if="action" class="scheme-name-form" @submit.prevent="save">
       <label :for="`${id}-name`" class="sr-only">方案名称</label
@@ -106,6 +139,7 @@ function remove() {
         取消
       </button>
     </form>
+    <p v-if="exportMessage" role="status">{{ exportMessage }}</p>
   </div>
 </template>
 <style scoped>

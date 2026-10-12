@@ -10,6 +10,7 @@ import SchemeSelector from "./SchemeSelector.vue";
 import CandidateUpdatePreview from "./CandidateUpdatePreview.vue";
 import { workspaceBusy } from "../features/useWorkspace";
 import CalendarSettings from "./CalendarSettings.vue";
+import SchemeComparison from "./SchemeComparison.vue";
 const props = defineProps<{
   planner: ReturnType<typeof usePlanner>;
   data?: Lesson[];
@@ -66,6 +67,7 @@ function exportICS() {
       </div>
     </div>
     <SchemeSelector :planner="planner" />
+    <SchemeComparison :planner="planner" :semester="semester" />
     <p v-if="planner.storageError.value" class="notice warning">
       {{ planner.storageError.value }}
     </p>

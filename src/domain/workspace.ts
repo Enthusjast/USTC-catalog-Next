@@ -275,3 +275,19 @@ export function serializeBackup(value: WorkspaceBackup) {
     throw new Error("备份超过 5 MB，请分方案导出。");
   return text;
 }
+export function singleSchemeBackup(
+  workspace: Workspace,
+  semester: string,
+  id: string,
+) {
+  const scheme = workspace.semesters[semester]?.schemes.find(
+    (s) => s.id === id,
+  );
+  if (!scheme) throw new Error("方案已被删除。");
+  const result = emptyWorkspace();
+  result.semesters[semester] = {
+    activeId: id,
+    schemes: [structuredClone(scheme)],
+  };
+  return makeBackup(result);
+}

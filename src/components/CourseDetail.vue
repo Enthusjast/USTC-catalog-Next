@@ -10,6 +10,7 @@ import QueryState from "./QueryState.vue";
 import CourseContent from "./CourseContent.vue";
 import CourseRelations from "./CourseRelations.vue";
 import { workspaceBusy } from "../features/useWorkspace";
+import FavoriteEditor from "./FavoriteEditor.vue";
 const props = defineProps<{ code: string; initial?: Course }>();
 defineEmits<{ close: [] }>();
 const { favorites, toggle, storageError } = useFavorites();
@@ -50,6 +51,7 @@ const course = computed(() => data.value?.[0] ?? props.initial);
       </button>
     </div>
     <p v-if="storageError" class="notice warning">{{ storageError }}</p>
+    <FavoriteEditor v-if="favorites.includes(code)" :code="code" />
     <dl v-if="course" class="detail-grid" style="margin-top: 24px">
       <div v-if="course.department">
         <dt>所属院系</dt>

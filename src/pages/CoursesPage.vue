@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { Bookmark, ArrowUpRight, Search, BookOpen } from "@lucide/vue";
 import { useRouter } from "vue-router";
 import { catalog } from "../api/catalog";
@@ -7,6 +7,8 @@ import { flattenDepartments } from "../adapters/catalog";
 import { useQuery } from "../features/useQuery";
 import { useFilter, useDebounced } from "../features/useFilters";
 import { useFavorites } from "../features/useFavorites";
+import FavoriteEditor from "../components/FavoriteEditor.vue";
+import FavoriteGroups from "../components/FavoriteGroups.vue";
 import { useFilterSummary } from "../features/useFilterSummary";
 import { publicCourseCatalogues } from "../domain/courseCatalog";
 import { courseMatches, rankCourses } from "../domain/search";
@@ -30,7 +32,20 @@ const router = useRouter(),
   code = useFilter("course"),
   sort = useFilter("sort", "code"),
   catalogueCode = useFilter("catalog", "ma");
-const { favorites } = useFavorites();
+const {
+  favorites,
+  groups: favoriteGroups,
+  details: favoriteDetails,
+} = useFavorites();
+const favoriteGroup = ref("");
+watch(favoriteGroups, (groups) => {
+  if (
+    favoriteGroup.value &&
+    favoriteGroup.value !== "ungrouped" &&
+    !groups.some((g) => g.id === favoriteGroup.value)
+  )
+    favoriteGroup.value = "";
+});
 const departmentQuery = useQuery((signal, force) =>
   catalog.departments({ signal, force }),
 );
@@ -108,7 +123,12 @@ const filtered = computed(() =>
           )) &&
         (!category.value ||
           category.value === (c.classification ?? c.category)) &&
-        (saved.value !== "1" || favorites.value.includes(c.code)),
+        (saved.value !== "1" || favorites.value.includes(c.code)) &&
+        (scope.value !== "saved" ||
+          !favoriteGroup.value ||
+          (favoriteGroup.value === "ungrouped"
+            ? !favoriteDetails.value[c.code]?.groupId
+            : favoriteDetails.value[c.code]?.groupId === favoriteGroup.value)),
     )
     .sort(
       (a, b) =>
@@ -231,6 +251,20 @@ function clear() {
     </button>
   </div>
   <div class="query-layout">
+    <div v-if="scope === 'saved'" class="flex-actions favorite-group-controls">
+      <label for="favorite-group-filter">收藏分组</label
+      ><select id="favorite-group-filter" v-model="favoriteGroup">
+        <option value="">全部分组</option>
+        <option value="ungrouped">未分组</option>
+        <option
+          v-for="group in favoriteGroups"
+          :key="group.id"
+          :value="group.id"
+        >
+          {{ group.name }}
+        </option></select
+      ><FavoriteGroups />
+    </div>
     <FilterPanel
       :active-count="filterSummary.count.value"
       :result-count="data ? filtered.length : undefined"
@@ -495,6 +529,18 @@ function clear() {
                       :size="16"
                     /><ArrowUpRight v-else :size="16" />
                   </button>
+                  <FavoriteEditor
+                    v-if="scope === 'saved'"
+                    :code="course.code"
+                  />
+                  <p
+                    v-if="
+                      scope === 'saved' && favoriteDetails[course.code]?.note
+                    "
+                    class="favorite-note"
+                  >
+                    {{ favoriteDetails[course.code]?.note }}
+                  </p>
                 </td>
               </tr>
             </tbody>
@@ -510,3 +556,20 @@ function clear() {
     @close="code = ''"
   />
 </template>
+<style scoped>
+.favorite-group-controls {
+  grid-column: 1/-1;
+  padding: 8px 0;
+}
+.favorite-group-controls select {
+  width: 200px;
+  max-width: 100%;
+}
+.favorite-note {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 260px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+</style>
