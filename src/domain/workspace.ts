@@ -76,18 +76,78 @@ const semesterSchema = z
     )
       ctx.addIssue({ code: "custom", message: "候选教学班重复" });
   });
-export const workspaceSchema = z.object({
+export const legacyWorkspaceSchema = z.object({
   version: z.literal(1),
   semesters: z.record(z.string().min(1).max(100), semesterSchema),
   favorites: z.array(z.string().min(1).max(100)).max(MAX_FAVORITES),
 });
+export const favoriteGroupSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(40),
+});
+export const favoriteDetailSchema = z.object({
+  groupId: z.string().optional(),
+  note: z.string().max(1000).default(""),
+});
+export const roomFavoriteSchema = z.object({
+  directoryId: z.number().int().nonnegative(),
+  room: z.string().min(1),
+  building: z.string().min(1),
+});
+export const workspaceSchema = legacyWorkspaceSchema
+  .extend({
+    version: z.literal(2),
+    revision: z.number().int().nonnegative().default(0),
+    favoriteGroups: z.array(favoriteGroupSchema).max(20).default([]),
+    favoriteDetails: z.record(z.string(), favoriteDetailSchema).default({}),
+    roomFavorites: z.array(roomFavoriteSchema).max(100).default([]),
+  })
+  .superRefine((value, ctx) => {
+    const groups = new Set(value.favoriteGroups.map((g) => g.id));
+    if (
+      groups.size !== value.favoriteGroups.length ||
+      new Set(value.favoriteGroups.map((g) => g.name)).size !==
+        value.favoriteGroups.length ||
+      new Set(value.favorites).size !== value.favorites.length ||
+      new Set(value.roomFavorites.map((r) => r.directoryId)).size !==
+        value.roomFavorites.length
+    )
+      ctx.addIssue({ code: "custom", message: "收藏或分组重复" });
+    for (const [code, detail] of Object.entries(value.favoriteDetails))
+      if (
+        !value.favorites.includes(code) ||
+        (detail.groupId && !groups.has(detail.groupId))
+      )
+        ctx.addIssue({ code: "custom", message: "收藏分组引用无效" });
+  });
 export type Workspace = z.infer<typeof workspaceSchema>;
 export type CandidateScheme = z.infer<typeof schemeSchema>;
 export const emptyWorkspace = (): Workspace => ({
-  version: 1,
+  version: 2,
+  revision: 0,
+  favoriteGroups: [],
+  favoriteDetails: {},
+  roomFavorites: [],
   semesters: {},
   favorites: [],
 });
+export function upgradeWorkspace(value: unknown): Workspace {
+  if (
+    value &&
+    typeof value === "object" &&
+    "version" in value &&
+    value.version === 1
+  ) {
+    const legacy = legacyWorkspaceSchema.parse(value);
+    return workspaceSchema.parse({
+      ...emptyWorkspace(),
+      ...legacy,
+      version: 2,
+      favorites: [...new Set(legacy.favorites)],
+    });
+  }
+  return workspaceSchema.parse(value);
+}
 export function createScheme(
   name = "默认方案",
   lessons: Lesson[] = [],
@@ -125,7 +185,7 @@ export function uniqueSchemeName(name: string, schemes: CandidateScheme[]) {
     if (!schemes.some((s) => s.name === next)) return next;
   }
 }
-const backupSchema = workspaceSchema.extend({
+const backupSchema = workspaceSchema.safeExtend({
   format: z.literal("USTC-catalog-Next-backup"),
   exportedAt: z.string().datetime(),
 });
@@ -140,7 +200,21 @@ export function parseBackup(text: string): WorkspaceBackup {
   if (new TextEncoder().encode(text).length > 5 * 1024 * 1024)
     throw new Error("备份文件不能超过 5 MB。");
   try {
-    return backupSchema.parse(JSON.parse(text));
+    const value = JSON.parse(text);
+    if (value.version === 1) {
+      legacyWorkspaceSchema
+        .extend({
+          format: z.literal("USTC-catalog-Next-backup"),
+          exportedAt: z.string().datetime(),
+        })
+        .parse(value);
+      return backupSchema.parse({
+        ...upgradeWorkspace(value),
+        format: value.format,
+        exportedAt: value.exportedAt,
+      });
+    }
+    return backupSchema.parse(value);
   } catch {
     throw new Error("备份格式无效、版本不支持或数据超过限制。");
   }
@@ -150,6 +224,27 @@ export function mergeBackup(
   backup: WorkspaceBackup,
 ): Workspace {
   const next = workspaceSchema.parse(JSON.parse(JSON.stringify(current)));
+  const groupIds = new Map<string, string>();
+  for (const group of backup.favoriteGroups) {
+    let target = next.favoriteGroups.find((g) => g.name === group.name);
+    if (!target) {
+      target = { ...group, id: crypto.randomUUID() };
+      next.favoriteGroups.push(target);
+    }
+    groupIds.set(group.id, target.id);
+  }
+  for (const code of backup.favorites)
+    if (!next.favorites.includes(code)) {
+      const detail = backup.favoriteDetails[code];
+      if (detail)
+        next.favoriteDetails[code] = {
+          ...detail,
+          groupId: detail.groupId ? groupIds.get(detail.groupId) : undefined,
+        };
+    }
+  for (const room of backup.roomFavorites)
+    if (!next.roomFavorites.some((r) => r.directoryId === room.directoryId))
+      next.roomFavorites.push(room);
   next.favorites = [...new Set([...next.favorites, ...backup.favorites])];
   if (next.favorites.length > MAX_FAVORITES)
     throw new Error("合并后收藏超过 1000 门，未导入任何数据。");
@@ -173,4 +268,10 @@ export function mergeBackup(
     next.semesters[term] = target;
   }
   return workspaceSchema.parse(next);
+}
+export function serializeBackup(value: WorkspaceBackup) {
+  const text = JSON.stringify(value, null, 2);
+  if (new TextEncoder().encode(text).length > 5 * 1024 * 1024)
+    throw new Error("备份超过 5 MB，请分方案导出。");
+  return text;
 }

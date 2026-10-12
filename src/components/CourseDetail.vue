@@ -9,6 +9,7 @@ import DisclosureDialog from "./DisclosureDialog.vue";
 import QueryState from "./QueryState.vue";
 import CourseContent from "./CourseContent.vue";
 import CourseRelations from "./CourseRelations.vue";
+import { workspaceBusy } from "../features/useWorkspace";
 const props = defineProps<{ code: string; initial?: Course }>();
 defineEmits<{ close: [] }>();
 const { favorites, toggle, storageError } = useFavorites();
@@ -39,6 +40,7 @@ const course = computed(() => data.value?.[0] ?? props.initial);
         >{{ course.valid ? "当前有效" : "历史课程" }}</span
       ><button
         class="button small secondary"
+        :disabled="workspaceBusy"
         :aria-pressed="favorites.includes(code)"
         @click="toggle(code)"
       >

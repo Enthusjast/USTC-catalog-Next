@@ -65,7 +65,7 @@ npm run check:api
 | `src/components` | 搜索、筛选、分页、详情、模块与课表              |
 | `src/pages`      | 页面，按路由动态加载                            |
 
-缓存只在网络失败时回退到通过校验的旧结果，HTTP、Content-Type、JSON 和 schema 错误不会被旧数据遮蔽。较大响应存入 IndexedDB，最多保留 100 个查询；清单和偏好使用 localStorage。存储不可用时查询仍可工作，并显示清单持久化失败信息。
+缓存只在网络失败时回退到通过校验的旧结果，HTTP、Content-Type、JSON 和 schema 错误不会被旧数据遮蔽。较大响应存入 IndexedDB，最多保留 100 个查询；候选和收藏使用独立 IndexedDB 事务库，偏好使用 localStorage。存储不可用时查询仍可工作，并显示清单持久化失败信息。
 
 ## GitHub Pages
 
@@ -82,7 +82,7 @@ npm run check:api
 
 首次联网加载完成后，Service Worker 预缓存应用入口、样式、全部路由和安装图标。API 与归档 JSON 仍由已有的 IndexedDB 校验与缓存层管理，不增加第二套查询缓存。没有查询过或已被 100 条缓存上限淘汰的资料需要联网。更新只在点击“更新应用”后加载，不清除方案、收藏或已查询资料。
 
-“站点说明”提供安装、JSON 备份以及两种清除操作。备份只包含本机方案、收藏和方案日历设置，格式标识为 `USTC-catalog-Next-backup`、`version: 1`。完整规则见 [数据管理说明](docs/data-management.md)。
+“站点说明”提供安装、JSON 备份以及两种清除操作。备份只包含本机方案、收藏和方案日历设置，格式标识为 `USTC-catalog-Next-backup`、`version: 2`（兼容导入版本 1）。完整规则见 [数据管理说明](docs/data-management.md)。
 
 浏览器回归先执行生产构建，再由 Playwright 启动预览；首次运行执行 `npx playwright install chromium`。可用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指定已有 Chromium。测试使用隔离浏览器和开发样本拦截 API，不写入发布资料。
 

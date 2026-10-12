@@ -1,103 +1,232 @@
-import { shallowRef } from "vue";
+import { shallowRef, ref, computed } from "vue";
 import { storageKey } from "./storageKey";
 import {
   emptyWorkspace,
   workspaceSchema,
+  upgradeWorkspace,
   migrateLegacy,
   makeBackup,
+  serializeBackup,
   parseBackup,
   mergeBackup,
   type Workspace,
 } from "../domain/workspace";
+import {
+  readWorkspace,
+  transactWorkspace,
+  eraseWorkspaces,
+  WorkspaceStorageError,
+} from "./workspaceRepository";
 const key = storageKey("workspace");
 export const workspaceStorageError = shallowRef("");
-let readable = true;
-function read(): Workspace {
+export const workspace = shallowRef<Workspace>(emptyWorkspace());
+export const workspaceLoaded = ref(false);
+const writes = ref(0);
+export const workspaceBusy = computed(
+  () => !workspaceLoaded.value || writes.value > 0,
+);
+const legacyValues = new Map<string, string | null>();
+let readable = true,
+  ephemeral = false,
+  epoch = 0;
+let channel: BroadcastChannel | undefined;
+const changeEvent = "ustc-workspace-changed";
+function legacy() {
+  for (const name of ["workspace", "planner", "favorites"])
+    legacyValues.set(storageKey(name), localStorage.getItem(storageKey(name)));
+  const saved = localStorage.getItem(key),
+    planner = localStorage.getItem(storageKey("planner")),
+    favorites = localStorage.getItem(storageKey("favorites"));
+  return saved
+    ? upgradeWorkspace(JSON.parse(saved))
+    : migrateLegacy(
+        planner ? JSON.parse(planner) : {},
+        favorites ? JSON.parse(favorites) : [],
+      );
+}
+function cleanLegacy(force = false) {
+  for (const name of ["workspace", "planner", "favorites"])
+    if (
+      force ||
+      localStorage.getItem(storageKey(name)) ===
+        legacyValues.get(storageKey(name))
+    )
+      localStorage.removeItem(storageKey(name));
+}
+function announce(clear = false) {
+  channel?.postMessage({ key, clear });
   try {
-    const saved = localStorage.getItem(key);
-    if (saved) return workspaceSchema.parse(JSON.parse(saved));
-    const planner = localStorage.getItem(storageKey("planner")),
-      favorites = localStorage.getItem(storageKey("favorites"));
-    const migrated = migrateLegacy(
-      planner ? JSON.parse(planner) : {},
-      favorites ? JSON.parse(favorites) : [],
+    localStorage.setItem(
+      storageKey("workspace-signal"),
+      `${Date.now()}:${crypto.randomUUID()}:${clear}`,
     );
-    if (planner || favorites) {
+  } catch {
+    /* Broadcast remains optional. */
+  }
+}
+async function refresh() {
+  if (ephemeral || !workspaceLoaded.value) return;
+  const generation = epoch;
+  try {
+    const latest = (await readWorkspace(key)) ?? emptyWorkspace();
+    if (
+      generation === epoch &&
+      JSON.stringify(latest) !== JSON.stringify(workspace.value)
+    ) {
+      workspace.value = latest;
+      workspaceStorageError.value = "";
+    }
+  } catch {
+    /* Keep the readable in-memory copy. */
+  }
+}
+export const workspaceReady = (async () => {
+  let seed = emptyWorkspace();
+  try {
+    const current = await readWorkspace(key);
+    if (current) workspace.value = current;
+    else {
       try {
-        localStorage.setItem(key, JSON.stringify(migrated));
-        localStorage.removeItem(storageKey("planner"));
-        localStorage.removeItem(storageKey("favorites"));
+        seed = legacy();
       } catch {
-        workspaceStorageError.value =
-          "旧清单已读取，但无法保存迁移结果；原存储已保留。";
+        readable = false;
+        throw new Error("旧规划数据无法读取，原存储已保留。");
+      }
+      workspace.value = await transactWorkspace(
+        key,
+        () => {},
+        () => seed,
+      );
+      try {
+        cleanLegacy();
+      } catch {
+        workspaceStorageError.value = "迁移已保存，旧键暂时无法移除。";
       }
     }
-    return migrated;
-  } catch {
-    readable = false;
-    workspaceStorageError.value =
-      "本机数据无法读取或迁移，原存储已保留。请先导出原浏览器数据或清除本机数据。";
-    return emptyWorkspace();
-  }
-}
-export const workspace = shallowRef<Workspace>(read());
-export function saveWorkspace(value: Workspace, requirePersist = false) {
-  const next = workspaceSchema.parse(value);
-  if (!readable) {
-    workspaceStorageError.value = "原存储无法读取，未覆盖原数据。";
-    return false;
-  }
-  try {
-    localStorage.setItem(key, JSON.stringify(next));
-    workspace.value = next;
-    workspaceStorageError.value = "";
-    return true;
-  } catch {
-    if (!requirePersist) workspace.value = next;
-    workspaceStorageError.value = requirePersist
-      ? "备份无法保存，原数据未改变。"
-      : "无法保存到浏览器，本次修改仅保留到页面关闭。";
-    return false;
-  }
-}
-export function editWorkspace(edit: (next: Workspace) => void) {
-  try {
-    const next = workspaceSchema.parse(workspace.value);
-    edit(next);
-    return saveWorkspace(next);
   } catch (error) {
-    workspaceStorageError.value =
-      error instanceof Error ? error.message : "无法修改方案";
+    if (error instanceof WorkspaceStorageError) {
+      ephemeral = true;
+      try {
+        seed = legacy();
+        workspace.value = seed;
+      } catch {
+        readable = false;
+      }
+      workspaceStorageError.value =
+        "无法保存到浏览器，原数据已保留；本次规划仅保留到页面关闭。";
+    } else {
+      readable = false;
+      workspaceStorageError.value = (error as Error).message;
+    }
+  } finally {
+    workspaceLoaded.value = true;
+  }
+})();
+if (typeof window !== "undefined") {
+  try {
+    channel = new BroadcastChannel("ustc-catalog-workspaces");
+    channel.onmessage = (event) => {
+      if (event.data?.key === key || event.data?.clear) {
+        epoch++;
+        void refresh();
+      }
+    };
+  } catch {
+    /* Use the storage event fallback. */
+  }
+  window.addEventListener("storage", (event) => {
+    if (event.key?.endsWith("workspace-signal")) {
+      epoch++;
+      void refresh();
+    }
+  });
+  window.addEventListener("focus", () => void refresh());
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) void refresh();
+  });
+  window.addEventListener(changeEvent, () => void refresh());
+}
+export async function editWorkspace(
+  edit: (next: Workspace) => void,
+  requirePersist = false,
+) {
+  await workspaceReady;
+  if (!readable) {
+    workspaceStorageError.value = "原数据无法读取，未覆盖原数据。";
     return false;
   }
+  epoch++;
+  writes.value++;
+  try {
+    if (ephemeral) {
+      if (requirePersist) throw new Error("备份无法保存，原数据未改变。");
+      const next = workspaceSchema.parse(workspace.value);
+      edit(next);
+      next.revision++;
+      workspace.value = workspaceSchema.parse(next);
+      return true;
+    }
+    workspace.value = await transactWorkspace(key, edit);
+    workspaceStorageError.value = "";
+    announce();
+    return true;
+  } catch (error) {
+    if (error instanceof WorkspaceStorageError && !requirePersist) {
+      const next = workspaceSchema.parse(workspace.value);
+      try {
+        edit(next);
+        next.revision++;
+        workspace.value = workspaceSchema.parse(next);
+        ephemeral = true;
+      } catch {
+        /* Failed validation must not alter state. */
+      }
+      workspaceStorageError.value =
+        "无法保存到浏览器，本次修改仅保留到页面关闭。";
+    } else
+      workspaceStorageError.value =
+        error instanceof Error ? error.message : "无法修改方案";
+    return false;
+  } finally {
+    writes.value--;
+  }
+}
+export async function saveWorkspace(value: Workspace, requirePersist = false) {
+  const expected = value.revision;
+  return editWorkspace((next) => {
+    if (next.revision !== expected)
+      throw new Error("本机数据已变化，请重新打开编辑。");
+    Object.assign(next, workspaceSchema.parse(value));
+  }, requirePersist);
 }
 export function exportWorkspace() {
-  return JSON.stringify(makeBackup(workspace.value), null, 2);
+  return serializeBackup(makeBackup(workspace.value));
 }
 export function previewWorkspaceImport(text: string) {
   const backup = parseBackup(text);
   mergeBackup(workspace.value, backup);
   return backup;
 }
-export function importWorkspace(text: string) {
+export async function importWorkspace(text: string) {
   try {
-    return saveWorkspace(mergeBackup(workspace.value, parseBackup(text)), true);
+    const backup = parseBackup(text);
+    return await editWorkspace(
+      (next) => Object.assign(next, mergeBackup(next, backup)),
+      true,
+    );
   } catch (error) {
-    workspaceStorageError.value =
-      error instanceof Error ? error.message : "导入失败";
+    workspaceStorageError.value = (error as Error).message;
     return false;
   }
 }
-export function clearWorkspace() {
-  try {
-    localStorage.removeItem(key);
-    localStorage.removeItem(storageKey("planner"));
-    localStorage.removeItem(storageKey("favorites"));
-    readable = true;
-    workspace.value = emptyWorkspace();
-    workspaceStorageError.value = "";
-  } catch {
-    workspaceStorageError.value = "无法清除本机数据。";
-    throw new Error(workspaceStorageError.value);
-  }
+export async function clearWorkspace() {
+  await workspaceReady;
+  epoch++;
+  await eraseWorkspaces();
+  cleanLegacy(true);
+  readable = true;
+  ephemeral = false;
+  workspace.value = emptyWorkspace();
+  workspaceStorageError.value = "";
+  announce(true);
 }

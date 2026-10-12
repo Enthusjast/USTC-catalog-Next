@@ -5,6 +5,7 @@ import {
   previewWorkspaceImport,
   importWorkspace,
   workspaceStorageError,
+  workspaceBusy,
 } from "../features/useWorkspace";
 import type { WorkspaceBackup } from "../domain/workspace";
 import { downloadFile } from "../domain/download";
@@ -12,11 +13,15 @@ const preview = ref<WorkspaceBackup>(),
   text = ref(""),
   message = ref("");
 function exportJSON() {
-  downloadFile(
-    exportWorkspace(),
-    `ustc-catalog-next-backup-${new Date().toISOString().slice(0, 10)}.json`,
-    "application/json",
-  );
+  try {
+    downloadFile(
+      exportWorkspace(),
+      `ustc-catalog-next-backup-${new Date().toISOString().slice(0, 10)}.json`,
+      "application/json",
+    );
+  } catch (error) {
+    message.value = (error as Error).message;
+  }
 }
 async function selectFile(event: Event) {
   preview.value = undefined;
@@ -35,8 +40,8 @@ async function selectFile(event: Event) {
     (event.target as HTMLInputElement).value = "";
   }
 }
-function importJSON() {
-  if (importWorkspace(text.value)) {
+async function importJSON() {
+  if (await importWorkspace(text.value)) {
     preview.value = undefined;
     text.value = "";
     message.value = "备份已导入，现有方案和收藏已保留。";
@@ -47,11 +52,17 @@ function importJSON() {
   <section class="workspace-backup">
     <h2>候选方案与收藏备份</h2>
     <div class="flex-actions">
-      <button class="button secondary" @click="exportJSON">导出 JSON</button
+      <button
+        class="button secondary"
+        :disabled="workspaceBusy"
+        @click="exportJSON"
+      >
+        导出 JSON</button
       ><label class="button secondary backup-file-label"
         >选择备份文件<input
           type="file"
           accept="application/json,.json"
+          :disabled="workspaceBusy"
           @change="selectFile"
       /></label>
     </div>
@@ -68,7 +79,12 @@ function importJSON() {
         {{ preview.favorites.length }} 门收藏。现有方案保留，同名方案自动更名。
       </p>
       <div class="flex-actions">
-        <button class="button small" @click="importJSON">确认导入</button
+        <button
+          class="button small"
+          :disabled="workspaceBusy"
+          @click="importJSON"
+        >
+          确认导入</button
         ><button
           class="text-button"
           @click="

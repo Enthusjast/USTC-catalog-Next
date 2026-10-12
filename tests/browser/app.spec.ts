@@ -51,8 +51,23 @@ test("offline restart, all route code, uncached queries and separate data cleari
     .click();
   await page.locator("#planner-start").fill("2026-08-31");
   await page.locator("#planner-layout").selectOption("1");
-  const saved = await page.evaluate(() =>
-    localStorage.getItem("catalog:workspace"),
+  const saved = await page.evaluate(
+    () =>
+      new Promise<string | null>((resolve, reject) => {
+        const open = indexedDB.open("ustc-catalog-workspace");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result,
+            request = db
+              .transaction("workspaces")
+              .objectStore("workspaces")
+              .get("catalog:workspace");
+          request.onsuccess = () => {
+            resolve(request.result ? JSON.stringify(request.result) : null);
+            db.close();
+          };
+        };
+      }),
   );
   expect(saved).toBeTruthy();
   await context.unroute("https://api.catalog.enthusjast.cc/**");
@@ -97,7 +112,24 @@ test("offline restart, all route code, uncached queries and separate data cleari
     "方案和收藏已保留",
   );
   expect(
-    await page.evaluate(() => localStorage.getItem("catalog:workspace")),
+    await page.evaluate(
+      () =>
+        new Promise<string | null>((resolve, reject) => {
+          const open = indexedDB.open("ustc-catalog-workspace");
+          open.onerror = () => reject(open.error);
+          open.onsuccess = () => {
+            const db = open.result,
+              request = db
+                .transaction("workspaces")
+                .objectStore("workspaces")
+                .get("catalog:workspace");
+            request.onsuccess = () => {
+              resolve(request.result ? JSON.stringify(request.result) : null);
+              db.close();
+            };
+          };
+        }),
+    ),
   ).toBe(saved);
   await page.evaluate(() => {
     localStorage.setItem("catalog:planner", "{}");
@@ -143,8 +175,23 @@ test("new worker waits for a click and preserves local workspace", async ({
   await expect
     .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))
     .toBe(true);
-  const saved = await page.evaluate(() =>
-    localStorage.getItem("catalog:workspace"),
+  const saved = await page.evaluate(
+    () =>
+      new Promise<string | null>((resolve, reject) => {
+        const open = indexedDB.open("ustc-catalog-workspace");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result,
+            request = db
+              .transaction("workspaces")
+              .objectStore("workspaces")
+              .get("catalog:workspace");
+          request.onsuccess = () => {
+            resolve(request.result ? JSON.stringify(request.result) : null);
+            db.close();
+          };
+        };
+      }),
   );
   expect(JSON.parse(saved!).favorites).toEqual(["DEMO101"]);
   const worker = await readFile("dist/sw.js", "utf8"),
@@ -187,7 +234,24 @@ test("new worker waits for a click and preserves local workspace", async ({
       }),
     ).toBeVisible();
     expect(
-      await page.evaluate(() => localStorage.getItem("catalog:workspace")),
+      await page.evaluate(
+        () =>
+          new Promise<string | null>((resolve, reject) => {
+            const open = indexedDB.open("ustc-catalog-workspace");
+            open.onerror = () => reject(open.error);
+            open.onsuccess = () => {
+              const db = open.result,
+                request = db
+                  .transaction("workspaces")
+                  .objectStore("workspaces")
+                  .get("catalog:workspace");
+              request.onsuccess = () => {
+                resolve(request.result ? JSON.stringify(request.result) : null);
+                db.close();
+              };
+            };
+          }),
+      ),
     ).toBe(saved);
     await expect
       .poll(() => page.evaluate(() => !!navigator.serviceWorker.controller))

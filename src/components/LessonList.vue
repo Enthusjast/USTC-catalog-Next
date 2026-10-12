@@ -3,6 +3,7 @@ import { Check, Plus } from "@lucide/vue";
 import type { Lesson } from "../domain/models";
 import LessonSchedule from "./LessonSchedule.vue";
 import IcourseLink from "./IcourseLink.vue";
+import { workspaceBusy } from "../features/useWorkspace";
 defineProps<{
   lessons: Lesson[];
   candidateIds: Set<string>;
@@ -61,6 +62,7 @@ defineEmits<{
           <td>
             <button
               class="button secondary small candidate-button"
+              :disabled="workspaceBusy"
               :class="{ 'is-selected': candidateIds.has(lesson.id) }"
               :aria-label="`${candidateIds.has(lesson.id) ? '移除' : '加入'} ${lesson.course.name} 候选清单`"
               :aria-pressed="candidateIds.has(lesson.id)"

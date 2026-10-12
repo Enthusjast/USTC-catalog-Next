@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { ref, useId } from "vue";
+import { ref, shallowRef, useId } from "vue";
+import type { CandidateScheme } from "../domain/workspace";
+import { workspaceBusy } from "../features/useWorkspace";
 import type { usePlanner } from "../features/usePlanner";
 const props = defineProps<{ planner: ReturnType<typeof usePlanner> }>();
 const action = ref<"" | "new" | "copy" | "rename">(""),
   name = ref(""),
   id = useId();
+const draftSource = shallowRef<CandidateScheme>(),
+  saving = ref(false);
 function open(mode: typeof action.value) {
   action.value = mode;
+  draftSource.value = props.planner.active.value
+    ? structuredClone(props.planner.active.value)
+    : undefined;
   name.value =
     mode === "rename"
       ? (props.planner.active.value?.name ?? "")
@@ -14,15 +21,24 @@ function open(mode: typeof action.value) {
         ? `${props.planner.active.value?.name ?? "默认方案"} 副本`
         : "";
 }
-function save() {
+async function save() {
   if (!name.value.trim()) return;
-  if (action.value === "rename") props.planner.renameScheme(name.value);
-  else props.planner.addScheme(name.value, action.value === "copy");
-  action.value = "";
+  saving.value = true;
+  const ok =
+    action.value === "rename"
+      ? await props.planner.renameScheme(name.value, draftSource.value)
+      : await props.planner.addScheme(
+          name.value,
+          action.value === "copy",
+          draftSource.value,
+        );
+  saving.value = false;
+  if (ok) action.value = "";
 }
 function remove() {
-  if (confirm(`删除方案“${props.planner.active.value?.name}”及其中候选？`))
-    props.planner.removeScheme();
+  const source = props.planner.active.value;
+  if (confirm(`删除方案“${source?.name}”及其中候选？`))
+    void props.planner.removeScheme(source?.id);
 }
 </script>
 <template>
@@ -31,6 +47,7 @@ function remove() {
     ><select
       :id="id"
       class="field-input"
+      :disabled="workspaceBusy"
       :value="planner.activeSchemeId.value"
       @change="
         planner.activeSchemeId.value = (
@@ -48,22 +65,27 @@ function remove() {
       </option>
     </select>
     <div class="flex-actions">
-      <button class="text-button" @click="open('new')">新建</button
+      <button
+        class="text-button"
+        :disabled="workspaceBusy"
+        @click="open('new')"
+      >
+        新建</button
       ><button
         class="text-button"
-        :disabled="!planner.active.value"
+        :disabled="workspaceBusy || !planner.active.value"
         @click="open('copy')"
       >
         复制</button
       ><button
         class="text-button"
-        :disabled="!planner.active.value"
+        :disabled="workspaceBusy || !planner.active.value"
         @click="open('rename')"
       >
         重命名</button
       ><button
         class="text-button"
-        :disabled="!planner.active.value"
+        :disabled="workspaceBusy || !planner.active.value"
         @click="remove"
       >
         删除
@@ -78,7 +100,8 @@ function remove() {
         required
         placeholder="方案名称"
         autofocus
-      /><button class="button small" type="submit">保存</button
+      /><button class="button small" type="submit" :disabled="saving">
+        保存</button
       ><button class="text-button" type="button" @click="action = ''">
         取消
       </button>

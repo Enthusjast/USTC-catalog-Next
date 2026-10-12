@@ -5,6 +5,7 @@ import { Search, ArrowRight } from "@lucide/vue";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
 import { useDebounced } from "../features/useFilters";
+import { courseMatches, rankCourses } from "../domain/search";
 const props = withDefaults(
   defineProps<{ id: string; compact?: boolean; initial?: string }>(),
   { initial: "" },
@@ -19,7 +20,14 @@ const suggestions = useQuery(
   debounced,
   () => focused.value && debounced.value.trim().length >= 2,
 );
-const items = computed(() => suggestions.data.value?.slice(0, 5) ?? []),
+const items = computed(() =>
+    rankCourses(
+      (suggestions.data.value ?? []).filter((course) =>
+        courseMatches(course, debounced.value),
+      ),
+      debounced.value,
+    ).slice(0, 5),
+  ),
   visible = computed(() => focused.value && !!items.value.length);
 watch(keyword, () => {
   selected.value = -1;

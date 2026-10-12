@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { IDBFactory } from "fake-indexeddb";
 import {
   emptyWorkspace,
   createScheme,
@@ -81,6 +82,7 @@ let values: Map<string, string>;
 beforeEach(() => {
   vi.resetModules();
   values = new Map();
+  vi.stubGlobal("indexedDB", new IDBFactory());
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
@@ -89,66 +91,104 @@ beforeEach(() => {
 });
 vi.mock("../src/api/environment", () => ({ DEMO_MODE: false }));
 describe("workspace persistence", () => {
-  it("persists legacy migration before deleting legacy keys", async () => {
+  it("persists migration before deleting legacy keys", async () => {
     values.set(
       "catalog:planner",
       JSON.stringify({ "2026": { lessons: [lesson], savedAt: "old" } }),
     );
-    const { workspace } = await import("../src/features/useWorkspace");
-    expect(workspace.value.semesters["2026"]?.schemes[0]?.lessons).toHaveLength(
-      1,
-    );
-    expect(values.has("catalog:workspace")).toBe(true);
+    const store = await import("../src/features/useWorkspace");
+    await store.workspaceReady;
+    const { readWorkspace } =
+      await import("../src/features/workspaceRepository");
+    expect((await readWorkspace("catalog:workspace"))?.version).toBe(2);
+    expect(
+      store.workspace.value.semesters["2026"]?.schemes[0]?.lessons,
+    ).toHaveLength(1);
     expect(values.has("catalog:planner")).toBe(false);
   });
-  it("preserves legacy storage and loaded candidates on migration quota errors", async () => {
+  it("preserves legacy data on unavailable storage", async () => {
+    vi.stubGlobal("indexedDB", undefined);
     values.set(
       "catalog:planner",
       JSON.stringify({ "2026": { lessons: [lesson], savedAt: "old" } }),
     );
-    vi.stubGlobal("localStorage", {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: () => {
-        throw new Error("quota");
-      },
-      removeItem: (key: string) => values.delete(key),
-    });
-    const { workspace } = await import("../src/features/useWorkspace");
-    expect(workspace.value.semesters["2026"]?.schemes[0]?.lessons).toHaveLength(
-      1,
-    );
-    expect(values.has("catalog:planner")).toBe(true);
-  });
-  it("keeps existing state when an import cannot persist", async () => {
     const store = await import("../src/features/useWorkspace");
-    store.saveWorkspace(populated());
+    await store.workspaceReady;
+    expect(
+      store.workspace.value.semesters["2026"]?.schemes[0]?.lessons,
+    ).toHaveLength(1);
+    expect(values.has("catalog:planner")).toBe(true);
+    expect(
+      await store.editWorkspace((next) => {
+        next.favorites.push("MATH");
+      }),
+    ).toBe(true);
+    expect(store.workspaceStorageError.value).toContain("无法保存");
+  });
+  it("keeps existing state when import cannot persist", async () => {
+    const store = await import("../src/features/useWorkspace");
+    await store.workspaceReady;
+    await store.editWorkspace((next) => Object.assign(next, populated()));
     const before = JSON.stringify(store.workspace.value);
-    vi.stubGlobal("localStorage", {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: () => {
-        throw new Error("quota");
-      },
-    });
-    expect(store.importWorkspace(JSON.stringify(makeBackup(populated())))).toBe(
-      false,
+    const repository = await import("../src/features/workspaceRepository");
+    vi.spyOn(repository, "transactWorkspace").mockRejectedValueOnce(
+      new repository.WorkspaceStorageError("quota"),
     );
+    expect(
+      await store.importWorkspace(JSON.stringify(makeBackup(populated()))),
+    ).toBe(false);
     expect(JSON.stringify(store.workspace.value)).toBe(before);
   });
-  it("switches candidates with the active scheme and preserves calendar preferences", async () => {
+  it("merges concurrent operations against the latest persisted revision", async () => {
+    const { transactWorkspace, readWorkspace } =
+      await import("../src/features/workspaceRepository");
+    await Promise.all([
+      transactWorkspace("test", (next) => next.favorites.push("A")),
+      transactWorkspace("test", (next) => next.favorites.push("B")),
+    ]);
+    expect((await readWorkspace("test"))?.favorites).toEqual(["A", "B"]);
+    expect((await readWorkspace("test"))?.revision).toBe(2);
+  });
+  it("switches schemes and rejects deleted targets and old rename drafts", async () => {
     const { ref } = await import("vue"),
       { usePlanner } = await import("../src/features/usePlanner");
     const planner = usePlanner(ref("2026"));
-    planner.toggle(lesson);
+    await planner.toggle(lesson);
     const original = planner.activeSchemeId.value;
-    planner.firstMonday.value = "2026-08-31";
-    planner.addScheme("新方案");
+    await planner.edit((s) => {
+      s.calendar.firstMonday = "2026-08-31";
+    });
+    const draft = structuredClone(planner.active.value!);
+    await planner.addScheme("新方案");
     expect(planner.lessons.value).toHaveLength(0);
-    planner.activeSchemeId.value = original;
-    expect(planner.lessons.value).toHaveLength(1);
+    await planner.selectScheme(original);
     expect(planner.firstMonday.value).toBe("2026-08-31");
-    planner.removeScheme();
-    planner.removeScheme();
+    await planner.renameScheme("修改后");
+    expect(await planner.renameScheme("过期草稿", draft)).toBe(false);
+    await planner.removeScheme(original);
+    expect(await planner.renameScheme("失效目标", draft)).toBe(false);
+    await planner.removeScheme();
     expect(planner.schemes.value).toHaveLength(1);
     expect(planner.lessons.value).toHaveLength(0);
+  });
+  it("reads version 1 backups and preserves new metadata when merging", () => {
+    const old = {
+      ...populated(),
+      version: 1,
+      format: "USTC-catalog-Next-backup",
+      exportedAt: new Date().toISOString(),
+    };
+    expect(parseBackup(JSON.stringify(old)).version).toBe(2);
+    const current = populated();
+    current.favoriteGroups = [{ id: "g", name: "分组" }];
+    current.favoriteDetails = { MATH: { groupId: "g", note: "保留" } };
+    const incoming = makeBackup(populated());
+    incoming.favoriteGroups = [{ id: "incoming", name: "分组" }];
+    incoming.favoriteDetails = {
+      MATH: { groupId: "incoming", note: "不能覆盖" },
+    };
+    const merged = mergeBackup(current, incoming);
+    expect(merged.favoriteGroups).toHaveLength(1);
+    expect(merged.favoriteDetails.MATH?.note).toBe("保留");
   });
 });

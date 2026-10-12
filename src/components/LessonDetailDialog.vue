@@ -8,6 +8,7 @@ import QueryState from "./QueryState.vue";
 import EmptyState from "./EmptyState.vue";
 import CourseContent from "./CourseContent.vue";
 import IcourseLink from "./IcourseLink.vue";
+import { workspaceBusy } from "../features/useWorkspace";
 const props = defineProps<{
   code: string;
   semester: string;
@@ -101,7 +102,11 @@ const detailCourse = computed(() =>
       />
       <div class="flex-actions">
         <IcourseLink :lesson="detail" variant="button" />
-        <button class="button" @click="$emit('candidate', detail)">
+        <button
+          class="button"
+          :disabled="workspaceBusy"
+          @click="$emit('candidate', detail)"
+        >
           {{ selected ? "移除候选" : "加入候选清单" }}</button
         ><RouterLink
           class="button secondary"

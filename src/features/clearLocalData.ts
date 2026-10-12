@@ -7,7 +7,7 @@ import { removeCatalogStorage } from "../domain/localData";
 
 export async function clearAllLocalData() {
   await clearCache();
-  clearWorkspace();
+  await clearWorkspace();
   clearFilterPreferences();
   usePreferences().theme.value = "light";
   await nextTick();

@@ -5,11 +5,13 @@ import {
   uniqueSchemeName,
   MAX_SCHEMES,
   MAX_CANDIDATES,
+  type CandidateScheme,
 } from "../domain/workspace";
 import {
   workspace,
   editWorkspace,
   workspaceStorageError,
+  workspaceReady,
 } from "./useWorkspace";
 export function usePlanner(semester: { value: string }) {
   const term = computed(() => workspace.value.semesters[semester.value]);
@@ -17,102 +19,145 @@ export function usePlanner(semester: { value: string }) {
   const active = computed(() =>
     schemes.value.find((s) => s.id === term.value?.activeId),
   );
-  function edit(update: (scheme: NonNullable<typeof active.value>) => void) {
-    if (!semester.value) return;
-    editWorkspace((next) => {
-      const id = semester.value;
-      const stored =
-        next.semesters[id] ??
-        (() => {
-          const scheme = createScheme();
-          return { activeId: scheme.id, schemes: [scheme] };
-        })();
-      next.semesters[id] = stored;
-      const scheme = stored.schemes.find((s) => s.id === stored.activeId)!;
+  const lessons = computed(() => active.value?.lessons ?? []);
+  async function edit(update: (scheme: CandidateScheme) => void) {
+    await workspaceReady;
+    const termId = semester.value,
+      schemeId = active.value?.id;
+    if (!termId) return false;
+    return editWorkspace((next) => {
+      let stored = next.semesters[termId];
+      if (!stored) {
+        if (schemeId) throw new Error("方案已被删除，请重新选择。");
+        const scheme = createScheme();
+        stored = { activeId: scheme.id, schemes: [scheme] };
+        next.semesters[termId] = stored;
+      }
+      const scheme = stored.schemes.find(
+        (s) => s.id === (schemeId ?? stored.activeId),
+      );
+      if (!scheme) throw new Error("方案已被删除，请重新选择。");
       update(scheme);
       scheme.savedAt = new Date().toISOString();
     });
   }
-  const lessons = computed(() => active.value?.lessons ?? []);
-  function toggle(lesson: Lesson) {
-    edit((s) => {
-      if (s.lessons.some((l) => l.id === lesson.id))
-        s.lessons = s.lessons.filter((l) => l.id !== lesson.id);
-      else if (s.lessons.length < MAX_CANDIDATES) s.lessons.push(lesson);
-      else throw new Error("每个方案最多保存 100 个候选教学班。");
+  async function toggle(lesson: Lesson) {
+    await workspaceReady;
+    const desired = !lessons.value.some((l) => l.id === lesson.id);
+    return edit((s) => {
+      if (!desired) s.lessons = s.lessons.filter((l) => l.id !== lesson.id);
+      else if (!s.lessons.some((l) => l.id === lesson.id)) {
+        if (s.lessons.length >= MAX_CANDIDATES)
+          throw new Error("每个方案最多保存 100 个候选教学班。");
+        s.lessons.push(lesson);
+      }
     });
   }
-  function addScheme(name: string, copy = false) {
-    if (!semester.value) return;
-    editWorkspace((next) => {
-      const id = semester.value;
-      const stored = next.semesters[id] ?? { activeId: "", schemes: [] };
+  async function addScheme(
+    name: string,
+    copy = false,
+    expected?: CandidateScheme,
+  ) {
+    await workspaceReady;
+    const termId = semester.value,
+      source = expected ?? active.value;
+    if (!termId) return false;
+    return editWorkspace((next) => {
+      const stored = next.semesters[termId] ?? { activeId: "", schemes: [] };
       if (stored.schemes.length >= MAX_SCHEMES)
         throw new Error("每学期最多保存 20 个方案。");
-      const source = copy
-        ? stored.schemes.find((s) => s.id === stored.activeId)
+      const latest = copy
+        ? stored.schemes.find((s) => s.id === source?.id)
         : undefined;
+      if (
+        copy &&
+        (!latest || JSON.stringify(latest) !== JSON.stringify(source))
+      )
+        throw new Error("原方案已变化，请重新打开复制。");
       const scheme = createScheme(
         uniqueSchemeName(name, stored.schemes),
-        source?.lessons ?? [],
-        source?.calendar,
+        latest?.lessons ?? [],
+        latest?.calendar,
       );
       stored.schemes.push(scheme);
       stored.activeId = scheme.id;
-      next.semesters[id] = stored;
+      next.semesters[termId] = stored;
+    });
+  }
+  async function selectScheme(id: string) {
+    await workspaceReady;
+    const termId = semester.value;
+    return editWorkspace((next) => {
+      const stored = next.semesters[termId];
+      if (!stored?.schemes.some((s) => s.id === id))
+        throw new Error("方案已被删除，请重新选择。");
+      stored.activeId = id;
     });
   }
   const activeSchemeId = computed({
     get: () => term.value?.activeId ?? "",
-    set: (id: string) => {
-      editWorkspace((next) => {
-        const term = next.semesters[semester.value];
-        if (term?.schemes.some((s) => s.id === id)) term.activeId = id;
-      });
+    set: (id) => {
+      void selectScheme(id);
     },
   });
-  function removeScheme() {
-    editWorkspace((next) => {
-      const term = next.semesters[semester.value];
-      if (!term) return;
-      term.schemes = term.schemes.filter((s) => s.id !== term.activeId);
-      if (!term.schemes.length) term.schemes = [createScheme()];
-      term.activeId = term.schemes[0]!.id;
+  async function removeScheme(id = active.value?.id) {
+    await workspaceReady;
+    const termId = semester.value;
+    return editWorkspace((next) => {
+      const stored = next.semesters[termId];
+      if (!stored?.schemes.some((s) => s.id === id))
+        throw new Error("方案已被删除。");
+      stored.schemes = stored.schemes.filter((s) => s.id !== id);
+      if (!stored.schemes.length) stored.schemes = [createScheme()];
+      if (stored.activeId === id) stored.activeId = stored.schemes[0]!.id;
     });
   }
-  function renameScheme(name: string) {
-    edit((s) => {
+  async function renameScheme(name: string, expected = active.value) {
+    await workspaceReady;
+    const termId = semester.value;
+    return editWorkspace((next) => {
+      const stored = next.semesters[termId],
+        latest = stored?.schemes.find((s) => s.id === expected?.id);
+      if (!stored || !latest || latest.name !== expected?.name)
+        throw new Error("方案已变化，请重新打开重命名。");
       if (!name.trim()) throw new Error("请输入方案名称。");
-      const others = schemes.value.filter((item) => item.id !== s.id);
-      s.name = uniqueSchemeName(name, others);
+      latest.name = uniqueSchemeName(
+        name,
+        stored.schemes.filter((s) => s.id !== latest.id),
+      );
+      latest.savedAt = new Date().toISOString();
     });
   }
   const firstMonday = computed({
     get: () => active.value?.calendar.firstMonday ?? "",
-    set: (value: string) =>
-      edit((s) => {
+    set: (value) => {
+      void edit((s) => {
         s.calendar.firstMonday = value;
-      }),
+      });
+    },
   });
   const layout = computed({
     get: () => active.value?.calendar.layout ?? "",
-    set: (value: string) =>
-      edit((s) => {
-        if (!["", "1", "2"].includes(value)) return;
+    set: (value) => {
+      void edit((s) => {
+        if (!["", "1", "2"].includes(value)) throw new Error("课节表无效。");
         s.calendar.layout = value as "" | "1" | "2";
-      }),
+      });
+    },
   });
   return {
     lessons,
     schemes,
-    activeSchemeId,
     active,
+    activeSchemeId,
+    selectScheme,
     addScheme,
     removeScheme,
     renameScheme,
     firstMonday,
     layout,
     toggle,
+    edit,
     refresh: (current: Lesson[]) =>
       edit((s) => {
         s.lessons = s.lessons.map(
@@ -127,8 +172,7 @@ export function usePlanner(semester: { value: string }) {
     storageError: workspaceStorageError,
   };
 }
-export function clearPlanner() {
+export const clearPlanner = () =>
   editWorkspace((next) => {
     next.semesters = {};
   });
-}

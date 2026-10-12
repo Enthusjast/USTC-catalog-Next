@@ -129,9 +129,9 @@ const candidateIds = computed(
   plannerPanel = ref<InstanceType<typeof PlannerPanel>>(),
   resultsHeading = ref<HTMLElement>(),
   candidateMessage = ref("");
-function toggleCandidate(lesson: Lesson) {
+async function toggleCandidate(lesson: Lesson) {
   const wasSelected = candidateIds.value.has(lesson.id);
-  planner.toggle(lesson);
+  await planner.toggle(lesson);
   candidateMessage.value =
     candidateIds.value.has(lesson.id) !== wasSelected
       ? `已${wasSelected ? "移除" : "加入"}候选：${lesson.course.name}，当前共 ${planner.lessons.value.length} 个教学班。`

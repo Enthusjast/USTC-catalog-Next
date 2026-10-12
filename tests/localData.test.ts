@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { IDBFactory } from "fake-indexeddb";
 import { removeCatalogStorage } from "../src/domain/localData";
 
 function storage(initial: Record<string, string>) {
@@ -24,6 +25,7 @@ function storage(initial: Record<string, string>) {
 vi.mock("../src/api/environment", () => ({ DEMO_MODE: false }));
 beforeEach(() => {
   vi.resetModules();
+  vi.stubGlobal("indexedDB", new IDBFactory());
   vi.stubGlobal("document", {
     createElement: () => ({}),
     documentElement: { dataset: {} },
@@ -57,7 +59,9 @@ describe("local data management", () => {
     const session = storage({ "catalog:classroom-positions": "[]" });
     vi.stubGlobal("localStorage", local);
     vi.stubGlobal("sessionStorage", session);
-    const { workspace } = await import("../src/features/useWorkspace");
+    const { workspace, workspaceReady } =
+      await import("../src/features/useWorkspace");
+    await workspaceReady;
     const { clearCache, writeCache, readCache } =
       await import("../src/api/cache");
     const entry = {
@@ -69,7 +73,11 @@ describe("local data management", () => {
     await clearCache();
     expect(await readCache("query")).toBeUndefined();
     expect(workspace.value.favorites).toEqual(["MATH"]);
-    expect(local.values.has("catalog:workspace")).toBe(true);
+    const { readWorkspace } =
+      await import("../src/features/workspaceRepository");
+    expect((await readWorkspace("catalog:workspace"))?.favorites).toEqual([
+      "MATH",
+    ]);
     const { clearAllLocalData } =
       await import("../src/features/clearLocalData");
     const { usePreferences } = await import("../src/features/usePreferences");
