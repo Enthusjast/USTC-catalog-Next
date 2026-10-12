@@ -3,6 +3,7 @@ import { ref, computed, watch } from "vue";
 import type { usePlanner } from "../features/usePlanner";
 import { schemeStats, compareSchemes } from "../domain/schemeComparison";
 import { weekdays } from "../domain/schedule";
+import { lessonLink } from "../domain/queryLinks";
 import DisclosureDialog from "./DisclosureDialog.vue";
 const props = defineProps<{
     planner: ReturnType<typeof usePlanner>;
@@ -149,7 +150,10 @@ watch(
       >
         <h3>{{ item.title }}</h3>
         <p v-if="!item.rows.length" class="muted">无变化</p>
-        <p v-for="code in item.rows" :key="code">
+        <p
+          v-for="code in item.title === '教学班或安排变化' ? [] : item.rows"
+          :key="code"
+        >
           <RouterLink
             :to="{
               path: '/courses',
@@ -158,6 +162,45 @@ watch(
             >{{ courseName(code) }} · {{ code }}</RouterLink
           >
         </p>
+        <div
+          v-if="item.title === '教学班或安排变化'"
+          class="scheme-changed-courses"
+        >
+          <article v-for="code in item.rows" :key="code">
+            <h4>
+              <RouterLink
+                :to="{
+                  path: '/courses',
+                  query: { q: code, course: code, history: '1' },
+                }"
+                >{{ courseName(code) }} · {{ code }}</RouterLink
+              >
+            </h4>
+            <div class="scheme-change-classes">
+              <div v-for="scheme in [a, b]" :key="scheme.id">
+                <strong>{{ scheme.name }}</strong>
+                <div
+                  v-for="lesson in scheme.lessons.filter(
+                    (l) => l.course.code === code,
+                  )"
+                  :key="lesson.id"
+                >
+                  <RouterLink
+                    class="text-button mono"
+                    :to="lessonLink(semester, lesson.code)"
+                    >{{ lesson.code }}</RouterLink
+                  >
+                  <p>
+                    {{ lesson.teachers.join("、") || "教师未提供" }} ·
+                    {{ lesson.credits ?? "未提供" }} 学分 /
+                    {{ lesson.hours ?? "未提供" }} 学时
+                  </p>
+                  <p>{{ lesson.schedule.text || "安排未提供" }}</p>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
       </section>
     </template>
   </DisclosureDialog>
@@ -180,10 +223,30 @@ watch(
 .scheme-stats th {
   white-space: normal;
 }
+.scheme-stats th:first-child {
+  min-width: 80px;
+}
 section {
   margin: 16px 0;
 }
 h3 {
   font-size: 16px;
+}
+.scheme-change-classes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.scheme-changed-courses article {
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+.scheme-change-classes p {
+  white-space: pre-wrap;
+}
+@media (max-width: 480px) {
+  .scheme-change-classes {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

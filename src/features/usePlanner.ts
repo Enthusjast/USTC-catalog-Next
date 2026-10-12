@@ -61,9 +61,11 @@ export function usePlanner(semester: { value: string }) {
     }
     return ok;
   }
-  async function toggle(lesson: Lesson) {
+  async function toggle(
+    lesson: Lesson,
+    desired = !lessons.value.some((l) => l.id === lesson.id),
+  ) {
     await workspaceReady;
-    const desired = !lessons.value.some((l) => l.id === lesson.id);
     return edit(
       (s) => {
         if (!desired) s.lessons = s.lessons.filter((l) => l.id !== lesson.id);

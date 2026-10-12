@@ -11,6 +11,12 @@ const props = defineProps<{ code: string }>(),
   id = useId(),
   input = ref<HTMLSelectElement>();
 const base = shallowRef<{ groupId?: string; note: string }>({ note: "" });
+watch(
+  () => props.code,
+  () => {
+    open.value = false;
+  },
+);
 function begin() {
   base.value = structuredClone(
     favorites.details.value[props.code] ?? { note: "" },

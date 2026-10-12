@@ -20,9 +20,11 @@ export function useFavorites() {
     groups: computed(() => workspace.value.favoriteGroups),
     details: computed(() => workspace.value.favoriteDetails),
     storageError: workspaceStorageError,
-    toggle: async (code: string) => {
+    toggle: async (
+      code: string,
+      desired = !workspace.value.favorites.includes(code),
+    ) => {
       await workspaceReady;
-      const desired = !workspace.value.favorites.includes(code);
       return editWorkspace((next) => {
         if (!desired) {
           next.favorites = next.favorites.filter((c) => c !== code);

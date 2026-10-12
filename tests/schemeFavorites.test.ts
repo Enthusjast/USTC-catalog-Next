@@ -6,6 +6,8 @@ import {
   singleSchemeBackup,
   serializeBackup,
   parseBackup,
+  mergeBackup,
+  makeBackup,
 } from "../src/domain/workspace";
 import { schemeStats, compareSchemes } from "../src/domain/schemeComparison";
 import type { Lesson } from "../src/domain/models";
@@ -83,6 +85,28 @@ describe("scheme comparisons and private favorites", () => {
     expect(file.favorites).toEqual([]);
     expect(file.favoriteDetails).toEqual({});
     expect(file.roomFavorites).toEqual([]);
+    const imported = mergeBackup(data, file);
+    expect(imported.semesters["461"]?.schemes).toHaveLength(3);
+    expect(imported.semesters["461"]?.activeId).toBe(scheme.id);
+    expect(imported.semesters["461"]?.schemes[2]?.calendar).toEqual(
+      scheme.calendar,
+    );
+    expect(imported.favoriteDetails.A?.note).toBe("不分享");
+  });
+  it("roundtrips extended metadata and rejects export or import beyond five MB", () => {
+    const data = emptyWorkspace();
+    data.favoriteGroups = [{ id: "g", name: "分组" }];
+    data.favorites = ["A"];
+    data.favoriteDetails.A = { groupId: "g", note: "私人备注\n第二行" };
+    data.roomFavorites = [{ directoryId: 207, room: "1101", building: "1" }];
+    const backup = parseBackup(serializeBackup(makeBackup(data)));
+    expect(backup.favoriteDetails).toEqual(data.favoriteDetails);
+    expect(backup.favoriteGroups).toEqual(data.favoriteGroups);
+    expect(backup.roomFavorites).toEqual(data.roomFavorites);
+    expect(() => parseBackup(" ".repeat(5 * 1024 * 1024 + 1))).toThrow("5 MB");
+    const excessive = makeBackup(data);
+    excessive.favoriteDetails.A!.note = "字".repeat(2 * 1024 * 1024);
+    expect(() => serializeBackup(excessive)).toThrow("5 MB");
   });
   it("preserves notes on group deletion and rejects stale note drafts", async () => {
     const { workspaceReady, workspace } =
@@ -108,6 +132,40 @@ describe("scheme comparisons and private favorites", () => {
       groupId: undefined,
       note: "新备注",
     });
+  });
+  it("applies explicit add and remove intent idempotently after another write", async () => {
+    const { workspaceReady, workspace } =
+      await import("../src/features/useWorkspace");
+    await workspaceReady;
+    const { useFavorites } = await import("../src/features/useFavorites"),
+      favorites = useFavorites();
+    await favorites.toggle("A", true);
+    await favorites.toggle("A", true);
+    expect(workspace.value.favorites).toEqual(["A"]);
+    await favorites.toggle("A", false);
+    await favorites.toggle("A", false);
+    expect(workspace.value.favorites).toEqual([]);
+    const { ref } = await import("vue"),
+      { usePlanner } = await import("../src/features/usePlanner"),
+      planner = usePlanner(ref("461"));
+    await planner.toggle(lesson, true);
+    await planner.toggle(lesson, true);
+    expect(planner.lessons.value).toHaveLength(1);
+    await planner.toggle(lesson, false);
+    await planner.toggle(lesson, false);
+    expect(planner.lessons.value).toHaveLength(0);
+    const { useRoomFavorites } =
+        await import("../src/features/useRoomFavorites"),
+      { roomAvailability } = await import("../src/domain/roomAvailability"),
+      { roomDirectory } = await import("../src/domain/roomDirectory"),
+      rooms = useRoomFavorites(),
+      room = roomAvailability([], 0, 1440, roomDirectory)[0]!;
+    await rooms.toggle(room, true);
+    await rooms.toggle(room, true);
+    expect(rooms.rooms.value).toHaveLength(1);
+    await rooms.toggle(room, false);
+    await rooms.toggle(room, false);
+    expect(rooms.rooms.value).toHaveLength(0);
   });
   it("rejects excessive notes and group counts atomically", async () => {
     const { workspaceReady, workspace } =

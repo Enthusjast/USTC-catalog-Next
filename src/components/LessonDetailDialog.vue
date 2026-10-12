@@ -11,6 +11,7 @@ import IcourseLink from "./IcourseLink.vue";
 import { workspaceBusy } from "../features/useWorkspace";
 import { teacherLink } from "../domain/queryLinks";
 import LessonSchedule from "./LessonSchedule.vue";
+import { selectionIntent } from "../domain/selectionIntent";
 const props = defineProps<{
   code: string;
   semester: string;
@@ -19,7 +20,7 @@ const props = defineProps<{
   weekStart?: string;
   week?: number;
 }>();
-defineEmits<{ close: []; candidate: [lesson: Lesson] }>();
+defineEmits<{ close: []; candidate: [lesson: Lesson, desired: boolean] }>();
 const lessonInfo = useQuery(
   (signal, force) =>
     catalog.lessonDetails(props.code, props.semester, { signal, force }),
@@ -123,7 +124,8 @@ const detailCourse = computed(() =>
         <button
           class="button"
           :disabled="workspaceBusy"
-          @click="$emit('candidate', detail)"
+          :aria-pressed="selected"
+          @click="$emit('candidate', detail, selectionIntent($event))"
         >
           {{ selected ? "移除候选" : "加入候选清单" }}</button
         ><RouterLink

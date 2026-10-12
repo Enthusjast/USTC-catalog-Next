@@ -7,7 +7,7 @@ afterEach(() => {
 });
 describe("optional icourse index", () => {
   it("shares one lazy load across links", async () => {
-    const load = vi.fn(() => ({ icourseIndex: { key: "1208" } }));
+    const load = vi.fn(() => ({ getIcourseIndex: () => ({ key: "1208" }) }));
     vi.doMock("../src/data/icourseLinks", load);
     const { useIcourseLinks } = await import("../src/features/useIcourseLinks");
     const first = useIcourseLinks(),

@@ -8,7 +8,7 @@ let pending: Promise<void> | undefined;
 export function useIcourseLinks() {
   pending ??= load()
     .then((module) => {
-      index.value = module.icourseIndex;
+      index.value = module.getIcourseIndex();
     })
     .catch(() => {
       // Search remains available when the optional index cannot be loaded.

@@ -76,7 +76,14 @@ async function importJSON() {
           )
         }}
         个方案，合并
-        {{ preview.favorites.length }} 门收藏。现有方案保留，同名方案自动更名。
+        {{ preview.favorites.length }} 门收藏、{{
+          preview.favoriteGroups.length
+        }}
+        个分组及
+        {{
+          preview.roomFavorites.length
+        }}
+        间常用教室。现有方案保留，同名方案自动更名。
       </p>
       <div class="flex-actions">
         <button

@@ -190,9 +190,13 @@ export async function editWorkspace(
       }
       workspaceStorageError.value =
         "无法保存到浏览器，本次修改仅保留到页面关闭。";
-    } else
-      workspaceStorageError.value =
-        error instanceof Error ? error.message : "无法修改方案";
+    } else {
+      const message = error instanceof Error ? error.message : "无法修改方案",
+        current = epoch;
+      // A rejected stale draft must be able to reopen the latest persisted fields.
+      await refresh();
+      if (current === epoch) workspaceStorageError.value = message;
+    }
     return false;
   } finally {
     writes.value--;

@@ -28,6 +28,7 @@ import {
 import { classroomDay, hasUsageTime } from "../domain/roomTimeline";
 import type { RoomUsage } from "../domain/models";
 import { isISODate, addISODate } from "../domain/dates";
+import { selectionIntent } from "../domain/selectionIntent";
 import PageHeading from "../components/PageHeading.vue";
 import FilterSummary from "../components/FilterSummary.vue";
 import FilterPanel from "../components/FilterPanel.vue";
@@ -438,7 +439,8 @@ useClassroomPositions(
             v-if="selectedRoom.directoryId !== undefined"
             class="text-button"
             :disabled="workspaceBusy"
-            @click="roomFavorites.toggle(selectedRoom)"
+            :aria-pressed="roomFavorites.includes(selectedRoom.directoryId)"
+            @click="roomFavorites.toggle(selectedRoom, selectionIntent($event))"
           >
             {{
               roomFavorites.includes(selectedRoom.directoryId)

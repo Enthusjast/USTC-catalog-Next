@@ -19,7 +19,7 @@ const props = defineProps<{
 }>();
 defineEmits<{
   detail: [code: string];
-  candidate: [lesson: Lesson];
+  candidate: [lesson: Lesson, desired: boolean];
   results: [];
 }>();
 const heading = ref<HTMLElement>(),
@@ -83,7 +83,7 @@ function exportICS() {
       ><button
         class="icon-button"
         :aria-label="`移除候选 ${lesson.course.name}`"
-        @click="$emit('candidate', lesson)"
+        @click="$emit('candidate', lesson, false)"
       >
         <Trash2 :size="16" />
       </button>

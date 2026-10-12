@@ -4,17 +4,22 @@ test("favorite groups and notes, scheme comparison and private single export", a
   page,
   context,
 }) => {
+  let modified = false;
   await context.route("https://api.catalog.enthusjast.cc/**", async (route) => {
     const req = route.request(),
       url = new URL(req.url());
+    let data = fixturePayload(
+      url.pathname + url.search,
+      req.postDataJSON() ?? undefined,
+    );
+    if (modified && url.pathname.includes("/list-for-teach/"))
+      data = (data as any[]).map((lesson) => ({
+        ...lesson,
+        teacherAssignmentList: [{ cn: "另一个教师" }],
+      }));
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify(
-        fixturePayload(
-          url.pathname + url.search,
-          req.postDataJSON() ?? undefined,
-        ),
-      ),
+      body: JSON.stringify(data),
     });
   });
   await page.goto("/#/courses?q=DEMO101&course=DEMO101");
@@ -56,11 +61,25 @@ test("favorite groups and notes, scheme comparison and private single export", a
     .locator(".scheme-name-form")
     .getByRole("button", { name: "保存", exact: true })
     .click();
+  modified = true;
+  await page
+    .getByRole("button", { name: "检查候选安排更新", exact: true })
+    .click();
+  await expect(page.locator(".update-preview-row")).toContainText("另一个教师");
+  await page
+    .getByRole("button", { name: "确认更新所选项", exact: true })
+    .click();
   await page.getByRole("button", { name: "对比方案", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "同学期候选方案对比", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".scheme-stats")).toContainText("已知课程学分");
+  await expect(page.locator(".scheme-change-classes")).toContainText(
+    "演示教师1",
+  );
+  await expect(page.locator(".scheme-change-classes")).toContainText(
+    "另一个教师",
+  );
   await page.keyboard.press("Escape");
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出当前方案", exact: true }).click();
@@ -79,6 +98,7 @@ test("favorite editors and scheme comparison fit five widths and both themes", a
 }) => {
   for (const width of [320, 375, 768, 1440, 1920])
     for (const theme of ["light", "dark"]) {
+      let modified = false;
       const context = await browser.newContext({
         viewport: { width, height: 900 },
       });
@@ -90,14 +110,18 @@ test("favorite editors and scheme comparison fit five widths and both themes", a
         "https://api.catalog.enthusjast.cc/**",
         async (route) => {
           const url = new URL(route.request().url());
+          let data = fixturePayload(
+            url.pathname + url.search,
+            route.request().postDataJSON() ?? undefined,
+          );
+          if (modified && url.pathname.includes("/list-for-teach/"))
+            data = (data as any[]).map((lesson) => ({
+              ...lesson,
+              teacherAssignmentList: [{ cn: "另一个教师" }],
+            }));
           await route.fulfill({
             contentType: "application/json",
-            body: JSON.stringify(
-              fixturePayload(
-                url.pathname + url.search,
-                route.request().postDataJSON() ?? undefined,
-              ),
-            ),
+            body: JSON.stringify(data),
           });
         },
       );
@@ -140,13 +164,30 @@ test("favorite editors and scheme comparison fit five widths and both themes", a
         .locator(".scheme-name-form")
         .getByRole("button", { name: "保存", exact: true })
         .click();
+      modified = true;
+      await page
+        .getByRole("button", { name: "检查候选安排更新", exact: true })
+        .click();
+      await expect(page.locator(".update-preview-row")).toContainText(
+        "另一个教师",
+      );
+      await page
+        .getByRole("button", { name: "确认更新所选项", exact: true })
+        .click();
       await page.getByRole("button", { name: "对比方案", exact: true }).click();
       await expect(page.locator(".scheme-stats")).toBeVisible();
+      await expect(page.locator(".scheme-change-classes")).toContainText(
+        "另一个教师",
+      );
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth + 1,
         ),
       ).toBe(true);
+      if (width === 375)
+        await page.screenshot({
+          path: test.info().outputPath(`scheme-${theme}.png`),
+        });
       await page.keyboard.press("Escape");
       await expect(
         page.getByRole("button", { name: "对比方案", exact: true }),

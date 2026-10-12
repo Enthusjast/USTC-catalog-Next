@@ -152,7 +152,9 @@ const props = defineProps<{ modules: ProgramModule[] }>(),
       <p v-if="query.data.value && !item.lessons.length" class="muted">
         未找到公开开课
       </p>
-      <p v-else-if="query.error.value" class="muted">开课状态未知</p>
+      <p v-else-if="query.error.value || semesters.error.value" class="muted">
+        开课状态未知
+      </p>
     </article>
   </section>
   <LessonDetailDialog

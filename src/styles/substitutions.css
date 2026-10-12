@@ -1,0 +1,234 @@
+.substitution-filters {
+  gap: 8px 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.substitution-filters .filter-field:first-child {
+  flex: 2;
+}
+.substitution-filters .filter-field {
+  gap: 4px;
+}
+.official-substitutions {
+  font-size: 13px;
+}
+.substitution-results {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 10px;
+}
+.substitution-card {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+  gap: 6px 8px;
+  min-width: 0;
+}
+.substitution-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 4px;
+}
+.substitution-label {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  font-weight: 400;
+}
+.substitution-label > span {
+  display: block;
+  color: var(--primary);
+}
+.substitution-course {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-height: 44px;
+  border-radius: 4px;
+  padding: 3px 0;
+}
+.substitution-course-meta {
+  display: flex;
+  align-items: center;
+  gap: 2px 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.substitution-course strong {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 550;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+.substitution-course:hover {
+  background: var(--surface-soft);
+}
+.substitution-plus {
+  color: var(--accent);
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+}
+.substitution-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: 12px;
+}
+.substitution-remark {
+  grid-column: 1/-1;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 768px) {
+  .substitution-results {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1440px) {
+  .substitution-results {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1800px) {
+  .substitution-results {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1023px) {
+  .exam-week {
+    grid-template-columns: repeat(7, 140px);
+  }
+}
+@media (max-width: 767px) {
+  .lesson-semester-field {
+    width: 100%;
+  }
+  .lesson-results-panel .results-toolbar {
+    gap: 10px;
+  }
+  .lesson-result-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .lesson-result-controls .sort-control {
+    position: absolute;
+    right: 16px;
+    top: 12px;
+  }
+  .lesson-results-panel .results-toolbar {
+    position: relative;
+    padding-top: 24px;
+  }
+  .view-switch .text-button {
+    flex: 1;
+    justify-content: center;
+  }
+  .planner-shortcut {
+    padding: 6px 12px;
+    gap: 0 8px;
+  }
+  .planner-shortcut-status {
+    order: 3;
+    width: 100%;
+    font-size: 12px;
+  }
+  .lesson-mobile-label {
+    display: inline;
+    color: var(--muted);
+  }
+  .planner-panel {
+    padding: 18px;
+  }
+  .candidate-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .candidate-row > .muted {
+    display: none;
+  }
+  .ics-settings .filter-field {
+    min-width: 100%;
+  }
+  .week-controls {
+    padding: 16px;
+    gap: 12px;
+  }
+  .lesson-table thead {
+    display: none;
+  }
+  .lesson-table tbody,
+  .lesson-table tr {
+    display: block;
+  }
+  .lesson-table tr.is-candidate {
+    box-shadow: inset 3px 0 var(--primary);
+    background: var(--surface-soft);
+  }
+  .lesson-table tr.is-candidate > td:first-child {
+    box-shadow: none;
+  }
+  .lesson-table tr {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .lesson-table td {
+    display: block;
+    border: 0;
+    padding: 5px 0;
+  }
+  .lesson-table td:last-child {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .lesson-table td:nth-child(3) {
+    padding: 12px 0 0;
+    margin-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .lesson-table td:nth-child(4) {
+    font-size: 13px;
+  }
+  .lesson-arrangements {
+    font-size: 14px;
+  }
+  .lesson-slot-weeks {
+    flex-basis: 100%;
+  }
+  .lesson-table .schedule-text {
+    max-width: none;
+    min-width: 0;
+  }
+  .archive-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .substitution-filters .filter-field:first-child {
+    flex-basis: 100%;
+  }
+  .substitution-filters .filter-field:last-of-type {
+    min-width: 0;
+  }
+  .substitutions-page .page-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+  }
+  .substitutions-page .heading-actions {
+    margin-top: 0;
+  }
+}

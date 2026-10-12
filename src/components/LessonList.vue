@@ -5,6 +5,7 @@ import LessonSchedule from "./LessonSchedule.vue";
 import IcourseLink from "./IcourseLink.vue";
 import { workspaceBusy } from "../features/useWorkspace";
 import { teacherLink } from "../domain/queryLinks";
+import { selectionIntent } from "../domain/selectionIntent";
 withDefaults(
   defineProps<{
     lessons: Lesson[];
@@ -17,7 +18,7 @@ withDefaults(
 );
 defineEmits<{
   detail: [code: string];
-  candidate: [lesson: Lesson];
+  candidate: [lesson: Lesson, desired: boolean];
   compare: [lesson: Lesson];
 }>();
 </script>
@@ -85,7 +86,7 @@ defineEmits<{
               :class="{ 'is-selected': candidateIds.has(lesson.id) }"
               :aria-label="`${candidateIds.has(lesson.id) ? '移除' : '加入'} ${lesson.course.name} 候选清单`"
               :aria-pressed="candidateIds.has(lesson.id)"
-              @click="$emit('candidate', lesson)"
+              @click="$emit('candidate', lesson, selectionIntent($event))"
             >
               <Check v-if="candidateIds.has(lesson.id)" :size="18" /><Plus
                 v-else

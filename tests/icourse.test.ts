@@ -4,8 +4,9 @@ import {
   icourseKey,
   icourseLink,
 } from "../src/domain/icourse";
-import { icourseIndex, icourseSource } from "../src/data/icourseLinks";
+import { getIcourseIndex, icourseSource } from "../src/data/icourseLinks";
 
+const icourseIndex = getIcourseIndex();
 const row = (
   name: string,
   teachers: string[],

@@ -132,13 +132,11 @@ const candidateIds = computed(
   plannerPanel = ref<InstanceType<typeof PlannerPanel>>(),
   resultsHeading = ref<HTMLElement>(),
   candidateMessage = ref("");
-async function toggleCandidate(lesson: Lesson) {
-  const wasSelected = candidateIds.value.has(lesson.id);
-  await planner.toggle(lesson);
-  candidateMessage.value =
-    candidateIds.value.has(lesson.id) !== wasSelected
-      ? `已${wasSelected ? "移除" : "加入"}候选：${lesson.course.name}，当前共 ${planner.lessons.value.length} 个教学班。`
-      : planner.storageError.value;
+async function toggleCandidate(lesson: Lesson, desired: boolean) {
+  const ok = await planner.toggle(lesson, desired);
+  candidateMessage.value = ok
+    ? `已${desired ? "加入" : "移除"}候选：${lesson.course.name}，当前共 ${planner.lessons.value.length} 个教学班。`
+    : planner.storageError.value;
 }
 function showPlanner() {
   plannerPanel.value?.focus();

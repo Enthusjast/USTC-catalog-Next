@@ -26,7 +26,13 @@ async function probe(path, options = {}) {
     }
     return { response, data, path };
   } catch (error) {
-    return { path, error: error.message };
+    const cause = error.cause;
+    return {
+      path,
+      error: [error.message, cause?.code, cause?.reason]
+        .filter(Boolean)
+        .join("; "),
+    };
   }
 }
 function record(name, ok, detail) {

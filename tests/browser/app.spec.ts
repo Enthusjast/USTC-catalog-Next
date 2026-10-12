@@ -167,6 +167,33 @@ test("new worker waits for a click and preserves local workspace", async ({
   await page.locator("#planner-layout").selectOption("1");
   await page.goto("/#/courses?q=DEMO101&course=DEMO101");
   await page.getByRole("button", { name: "收藏课程", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await page.goto("/#/courses?mode=saved");
+  await page.getByRole("button", { name: "管理分组", exact: true }).click();
+  await page.getByLabel("新分组", { exact: true }).fill("离线分组");
+  await page.getByRole("button", { name: "创建", exact: true }).click();
+  await expect(
+    page.getByLabel("修改分组 离线分组", { exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page
+    .getByRole("button", { name: "编辑 DEMO101 收藏分组与备注", exact: true })
+    .click();
+  await page
+    .locator("dialog[open]")
+    .getByLabel("分组", { exact: true })
+    .selectOption({ label: "离线分组" });
+  await page
+    .getByLabel("个人备注", { exact: true })
+    .fill("更新后保留的私人备注");
+  await page
+    .locator("dialog[open]")
+    .getByRole("button", { name: "保存", exact: true })
+    .click();
+  await page.goto("/#/classrooms?date=2026-10-13");
+  await page.locator(".room-label").first().click();
+  await page.getByRole("button", { name: "收藏教室", exact: true }).click();
+  await page.keyboard.press("Escape");
   await page.goto("/#/lessons?semester=demo-current");
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
@@ -194,6 +221,11 @@ test("new worker waits for a click and preserves local workspace", async ({
       }),
   );
   expect(JSON.parse(saved!).favorites).toEqual(["DEMO101"]);
+  expect(JSON.parse(saved!).favoriteDetails.DEMO101.note).toBe(
+    "更新后保留的私人备注",
+  );
+  expect(JSON.parse(saved!).favoriteGroups[0].name).toBe("离线分组");
+  expect(JSON.parse(saved!).roomFavorites).toHaveLength(1);
   const worker = await readFile("dist/sw.js", "utf8"),
     offline = await readFile("dist/offline.html", "utf8");
   const nextOffline = offline + "\n<!-- browser update regression -->\n";

@@ -11,6 +11,7 @@ import CourseContent from "./CourseContent.vue";
 import CourseRelations from "./CourseRelations.vue";
 import { workspaceBusy } from "../features/useWorkspace";
 import FavoriteEditor from "./FavoriteEditor.vue";
+import { selectionIntent } from "../domain/selectionIntent";
 const props = defineProps<{ code: string; initial?: Course }>();
 defineEmits<{ close: [] }>();
 const { favorites, toggle, storageError } = useFavorites();
@@ -43,7 +44,7 @@ const course = computed(() => data.value?.[0] ?? props.initial);
         class="button small secondary"
         :disabled="workspaceBusy"
         :aria-pressed="favorites.includes(code)"
-        @click="toggle(code)"
+        @click="toggle(code, selectionIntent($event))"
       >
         <Bookmark :size="16" />{{
           favorites.includes(code) ? "已收藏" : "收藏课程"

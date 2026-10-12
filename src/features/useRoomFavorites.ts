@@ -8,14 +8,16 @@ export function useRoomFavorites() {
     rooms,
     includes: (id?: number) =>
       id !== undefined && rooms.value.some((room) => room.directoryId === id),
-    async toggle(room: RoomSummary) {
+    async toggle(
+      room: RoomSummary,
+      desired = !rooms.value.some((r) => r.directoryId === room.directoryId),
+    ) {
       if (room.directoryId === undefined) return false;
       const entry = roomDirectory.find(
         (entry) => entry.id === room.directoryId,
       );
       if (!entry) return false;
-      const id = room.directoryId,
-        desired = !rooms.value.some((r) => r.directoryId === id);
+      const id = room.directoryId;
       return editWorkspace((next) => {
         if (!desired)
           next.roomFavorites = next.roomFavorites.filter(
