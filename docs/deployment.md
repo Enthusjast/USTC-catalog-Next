@@ -14,6 +14,10 @@
 
 第三批扩展发布最初因 `api.catalog.enthusjast.cc` 返回仅覆盖 `azure.enthusjast.cc` 的证书而受阻。服务器迁移后新证书已覆盖正确域名，但曾出现 OPTIONS 正常、GET 和详情 POST 超时；随后实际请求恢复并通过发布门槛。保留历史证据用于诊断，当前状态以上面的成功工作流及本次实际检查为准。
 
+## 2026-10-13 Varlet 与 MD3 发布状态
+
+全站界面迁移提交 `6c222fa` 已通过工作流 `38347416984` 发布。正式入口、JS/CSS 与 Service Worker 和 CI 产物一致；14 个页面的五种宽度、深浅主题、离线重开及提示更新均已复查，本机工作区保持不变。组件约定见 [界面组件说明](material-design.md)，完整证据见 [验证记录](verification.md#varlet-与-material-design-3-迁移2026-10-13)。
+
 ## 仓库部署设置
 
 - Pages 发布源：GitHub Actions；允许 `github-pages` environment 从 main 部署。

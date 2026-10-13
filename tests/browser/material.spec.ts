@@ -1,6 +1,6 @@
 import { test, expect, type BrowserContext } from "@playwright/test";
 import { fixturePayload } from "../../src/api/fixtures";
-import { selectOption } from "./ui";
+import { navigatePage, selectOption } from "./ui";
 
 async function mockAPI(context: BrowserContext) {
   await context.route("https://api.catalog.enthusjast.cc/**", async (route) => {
@@ -119,7 +119,7 @@ test("Material 3 controls, adaptive navigation and theme changes work at all sup
         ["classrooms", "/classrooms?date=2026-10-13"],
         ["home", "/"],
       ]) {
-        await page.goto(`/#${path}`);
+        await navigatePage(page, path);
         await expect(page.locator(".query-loading")).toHaveCount(0);
         expect(
           await page.evaluate(
@@ -152,7 +152,7 @@ test("Varlet selectors stay inside native dialogs and Escape restores the correc
   await trigger.click();
   const dialog = page.locator("dialog[open]");
   const field = dialog.getByRole("combobox", { name: "分组", exact: true });
-  await field.focus();
+  await expect(field).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(
     field.getByRole("option", { name: "未分组", exact: true }),

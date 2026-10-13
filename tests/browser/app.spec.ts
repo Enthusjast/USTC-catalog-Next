@@ -1,4 +1,4 @@
-import { selectOption } from "./ui";
+import { navigatePage, selectOption } from "./ui";
 import { test, expect, type BrowserContext } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -335,7 +335,7 @@ test("all pages at five widths in both themes", async ({ browser }) => {
         errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
       for (const path of paths) {
-        await page.goto(`/#${path}`);
+        await navigatePage(page, path);
         await expect(page.locator("h1").first()).toBeVisible();
         await expect(page.locator(".query-loading")).toHaveCount(0);
         await expect

@@ -106,7 +106,9 @@ onMounted(async () => {
 });
 onUpdated(() => nextTick(label));
 onBeforeUnmount(() => observer?.disconnect());
-defineExpose({ focus: () => select.value?.focus() });
+defineExpose({
+  focus: (options?: FocusOptions) => select.value?.$el.focus(options),
+});
 </script>
 <template>
   <VarSelect
@@ -128,6 +130,7 @@ defineExpose({ focus: () => select.value?.focus() });
     "
     @update:model-value="change"
     @focus="nextTick(label)"
+    @keydown="select?.focus()"
   >
     <template #selected>{{ selectedLabel }}</template>
     <VarOption
