@@ -271,8 +271,9 @@
 
 ## pnpm 迁移（2026-10-13）
 
-- 使用 `packageManager` 固定 pnpm 12.3.4，由原 npm 锁文件导入 `pnpm-lock.yaml`，删除 `package-lock.json`。原直接依赖的范围与实际版本保持不变，722 组应用依赖名称与版本集合完全一致；显式声明原有 esbuild 0.28.2，确保 Vite 的 peer 解析保持一致。
+- 使用 `packageManager` 固定 pnpm 12.3.4，由原 npm 锁文件导入 `pnpm-lock.yaml`，删除 `package-lock.json`。原直接依赖的范围与实际版本保持不变，722 组应用依赖名称与版本集合完全一致；显式声明原有 esbuild 0.28.2 与 workbox-window 7.4.1，确保 Vite 的 peer 解析与 PWA 虚拟模块在隔离依赖布局下可用。
 - `pnpm-workspace.yaml` 仅允许 esbuild 与 macOS 可选依赖 fsevents 的构建脚本。根目录及没有现有依赖、使用独立 store 的临时目录均通过 `pnpm install --frozen-lockfile`，安装未修改锁文件，peer 检查通过。
 - Pages 的构建与发布 job 均改用固定版本 pnpm、pnpm store 缓存与冻结安装；Playwright 预览和安装命令、README 及当前维护文档同步迁移。此前验证记录保留当时实际使用的 npm 命令。
 - 107 项单元测试、完整 29 组浏览器回归、生产构建及 PWA 检查通过。全部 68 个 JS/CSS 资源、入口、许可与三个安装图标继续纳入预缓存；148 个构建文件与上一版工作流 `38370472535` 的正式产物逐字节相同。
+- 初次 pnpm 工作流 `38416341562` 的冻结安装与单元测试通过，构建发现 PWA 虚拟模块需要显式声明 workbox-window，原有 npm 安装残留曾掩盖此问题；该次未发布。补齐原版本依赖后移走全部旧 `node_modules` 并重新冻结安装，107 项单元、29 组浏览器回归、生产构建与 PWA 检查再次通过；干净构建仍与原正式产物逐字节一致。
 - 本轮仅调整依赖管理、工作流、预览启动命令及相关文档；API、界面、工作区与备份格式保持一致。`spec.md` 未暂存或提交；发布继续保留全部回归及独立 API 门槛。
