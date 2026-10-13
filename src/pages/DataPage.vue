@@ -38,11 +38,7 @@ async function clearLocal(all = false) {
 }
 </script>
 <template>
-  <PageHeading
-    title="站点说明"
-    description="了解本站功能和本机数据管理。"
-    eyebrow="ABOUT / 关于本站"
-  />
+  <PageHeading title="站点说明" />
   <article class="panel prose">
     <h2>新一代公共查询工具</h2>
     <p>
