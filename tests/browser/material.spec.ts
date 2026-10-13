@@ -106,9 +106,42 @@ test("Material 3 controls, adaptive navigation and theme changes work at all sup
         ).toBeFocused();
       } else {
         await page.getByRole("button", { name: "更多", exact: true }).click();
-        await expect(
-          page.getByRole("navigation", { name: "更多导航", exact: true }),
-        ).toBeVisible();
+        const navigation = page.getByRole("navigation", {
+          name: "更多导航",
+          exact: true,
+        });
+        const surface = page.locator(".more-menu .var-menu__menu");
+        await expect(navigation).toBeVisible();
+        await expect(surface).not.toHaveClass(/var-menu-enter-active/);
+        await expect(surface).toHaveCSS("opacity", "1");
+        await expect(navigation).toHaveCSS(
+          "background-color",
+          "rgba(0, 0, 0, 0)",
+        );
+        await expect(navigation).toHaveCSS("border-radius", "0px");
+        await expect(surface).toHaveCSS("padding", "0px");
+        await expect(surface).toHaveCSS("border-top-width", "0px");
+        await expect(surface).toHaveCSS("border-radius", "12px");
+        await expect(surface).toHaveCSS(
+          "color",
+          theme === "dark" ? "rgb(227, 228, 232)" : "rgb(25, 27, 31)",
+        );
+        const bounds = (await surface.boundingBox())!;
+        const navigationBounds = (await navigation.boundingBox())!;
+        expect(navigationBounds.x).toBeGreaterThanOrEqual(bounds.x - 1);
+        expect(navigationBounds.y).toBeGreaterThanOrEqual(bounds.y - 1);
+        expect(navigationBounds.x + navigationBounds.width).toBeLessThanOrEqual(
+          bounds.x + bounds.width + 1,
+        );
+        expect(
+          navigationBounds.y + navigationBounds.height,
+        ).toBeLessThanOrEqual(bounds.y + bounds.height + 1);
+        expect(bounds.x).toBeGreaterThanOrEqual(0);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width + 1);
+        if (width === 1440)
+          await page.screenshot({
+            path: test.info().outputPath(`more-menu-${theme}.png`),
+          });
         await page.keyboard.press("Escape");
         await expect(
           page.getByRole("button", { name: "更多", exact: true }),

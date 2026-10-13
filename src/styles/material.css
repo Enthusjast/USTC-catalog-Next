@@ -53,19 +53,27 @@ body {
   background: var(--surface-high);
   min-height: 44px;
 }
+.more-menu {
+  --menu-background-color: var(--surface-high);
+  --menu-border-radius: 12px;
+}
+.more-menu .var-menu__menu {
+  color: var(--text);
+}
 .more-navigation {
   display: grid;
   gap: 4px;
   min-width: 168px;
   padding: 8px;
-  background: var(--surface-soft);
-  border-radius: 12px;
 }
 .more-navigation a {
+  display: flex;
+  align-items: center;
   padding: 12px 16px;
   border-radius: 8px;
   font-size: 14px;
   min-height: 44px;
+  line-height: 20px;
 }
 .more-navigation a:hover,
 .more-navigation a:focus-visible {
