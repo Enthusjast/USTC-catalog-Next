@@ -18,6 +18,30 @@
 
 全站界面迁移提交 `6c222fa` 已通过工作流 `38347416984` 发布。正式入口、JS/CSS 与 Service Worker 和 CI 产物一致；14 个页面的五种宽度、深浅主题、离线重开及提示更新均已复查，本机工作区保持不变。组件约定见 [界面组件说明](material-design.md)，完整证据见 [验证记录](verification.md#varlet-与-material-design-3-迁移2026-10-13)。
 
+补充修订 `8b1e01d` 的工作流 `38349319057` 已成功发布，正式手机端收藏编辑的初始焦点、Enter、Escape、保存及焦点返回通过。Cloudflare 曾缓存旧版 Service Worker；用户调整入口缓存规则并清除缓存后，普通入口、JS/CSS、安装清单及 `/sw.js` 已与 CI 产物逐字节一致。旧页面收到更新提示，点击后切换到新版；离线刷新、关闭标签页后重开、已查询资料读取、未缓存查询报错及规划数据保留全部通过。
+
+### 应用入口的 CDN 缓存规则
+
+在 Cloudflare 的 Cache Rules 中创建以下自定义匹配规则，将 Cache eligibility 设置为 **Bypass cache**，放在通用缓存规则之后：
+
+```text
+(http.host eq "catalog.enthusjast.cc" and http.request.uri.path in {"/" "/index.html" "/sw.js" "/manifest.webmanifest"})
+```
+
+随后在 Caching → Configuration → Custom Purge 中，按 URL 清除：
+
+```text
+https://catalog.enthusjast.cc/
+https://catalog.enthusjast.cc/index.html
+https://catalog.enthusjast.cc/sw.js
+https://catalog.enthusjast.cc/manifest.webmanifest
+```
+
+该匹配范围仅覆盖应用入口；带哈希的 `/assets/` 资源继续使用现有缓存策略。
+操作依据为 Cloudflare 官方的 [Cache Rules 创建说明](https://developers.cloudflare.com/cache/how-to/cache-rules/create-dashboard/)、[执行顺序](https://developers.cloudflare.com/cache/how-to/cache-rules/order/)及 [单文件缓存清除](https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-single-file/)。
+
+维护验收使用不带查询参数的 `/sw.js` URL 核对 CI 产物，并检查旧页更新提示、点击更新、离线刷新和规划数据保留。2026-10-13 的四个入口均返回 `CF-Cache-Status: DYNAMIC`；带查询参数的资源读取仅用于定位历史缓存差异。
+
 ## 仓库部署设置
 
 - Pages 发布源：GitHub Actions；允许 `github-pages` environment 从 main 部署。
