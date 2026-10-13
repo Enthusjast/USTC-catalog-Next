@@ -48,7 +48,7 @@ function clear() {
       result-label="个计划"
       ><div class="filter-field">
         <label for="program-q">专业或计划名称</label
-        ><input
+        ><UiInput
           id="program-q"
           v-model="q"
           type="search"
@@ -57,28 +57,28 @@ function clear() {
       </div>
       <div class="filter-field">
         <label for="program-type">培养类型</label
-        ><select id="program-type" v-model="type">
+        ><UiSelect id="program-type" v-model="type">
           <option value="">全部培养类型</option>
           <option v-for="t in types" :key="t">{{ t }}</option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field">
         <label for="program-dept">院系</label
-        ><select id="program-dept" v-model="dept">
+        ><UiSelect id="program-dept" v-model="dept">
           <option value="">全部院系</option>
           <option v-for="d in departments" :key="d">{{ d }}</option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field">
         <label for="program-grade">入学年级</label
-        ><select id="program-grade" v-model="grade">
+        ><UiSelect id="program-grade" v-model="grade">
           <option value="">全部年级</option>
           <option v-for="g in grades" :key="g">{{ g }}</option>
-        </select>
+        </UiSelect>
       </div>
-      <button class="text-button" @click="clear">
+      <UiButton class="text-button" @click="clear">
         清除全部筛选
-      </button></FilterPanel
+      </UiButton></FilterPanel
     >
     <div>
       <QueryState
@@ -108,8 +108,8 @@ function clear() {
           class="result-card panel"
         >
           <div class="card-topline">
-            <span class="tag"
-              >{{ program.grade }} 级 · {{ program.trainType }}</span
+            <VarChip size="small" :elevation="false" class="tag"
+              >{{ program.grade }} 级 · {{ program.trainType }}</VarChip
             ><span class="mono muted" style="font-size: 11px"
               >#{{ program.id }}</span
             >
@@ -134,9 +134,9 @@ function clear() {
         </article>
       </div>
       <EmptyState v-if="data && !filtered.length"
-        ><button class="button secondary" @click="clear">
+        ><UiButton class="button secondary" @click="clear">
           清除筛选
-        </button></EmptyState
+        </UiButton></EmptyState
       ><Pagination
         :total="filtered.length"
         :size="12"

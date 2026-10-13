@@ -113,12 +113,12 @@ function reset() {
   <PageHeading title="全校教学班"
     ><div class="filter-field lesson-semester-field">
       <label for="lesson-semester">查询学期</label
-      ><select id="lesson-semester" v-model="semester">
+      ><UiSelect id="lesson-semester" v-model="semester">
         <option v-if="!semesterQuery.data.value" value="">正在读取学期</option>
         <option v-for="s in semesterQuery.data.value" :key="s.id" :value="s.id">
           {{ s.name }}
         </option>
-      </select>
+      </UiSelect>
     </div></PageHeading
   ><QueryState
     :loading="semesterQuery.loading.value"
@@ -137,7 +137,7 @@ function reset() {
       result-label="个教学班"
       ><div class="filter-field">
         <label for="lesson-q">课程、编号或关键词</label
-        ><input
+        ><UiInput
           id="lesson-q"
           v-model="q"
           type="search"
@@ -146,34 +146,38 @@ function reset() {
       </div>
       <div class="filter-field">
         <label for="lesson-dept">开课院系</label
-        ><select id="lesson-dept" v-model="selectedDepartment">
+        ><UiSelect id="lesson-dept" v-model="selectedDepartment">
           <option value="">全部院系</option>
           <option v-for="d in departments" :key="d.code" :value="d.code">
             {{ d.name }}
           </option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field">
         <label for="lesson-teacher">授课教师</label
-        ><input id="lesson-teacher" v-model="teacher" placeholder="教师姓名" />
+        ><UiInput
+          id="lesson-teacher"
+          v-model="teacher"
+          placeholder="教师姓名"
+        />
       </div>
       <div class="filter-field">
         <label for="lesson-day">星期</label
-        ><select id="lesson-day" v-model="day">
+        ><UiSelect id="lesson-day" v-model="day">
           <option value="">不限星期</option>
           <option v-for="(d, i) in weekdays" :key="d" :value="String(i + 1)">
             周{{ d }}
           </option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field">
         <label for="lesson-period">课节</label
-        ><select id="lesson-period" v-model="period">
+        ><UiSelect id="lesson-period" v-model="period">
           <option value="">不限课节</option>
           <option v-for="p in 14" :key="p" :value="String(p)">
             第 {{ p }} 节
           </option>
-        </select>
+        </UiSelect>
       </div>
       <details
         :open="advancedOpen"
@@ -182,7 +186,7 @@ function reset() {
         <summary>更多筛选</summary>
         <div class="filter-field">
           <label for="lesson-location">上课地点</label
-          ><input
+          ><UiInput
             id="lesson-location"
             v-model="location"
             placeholder="教室或楼宇"
@@ -213,7 +217,9 @@ function reset() {
           />
         </details>
       </details>
-      <button class="text-button" @click="reset">清除筛选</button></FilterPanel
+      <UiButton class="text-button" @click="reset"
+        >清除筛选</UiButton
+      ></FilterPanel
     >
     <div>
       <QueryState
@@ -246,11 +252,19 @@ function reset() {
           >
         </div>
         <div class="planner-shortcut-status">
-          <span v-if="conflicts.overlaps.length" class="tag warning"
-            >{{ conflicts.overlaps.length }} 组时间重叠</span
+          <VarChip
+            size="small"
+            :elevation="false"
+            v-if="conflicts.overlaps.length"
+            class="tag warning"
+            >{{ conflicts.overlaps.length }} 组时间重叠</VarChip
           >
-          <span v-if="conflicts.unknown.length" class="tag warning"
-            >{{ conflicts.unknown.length }} 个安排无法完整判断</span
+          <VarChip
+            size="small"
+            :elevation="false"
+            v-if="conflicts.unknown.length"
+            class="tag warning"
+            >{{ conflicts.unknown.length }} 个安排无法完整判断</VarChip
           >
           <span
             v-if="!conflicts.overlaps.length && !conflicts.unknown.length"
@@ -258,9 +272,9 @@ function reset() {
             >已识别安排未发现重叠</span
           >
         </div>
-        <button class="text-button" @click="showPlanner">
+        <UiButton class="text-button" @click="showPlanner">
           管理清单<ArrowDown :size="15" />
-        </button>
+        </UiButton>
       </div>
       <div class="panel lesson-results-panel">
         <div class="results-toolbar">
@@ -274,34 +288,34 @@ function reset() {
             }}</span></strong
           >
           <div class="lesson-result-controls">
-            <button
+            <UiButton
               class="text-button"
               :disabled="!filtered.length"
               @click="exportLessons(filtered, filterInfoByCode)"
             >
               导出 CSV
-            </button>
+            </UiButton>
             <label v-if="view === 'list'" class="sort-control"
-              >排序<select v-model="sort">
+              >排序<UiSelect v-model="sort">
                 <option value="code">教学班号</option>
                 <option value="name">课程名称</option>
                 <option value="department">开课院系</option>
-              </select></label
+              </UiSelect></label
             >
             <div class="view-switch" role="group" aria-label="教学班结果视图">
-              <button
+              <UiButton
                 class="text-button"
                 :aria-pressed="view === 'list'"
                 @click="view = 'list'"
               >
-                <List :size="15" />查询列表</button
-              ><button
+                <List :size="15" />查询列表</UiButton
+              ><UiButton
                 class="text-button"
                 :aria-pressed="view === 'week'"
                 @click="view = 'week'"
               >
                 <CalendarDays :size="15" />周课表
-              </button>
+              </UiButton>
             </div>
           </div>
         </div>
@@ -317,9 +331,9 @@ function reset() {
           <EmptyState
             v-if="data && !metadataFiltersPending && !filtered.length"
             message="尝试切换学期、修改关键词或清除时间与院系筛选。"
-            ><button class="button secondary" @click="reset">
+            ><UiButton class="button secondary" @click="reset">
               清除筛选
-            </button></EmptyState
+            </UiButton></EmptyState
           ><Pagination
             :total="filtered.length"
             :page="page"

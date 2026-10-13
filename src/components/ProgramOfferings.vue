@@ -71,7 +71,7 @@ watch(
 <template>
   <div class="program-offering-controls panel">
     <label for="program-offering-semester">开课学期</label>
-    <select id="program-offering-semester" v-model="semester">
+    <UiSelect id="program-offering-semester" v-model="semester">
       <option
         v-for="term in semesters.data.value"
         :key="term.id"
@@ -79,7 +79,7 @@ watch(
       >
         {{ term.name }}
       </option>
-    </select>
+    </UiSelect>
     <SchemeSelector :planner="planner" />
     <p v-if="planner.storageError.value" class="notice warning" role="status">
       {{ planner.storageError.value }}
@@ -91,8 +91,8 @@ watch(
     @retry="query.error.value ? query.reload() : semesters.reload()"
   />
   <div v-if="rows.length" class="flex-actions offering-expand-controls">
-    <button class="text-button" @click="all(true)">全部展开</button
-    ><button class="text-button" @click="all(false)">全部收起</button>
+    <UiButton class="text-button" @click="all(true)">全部展开</UiButton
+    ><UiButton class="text-button" @click="all(false)">全部收起</UiButton>
   </div>
   <section
     v-for="row in rows"
@@ -188,7 +188,9 @@ watch(
   padding: 16px;
   margin: 16px 0;
 }
-.program-offering-controls > select {
+.program-offering-controls > .ui-select {
+  display: inline-block;
+  vertical-align: middle;
   width: 220px;
   max-width: 100%;
   margin: 0 12px;
@@ -214,7 +216,7 @@ watch(
   margin: 0;
 }
 @media (max-width: 480px) {
-  .program-offering-controls > select {
+  .program-offering-controls > .ui-select {
     display: block;
     margin: 8px 0;
     width: 100%;

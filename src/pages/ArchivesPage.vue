@@ -70,7 +70,7 @@ function reset() {
       result-label="份资料"
       ><div class="filter-field">
         <label for="archive-q">文档名称或编号</label
-        ><input
+        ><UiInput
           id="archive-q"
           v-model="q"
           type="search"
@@ -79,19 +79,21 @@ function reset() {
       </div>
       <div class="filter-field">
         <label for="archive-type">资料类型</label
-        ><select id="archive-type" v-model="type">
+        ><UiSelect id="archive-type" v-model="type">
           <option value="">全部类型</option>
           <option v-for="value in types" :key="value">{{ value }}</option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field">
         <label for="archive-department">院系（来源有标注时）</label
-        ><select id="archive-department" v-model="department">
+        ><UiSelect id="archive-department" v-model="department">
           <option value="">全部院系</option>
           <option v-for="value in departments" :key="value">{{ value }}</option>
-        </select>
+        </UiSelect>
       </div>
-      <button class="text-button" @click="reset">清除筛选</button></FilterPanel
+      <UiButton class="text-button" @click="reset"
+        >清除筛选</UiButton
+      ></FilterPanel
     >
     <div>
       <FilterSummary
@@ -114,7 +116,8 @@ function reset() {
           class="panel result-card"
         >
           <div class="card-topline">
-            <span class="tag warning">{{ document.version }} · 静态资料</span
+            <VarChip size="small" :elevation="false" class="tag warning"
+              >{{ document.version }} · 静态资料</VarChip
             ><span class="mono muted">{{ document.code }}</span>
           </div>
           <h2>
@@ -137,9 +140,9 @@ function reset() {
       <EmptyState
         v-if="data && !filtered.length"
         message="尝试专业名称、方案编号，或清除类型与院系筛选。"
-        ><button class="button secondary" @click="reset">
+        ><UiButton class="button secondary" @click="reset">
           清除筛选
-        </button></EmptyState
+        </UiButton></EmptyState
       ><Pagination
         :total="filtered.length"
         :size="12"
@@ -171,7 +174,9 @@ function reset() {
         <tbody>
           <tr v-for="attachment in data.attachments" :key="attachment.id">
             <td>
-              <span class="tag">{{ attachment.version }}</span>
+              <VarChip size="small" :elevation="false" class="tag">{{
+                attachment.version
+              }}</VarChip>
             </td>
             <td>
               <a

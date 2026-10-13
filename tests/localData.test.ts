@@ -23,6 +23,11 @@ function storage(initial: Record<string, string>) {
   };
 }
 vi.mock("../src/api/environment", () => ({ DEMO_MODE: false }));
+vi.mock("../src/app/theme", () => ({
+  applyTheme: (theme: string) => {
+    document.documentElement.dataset.theme = theme;
+  },
+}));
 beforeEach(() => {
   vi.resetModules();
   vi.stubGlobal("indexedDB", new IDBFactory());

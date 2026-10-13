@@ -42,9 +42,9 @@ onBeforeUnmount(() => {
       role="status"
     >
       <span>{{ last.label }}</span
-      ><button class="text-button" :disabled="workspaceBusy" @click="undo">
+      ><UiButton class="text-button" :disabled="workspaceBusy" @click="undo">
         撤销
-      </button>
+      </UiButton>
     </div></Teleport
   >
 </template>

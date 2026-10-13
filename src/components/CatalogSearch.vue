@@ -81,7 +81,7 @@ function focusOut(event: FocusEvent) {
         ><Search :size="compact ? 17 : 24" /><span class="sr-only"
           >课程名称、编号、教师、院系或教室</span
         ></label
-      ><input
+      ><UiInput
         :id="id"
         v-model="keyword"
         type="search"
@@ -98,10 +98,10 @@ function focusOut(event: FocusEvent) {
         @keydown.down.prevent="move(1)"
         @keydown.up.prevent="move(-1)"
         @keydown.esc="focused = false"
-      /><button type="submit">
+      /><UiButton type="submit">
         {{ compact ? "搜索" : "开始查询"
         }}<ArrowRight v-if="!compact" :size="18" />
-      </button>
+      </UiButton>
     </form>
     <ul
       v-if="visible"

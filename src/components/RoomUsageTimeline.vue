@@ -90,6 +90,7 @@ watch(
         >
           <div class="room-column-header">
             <button
+              v-ripple
               type="button"
               class="room-label"
               :class="{ 'has-weekday': !!column.date }"
@@ -116,6 +117,7 @@ watch(
           </div>
           <div class="room-time-track">
             <button
+              v-ripple
               type="button"
               v-for="block in column.blocks"
               :key="block.record.id"

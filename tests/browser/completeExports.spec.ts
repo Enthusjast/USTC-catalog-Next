@@ -1,3 +1,4 @@
+import { selectOption } from "./ui";
 import { test, expect } from "@playwright/test";
 import { fixturePayload } from "../../src/api/fixtures";
 import { readFile } from "node:fs/promises";
@@ -32,7 +33,7 @@ test("all 1200 queried classes survive CSV, dense timetable, PNG pages and print
   expect(csv).toContain("DEMO101.1199");
   expect(csv.split("\r\n").filter(Boolean)).toHaveLength(1201);
   await page.getByRole("button", { name: "周课表", exact: true }).click();
-  await page.locator("#timetable-source").selectOption("results");
+  await selectOption(page.locator("#timetable-source"), "results");
   const dense = page.locator(".tt-dense");
   await expect(dense).toContainText("1200 项安排");
   await dense.focus();
@@ -52,11 +53,11 @@ test("all 1200 queried classes survive CSV, dense timetable, PNG pages and print
   await page.keyboard.press("Escape");
   await expect(dense).toBeFocused();
   await page.getByRole("button", { name: "导出 PNG", exact: true }).click();
-  const options = page.locator("#timetable-image-page option");
+  const imageSelect = page.locator("#timetable-image-page");
+  await imageSelect.click();
+  const options = imageSelect.getByRole("option");
   expect(await options.count()).toBeGreaterThan(20);
-  await page
-    .locator("#timetable-image-page")
-    .selectOption(String((await options.count()) - 1));
+  await options.last().click();
   const pngDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "保存此张 PNG", exact: true }).click();
   const png = await readFile((await (await pngDownload).path())!);

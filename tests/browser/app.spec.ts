@@ -1,3 +1,4 @@
+import { selectOption } from "./ui";
 import { test, expect, type BrowserContext } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -50,7 +51,7 @@ test("offline restart, all route code, uncached queries and separate data cleari
     .getByRole("button", { name: "加入 演示数学基础 候选清单", exact: true })
     .click();
   await page.locator("#planner-start").fill("2026-08-31");
-  await page.locator("#planner-layout").selectOption("1");
+  await selectOption(page.locator("#planner-layout"), "1");
   const saved = await page.evaluate(
     () =>
       new Promise<string | null>((resolve, reject) => {
@@ -164,7 +165,7 @@ test("new worker waits for a click and preserves local workspace", async ({
     .getByRole("button", { name: "加入 演示数学基础 候选清单", exact: true })
     .click();
   await page.locator("#planner-start").fill("2026-08-31");
-  await page.locator("#planner-layout").selectOption("1");
+  await selectOption(page.locator("#planner-layout"), "1");
   await page.goto("/#/courses?q=DEMO101&course=DEMO101");
   await page.getByRole("button", { name: "收藏课程", exact: true }).click();
   await page.keyboard.press("Escape");
@@ -179,10 +180,10 @@ test("new worker waits for a click and preserves local workspace", async ({
   await page
     .getByRole("button", { name: "编辑 DEMO101 收藏分组与备注", exact: true })
     .click();
-  await page
-    .locator("dialog[open]")
-    .getByLabel("分组", { exact: true })
-    .selectOption({ label: "离线分组" });
+  await selectOption(
+    page.locator("dialog[open]").getByLabel("分组", { exact: true }),
+    { label: "离线分组" },
+  );
   await page
     .getByLabel("个人备注", { exact: true })
     .fill("更新后保留的私人备注");
@@ -352,7 +353,7 @@ test("all pages at five widths in both themes", async ({ browser }) => {
           `${path}: ${width}px ${theme} heading contrast`,
         ).toHaveCSS(
           "color",
-          theme === "dark" ? "rgb(237, 243, 250)" : "rgb(25, 44, 64)",
+          theme === "dark" ? "rgb(227, 228, 232)" : "rgb(25, 27, 31)",
         );
       }
       expect(errors).toEqual([]);

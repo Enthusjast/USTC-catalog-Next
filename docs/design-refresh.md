@@ -1,5 +1,7 @@
 # 原站参考与前端优化
 
+当前全站界面已迁移为 Varlet / Material Design 3，主题和组件约定见 [界面组件说明](material-design.md)。下文保留历次设计调整记录。
+
 日期：2026-10-10。项目名称：USTC-catalog-Next。
 
 ## 浏览依据

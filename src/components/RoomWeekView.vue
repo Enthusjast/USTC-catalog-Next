@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { LoaderCircle } from "@lucide/vue";
 import type { RoomUsage } from "../domain/models";
 import type { RoomSummary } from "../domain/roomAvailability";
 import { weekDates, addISODate } from "../domain/dates";
@@ -61,21 +60,21 @@ function recordsUsage(
 <template>
   <div class="room-week-view">
     <div class="flex-actions">
-      <button
+      <UiButton
         class="text-button"
         @click="$emit('navigate', addISODate(date, -7))"
       >
-        上一周</button
+        上一周</UiButton
       ><strong>{{ dates[0] }}–{{ dates[6] }}</strong
-      ><button
+      ><UiButton
         class="text-button"
         @click="$emit('navigate', addISODate(date, 7))"
       >
-        下一周</button
-      ><LoaderCircle
+        下一周</UiButton
+      ><VarLoading
+        type="circle"
+        size="small"
         v-if="query.loading.value"
-        class="spin"
-        :size="18"
         aria-label="正在加载教室周记录"
       />
     </div>
@@ -89,9 +88,9 @@ function recordsUsage(
     />
     <div class="flex-actions">
       <label for="room-week-list-date">完整记录</label
-      ><select id="room-week-list-date" v-model="listDate">
+      ><UiSelect id="room-week-list-date" v-model="listDate">
         <option v-for="day in dates" :key="day" :value="day">{{ day }}</option>
-      </select>
+      </UiSelect>
     </div>
     <RoomRecordList
       v-if="selected"
@@ -109,7 +108,7 @@ function recordsUsage(
 .room-week-view :deep(.room-timeline) {
   margin: 12px 0;
 }
-.room-week-view select {
+.room-week-view .ui-select {
   width: auto;
   max-width: 100%;
 }

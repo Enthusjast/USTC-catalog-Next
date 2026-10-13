@@ -215,31 +215,31 @@ function clear() {
       >官方课程目录<ArrowUpRight :size="16" /></a
   ></PageHeading>
   <div class="view-switcher" role="group" aria-label="课程查询方式">
-    <button
+    <UiButton
       type="button"
       :class="{ active: scope === 'search' }"
       :aria-pressed="scope === 'search'"
       @click="selectScope('search')"
     >
       <Search :size="16" />课程搜索
-    </button>
-    <button
+    </UiButton>
+    <UiButton
       type="button"
       :class="{ active: scope === 'public' }"
       :aria-pressed="scope === 'public'"
       @click="selectScope('public')"
     >
       <BookOpen :size="16" />通修门类
-    </button>
-    <button
+    </UiButton>
+    <UiButton
       type="button"
       :class="{ active: scope === 'quality' }"
       :aria-pressed="scope === 'quality'"
       @click="selectScope('quality')"
     >
       <BookOpen :size="16" />综合素质
-    </button>
-    <button
+    </UiButton>
+    <UiButton
       type="button"
       :class="{ active: scope === 'saved' }"
       :aria-pressed="scope === 'saved'"
@@ -248,12 +248,12 @@ function clear() {
       <Bookmark :size="16" />本机收藏<span class="view-count">{{
         favorites.length
       }}</span>
-    </button>
+    </UiButton>
   </div>
   <div class="query-layout">
     <div v-if="scope === 'saved'" class="flex-actions favorite-group-controls">
       <label for="favorite-group-filter">收藏分组</label
-      ><select id="favorite-group-filter" v-model="favoriteGroup">
+      ><UiSelect id="favorite-group-filter" v-model="favoriteGroup">
         <option value="">全部分组</option>
         <option value="ungrouped">未分组</option>
         <option
@@ -262,7 +262,7 @@ function clear() {
           :value="group.id"
         >
           {{ group.name }}
-        </option></select
+        </option></UiSelect
       ><FavoriteGroups />
     </div>
     <FilterPanel
@@ -275,7 +275,7 @@ function clear() {
       "
       ><div class="filter-field">
         <label for="course-q">课程名称或编号</label
-        ><input
+        ><UiInput
           id="course-q"
           v-model="q"
           type="search"
@@ -284,7 +284,7 @@ function clear() {
       </div>
       <div v-if="scope === 'public'" class="filter-field">
         <label for="course-catalogue">通修门类</label
-        ><select
+        ><UiSelect
           id="course-catalogue"
           v-model="catalogueCode"
           @change="category = ''"
@@ -299,19 +299,19 @@ function clear() {
           >
             {{ entry.name }}
           </option>
-        </select>
+        </UiSelect>
       </div>
       <div
         v-if="scope === 'search' || data?.some((course) => !!course.department)"
         class="filter-field"
       >
         <label for="course-dept">所属院系</label
-        ><select id="course-dept" v-model="dept">
+        ><UiSelect id="course-dept" v-model="dept">
           <option value="">全部院系</option>
           <option v-for="d in departmentOptions" :key="d.id" :value="d.id">
             {{ d.name }}
           </option>
-        </select>
+        </UiSelect>
       </div>
       <QueryState
         :error="departmentQuery.error.value"
@@ -320,13 +320,13 @@ function clear() {
       />
       <div class="filter-field">
         <label for="course-category">课程类别</label
-        ><select id="course-category" v-model="category">
+        ><UiSelect id="course-category" v-model="category">
           <option value="">全部可用类别</option>
           <option v-for="c in categories" :key="c">{{ c }}</option>
-        </select>
+        </UiSelect>
       </div>
       <label class="checkbox-label"
-        ><input
+        ><UiCheckbox
           type="checkbox"
           :checked="history === '1'"
           @change="
@@ -334,16 +334,16 @@ function clear() {
           "
         />显示历史课程</label
       ><label v-if="scope !== 'saved'" class="checkbox-label"
-        ><input
+        ><UiCheckbox
           type="checkbox"
           :checked="saved === '1'"
           @change="
             saved = ($event.target as HTMLInputElement).checked ? '1' : ''
           "
         />仅看本机收藏</label
-      ><button class="text-button" @click="clear">
+      ><UiButton class="text-button" @click="clear">
         清除全部筛选
-      </button></FilterPanel
+      </UiButton></FilterPanel
     >
     <div>
       <QueryState
@@ -359,13 +359,13 @@ function clear() {
       />
       <div class="panel">
         <div class="results-toolbar">
-          <button
+          <UiButton
             class="text-button"
             :disabled="!filtered.length"
             @click="exportCourses(filtered)"
           >
             导出 CSV
-          </button>
+          </UiButton>
           <div>
             <strong>{{
               scope === "public"
@@ -387,13 +387,13 @@ function clear() {
             >
           </div>
           <label v-if="active" class="sort-control"
-            >排序<select v-model="sort">
+            >排序<UiSelect v-model="sort">
               <option value="code">课程编号</option>
               <option value="name">课程名称</option>
               <option value="department">
                 {{ scope === "public" ? "课程类别" : "所属院系" }}
               </option>
-            </select></label
+            </UiSelect></label
           >
         </div>
         <div
@@ -402,15 +402,15 @@ function clear() {
           role="group"
           aria-label="课程分类"
         >
-          <button
+          <UiButton
             type="button"
             :aria-pressed="!category"
             :class="{ active: !category }"
             @click="category = ''"
           >
             全部类别
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             v-for="value in categories"
             :key="value"
             type="button"
@@ -419,47 +419,47 @@ function clear() {
             @click="category = value"
           >
             {{ value }}
-          </button>
+          </UiButton>
         </div>
         <EmptyState
           v-if="scope === 'public' && !selectedCatalogue"
           title="请选择通修门类"
           message="此链接的门类不在目录中，可重新选择数学、物理等门类。"
-          ><button class="button secondary" @click="catalogueCode = 'ma'">
+          ><UiButton class="button secondary" @click="catalogueCode = 'ma'">
             打开数学类
-          </button></EmptyState
+          </UiButton></EmptyState
         >
         <EmptyState
           v-if="scope === 'saved' && !favorites.length"
           title="本机还没有收藏课程"
           message="查找课程并在详情中收藏，可在这里汇总查看。"
-          ><button class="button secondary" @click="selectScope('search')">
+          ><UiButton class="button secondary" @click="selectScope('search')">
             查找课程
-          </button></EmptyState
+          </UiButton></EmptyState
         >
         <EmptyState
           v-if="!active"
           title="从课程名称或院系开始"
           message="输入课程名称或编号，按院系浏览专业课程，或选择通修门类与综合素质课程。课程有效不代表每学期都会开课。"
-          ><button class="button" @click="selectScope('public')">
-            浏览通修门类</button
-          ><button class="button secondary" @click="selectScope('saved')">
+          ><UiButton class="button" @click="selectScope('public')">
+            浏览通修门类</UiButton
+          ><UiButton class="button secondary" @click="selectScope('saved')">
             查看本机收藏
-          </button></EmptyState
+          </UiButton></EmptyState
         ><EmptyState
           v-else-if="
             data &&
             !filtered.length &&
             !(scope === 'saved' && !favorites.length)
           "
-          ><button class="button secondary" @click="clear">清除筛选</button
-          ><button
+          ><UiButton class="button secondary" @click="clear">清除筛选</UiButton
+          ><UiButton
             v-if="history !== '1'"
             class="button secondary"
             @click="history = '1'"
           >
             显示历史课程
-          </button></EmptyState
+          </UiButton></EmptyState
         >
         <div v-if="filtered.length" class="table-scroll">
           <table class="course-table">
@@ -478,9 +478,9 @@ function clear() {
               >
                 <td>
                   <span class="course-code mono">{{ course.code }}</span
-                  ><button class="course-name" @click="code = course.code">
+                  ><UiButton class="course-name" @click="code = course.code">
                     {{ course.name }}
-                  </button>
+                  </UiButton>
                   <p v-if="course.englishName" class="course-en">
                     {{ course.englishName }}
                   </p>
@@ -509,7 +509,9 @@ function clear() {
                 </td>
                 <td>{{ course.lastTerm ?? "暂无记录" }}</td>
                 <td>
-                  <span
+                  <VarChip
+                    size="small"
+                    :elevation="false"
                     class="tag"
                     :class="course.valid ? 'valid' : 'warning'"
                     >{{
@@ -518,8 +520,8 @@ function clear() {
                         : course.valid
                           ? "当前有效"
                           : "历史课程"
-                    }}</span
-                  ><button
+                    }}</VarChip
+                  ><UiButton
                     class="icon-button"
                     :aria-label="`查看 ${course.name} 详情`"
                     @click="code = course.code"
@@ -528,7 +530,7 @@ function clear() {
                       v-if="favorites.includes(course.code)"
                       :size="16"
                     /><ArrowUpRight v-else :size="16" />
-                  </button>
+                  </UiButton>
                   <FavoriteEditor
                     v-if="scope === 'saved'"
                     :code="course.code"
@@ -561,7 +563,7 @@ function clear() {
   grid-column: 1/-1;
   padding: 8px 0;
 }
-.favorite-group-controls select {
+.favorite-group-controls .ui-select {
   width: 200px;
   max-width: 100%;
 }

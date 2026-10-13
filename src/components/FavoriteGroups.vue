@@ -36,18 +36,20 @@ async function remove(id: string) {
 }
 </script>
 <template>
-  <button class="text-button" :disabled="workspaceBusy" @click="begin">
+  <UiButton class="text-button" :disabled="workspaceBusy" @click="begin">
     管理分组
-  </button>
+  </UiButton>
   <DisclosureDialog :open="open" title="收藏分组" @close="open = false"
     ><form class="flex-actions group-form" @submit.prevent="create">
       <label :for="`${id}-new`">新分组</label
-      ><input :id="`${id}-new`" v-model="name" maxlength="40" required /><button
-        class="button small"
-        :disabled="workspaceBusy"
-      >
+      ><UiInput
+        :id="`${id}-new`"
+        v-model="name"
+        maxlength="40"
+        required
+      /><UiButton type="submit" class="button small" :disabled="workspaceBusy">
         创建
-      </button>
+      </UiButton>
     </form>
     <div
       v-for="(row, index) in rows"
@@ -56,19 +58,23 @@ async function remove(id: string) {
     >
       <label class="sr-only" :for="`${id}-${index}`"
         >修改分组 {{ row.base }}</label
-      ><input :id="`${id}-${index}`" v-model="row.name" maxlength="40" /><button
+      ><UiInput
+        :id="`${id}-${index}`"
+        v-model="row.name"
+        maxlength="40"
+      /><UiButton
         class="text-button"
         :disabled="workspaceBusy"
         @click="rename(row)"
       >
-        保存</button
-      ><button
+        保存</UiButton
+      ><UiButton
         class="text-button"
         :disabled="workspaceBusy"
         @click="remove(row.id)"
       >
         删除
-      </button>
+      </UiButton>
     </div>
     <p v-if="favorites.storageError.value" class="notice warning" role="status">
       {{ favorites.storageError.value }}
@@ -79,7 +85,7 @@ async function remove(id: string) {
 .group-form {
   padding: 12px 0;
 }
-.group-form input {
+.group-form .ui-input {
   min-width: 0;
   flex: 1;
   max-width: 100%;

@@ -67,7 +67,7 @@ async function clearLocal(all = false) {
       首次联网加载完成后，可以离线打开应用并阅读已查询的资料。未查询的内容仍需要联网，公开数据不会在后台自动更新。
     </p>
     <p v-if="installed">已作为应用安装。</p>
-    <button
+    <UiButton
       v-else-if="installAvailable"
       class="button secondary"
       :disabled="installing"
@@ -76,16 +76,16 @@ async function clearLocal(all = false) {
       <Download :size="16" />{{
         installing ? "正在安装…" : "安装 USTC-catalog-Next"
       }}
-    </button>
+    </UiButton>
     <p v-else>可通过浏览器菜单选择“安装应用”或“添加到主屏幕”。</p>
-    <button
+    <UiButton
       v-if="needRefresh"
       class="button secondary"
       :disabled="updating"
       @click="update"
     >
       <RefreshCw :size="16" />{{ updating ? "正在更新…" : "更新应用" }}
-    </button>
+    </UiButton>
     <p v-if="pwaMessage" role="status">{{ pwaMessage }}</p>
     <WorkspaceBackup />
     <h2>本机数据与隐私</h2>
@@ -95,20 +95,20 @@ async function clearLocal(all = false) {
       JSON 备份。
     </p>
     <div class="flex-actions">
-      <button
+      <UiButton
         class="button secondary"
         :disabled="clearing"
         @click="clearLocal(false)"
       >
         <Trash2 :size="16" />清除查询缓存
-      </button>
-      <button
+      </UiButton>
+      <UiButton
         class="button secondary"
         :disabled="clearing"
         @click="confirmClear = true"
       >
         <Trash2 :size="16" />清除全部本机数据
-      </button>
+      </UiButton>
     </div>
     <div
       v-if="confirmClear"
@@ -118,16 +118,16 @@ async function clearLocal(all = false) {
     >
       <p>此浏览器中的方案与收藏也将被删除。</p>
       <div class="flex-actions">
-        <button class="button" :disabled="clearing" @click="clearLocal(true)">
+        <UiButton class="button" :disabled="clearing" @click="clearLocal(true)">
           确认清除
-        </button>
-        <button
+        </UiButton>
+        <UiButton
           class="button secondary"
           :disabled="clearing"
           @click="confirmClear = false"
         >
           取消
-        </button>
+        </UiButton>
       </div>
     </div>
     <p v-if="message" role="status" style="margin-top: 16px">{{ message }}</p>

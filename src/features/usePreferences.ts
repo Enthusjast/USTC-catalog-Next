@@ -1,4 +1,5 @@
 import { ref, watch } from "vue";
+import { applyTheme } from "../app/theme";
 
 function readTheme(): string | null {
   try {
@@ -7,11 +8,19 @@ function readTheme(): string | null {
     return null;
   }
 }
-const theme = ref(readTheme() === "dark" ? "dark" : "light");
+const savedTheme = readTheme();
+const theme = ref<"dark" | "light">(
+  savedTheme === "dark" ||
+    (!savedTheme &&
+      typeof matchMedia === "function" &&
+      matchMedia("(prefers-color-scheme: dark)").matches)
+    ? "dark"
+    : "light",
+);
 watch(
   theme,
   (value) => {
-    document.documentElement.dataset.theme = value;
+    applyTheme(value);
     try {
       localStorage.setItem("catalog:theme", value);
     } catch {

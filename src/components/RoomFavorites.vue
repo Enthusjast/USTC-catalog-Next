@@ -30,7 +30,7 @@ function jump() {
     class="panel room-favorites flex-actions"
   >
     <label for="favorite-room-jump">常用教室</label
-    ><select id="favorite-room-jump" v-model="selected" @change="jump">
+    ><UiSelect id="favorite-room-jump" v-model="selected" @change="jump">
       <option value="">选择教室</option>
       <option
         v-for="room in favorites.rooms.value"
@@ -41,8 +41,8 @@ function jump() {
         "
       >
         {{ buildingLabel(room.building) }} · {{ room.room }}
-      </option></select
-    ><button class="text-button" @click="open = true">管理</button>
+      </option></UiSelect
+    ><UiButton class="text-button" @click="open = true">管理</UiButton>
   </div>
   <DisclosureDialog :open="open" title="常用教室" @close="open = false"
     ><div
@@ -51,14 +51,14 @@ function jump() {
       class="flex-actions favorite-room-row"
     >
       <span>{{ buildingLabel(room.building) }} · {{ room.room }}</span
-      ><button
+      ><UiButton
         class="text-button"
         :disabled="workspaceBusy"
         :aria-label="`移除常用教室 ${room.room}`"
         @click="favorites.remove(room.directoryId)"
       >
         移除
-      </button>
+      </UiButton>
     </div></DisclosureDialog
   >
 </template>
@@ -67,7 +67,7 @@ function jump() {
   padding: 12px;
   margin: 12px 0;
 }
-.room-favorites select {
+.room-favorites .ui-select {
   width: auto;
   max-width: 100%;
 }

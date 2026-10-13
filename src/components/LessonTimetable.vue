@@ -26,14 +26,18 @@ const {
 <template>
   <div class="week-controls">
     <label for="planner-week">教学周</label
-    ><select id="planner-week" v-model="week" class="field-input">
+    ><UiSelect id="planner-week" v-model="week" class="field-input">
       <option v-for="w in 53" :key="w" :value="String(w)">第 {{ w }} 周</option>
-    </select>
-    <button class="text-button" :disabled="!thisWeek" @click="jumpToday()">
-      跳到本周</button
-    ><button class="text-button" :disabled="!thisWeek" @click="jumpToday(true)">
+    </UiSelect>
+    <UiButton class="text-button" :disabled="!thisWeek" @click="jumpToday()">
+      跳到本周</UiButton
+    ><UiButton
+      class="text-button"
+      :disabled="!thisWeek"
+      @click="jumpToday(true)"
+    >
       今天
-    </button>
+    </UiButton>
     <p class="week-planner-link">
       欲进行详细排课, 请前往
       <a
@@ -45,20 +49,20 @@ const {
       >
     </p>
     <label for="timetable-source">课表来源</label
-    ><select
+    ><UiSelect
       id="timetable-source"
       v-model="timetableSource"
       class="field-input"
     >
       <option value="candidates">候选方案</option>
       <option value="results">查询结果</option>
-    </select>
+    </UiSelect>
     <label for="timetable-mode">视图</label
-    ><select id="timetable-mode" v-model="timetableMode" class="field-input">
+    ><UiSelect id="timetable-mode" v-model="timetableMode" class="field-input">
       <option value="week">完整周</option>
       <option value="day">单日</option>
-    </select>
-    <select
+    </UiSelect>
+    <UiSelect
       v-if="timetableMode === 'day'"
       v-model="timetableDay"
       class="field-input"
@@ -67,7 +71,7 @@ const {
       <option v-for="(d, i) in weekdays" :key="d" :value="String(i + 1)">
         周{{ d }}
       </option>
-    </select>
+    </UiSelect>
   </div>
   <SchemeSelector v-if="timetableSource !== 'results'" :planner="planner" />
   <details class="calendar-control">

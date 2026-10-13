@@ -57,9 +57,12 @@ function toggle(event: Event) {
   <article ref="host" class="program-offering-course">
     <h3>
       <span class="mono">{{ entry.course.code }}</span
-      ><button class="course-name" @click="$emit('course', entry.course.code)">
+      ><UiButton
+        class="course-name"
+        @click="$emit('course', entry.course.code)"
+      >
         {{ entry.course.name }}
-      </button>
+      </UiButton>
     </h3>
     <p class="muted">
       {{

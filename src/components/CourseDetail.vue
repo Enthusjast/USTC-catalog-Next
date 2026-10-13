@@ -35,12 +35,14 @@ const course = computed(() => data.value?.[0] ?? props.initial);
       <p v-if="course?.englishName">{{ course.englishName }}</p>
     </div>
     <div class="flex-actions">
-      <span
+      <VarChip
+        size="small"
+        :elevation="false"
         v-if="course?.valid !== undefined"
         class="tag"
         :class="course.valid ? 'valid' : 'warning'"
-        >{{ course.valid ? "当前有效" : "历史课程" }}</span
-      ><button
+        >{{ course.valid ? "当前有效" : "历史课程" }}</VarChip
+      ><UiButton
         class="button small secondary"
         :disabled="workspaceBusy"
         :aria-pressed="favorites.includes(code)"
@@ -49,7 +51,7 @@ const course = computed(() => data.value?.[0] ?? props.initial);
         <Bookmark :size="16" />{{
           favorites.includes(code) ? "已收藏" : "收藏课程"
         }}
-      </button>
+      </UiButton>
     </div>
     <p v-if="storageError" class="notice warning">{{ storageError }}</p>
     <FavoriteEditor v-if="favorites.includes(code)" :code="code" />

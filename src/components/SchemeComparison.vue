@@ -53,38 +53,38 @@ watch(
 );
 </script>
 <template>
-  <button
+  <UiButton
     class="text-button"
     :disabled="planner.schemes.value.length < 2"
     @click="begin"
   >
     对比方案
-  </button>
+  </UiButton>
   <DisclosureDialog
     :open="open"
     title="同学期候选方案对比"
     @close="open = false"
     ><div class="scheme-comparison-controls">
       <label for="scheme-left">原方案</label
-      ><select id="scheme-left" v-model="left">
+      ><UiSelect id="scheme-left" v-model="left">
         <option
           v-for="scheme in planner.schemes.value"
           :key="scheme.id"
           :value="scheme.id"
         >
           {{ scheme.name }}
-        </option></select
+        </option></UiSelect
       ><label for="scheme-right">目标方案</label
-      ><select id="scheme-right" v-model="right">
+      ><UiSelect id="scheme-right" v-model="right">
         <option
           v-for="scheme in planner.schemes.value"
           :key="scheme.id"
           :value="scheme.id"
         >
           {{ scheme.name }}
-        </option></select
+        </option></UiSelect
       ><label for="scheme-compare-week">教学周</label
-      ><input
+      ><UiInput
         id="scheme-compare-week"
         v-model.number="week"
         type="number"

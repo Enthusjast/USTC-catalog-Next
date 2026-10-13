@@ -23,12 +23,12 @@ const groups = computed(() => programTermGroups(props.modules));
           <tr v-for="row in group.entries" :key="row.key">
             <td>
               <span class="mono">{{ row.entry.course.code }}</span
-              ><button
+              ><UiButton
                 class="course-name"
                 @click="$emit('course', row.entry.course.code)"
               >
                 {{ row.entry.course.name }}
-              </button>
+              </UiButton>
             </td>
             <td>{{ row.entry.course.credits ?? "未提供" }}</td>
             <td>

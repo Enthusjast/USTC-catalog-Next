@@ -52,12 +52,12 @@ async function importJSON() {
   <section class="workspace-backup">
     <h2>候选方案与收藏备份</h2>
     <div class="flex-actions">
-      <button
+      <UiButton
         class="button secondary"
         :disabled="workspaceBusy"
         @click="exportJSON"
       >
-        导出 JSON</button
+        导出 JSON</UiButton
       ><label class="button secondary backup-file-label"
         >选择备份文件<input
           type="file"
@@ -80,19 +80,17 @@ async function importJSON() {
           preview.favoriteGroups.length
         }}
         个分组及
-        {{
-          preview.roomFavorites.length
-        }}
+        {{ preview.roomFavorites.length }}
         间常用教室。现有方案保留，同名方案自动更名。
       </p>
       <div class="flex-actions">
-        <button
+        <UiButton
           class="button small"
           :disabled="workspaceBusy"
           @click="importJSON"
         >
-          确认导入</button
-        ><button
+          确认导入</UiButton
+        ><UiButton
           class="text-button"
           @click="
             preview = undefined;
@@ -100,7 +98,7 @@ async function importJSON() {
           "
         >
           取消
-        </button>
+        </UiButton>
       </div>
     </div>
     <p v-if="message" role="status">{{ message }}</p>

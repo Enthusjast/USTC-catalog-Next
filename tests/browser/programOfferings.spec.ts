@@ -1,3 +1,4 @@
+import { selectOption } from "./ui";
 import { test, expect } from "@playwright/test";
 import { fixturePayload } from "../../src/api/fixtures";
 test("program offerings load once per semester and preserve every matching class", async ({
@@ -66,9 +67,10 @@ test("program offerings load once per semester and preserve every matching class
     page.locator(".program-offering-course .lesson-table tbody tr"),
   ).toHaveCount(5);
   expect(loads).toBe(1);
-  await page
-    .locator("#program-offering-semester")
-    .selectOption("demo-previous");
+  await selectOption(
+    page.locator("#program-offering-semester"),
+    "demo-previous",
+  );
   await expect(page.locator(".program-offering-course")).toContainText(
     "未找到公开开课",
   );

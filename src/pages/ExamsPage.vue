@@ -128,12 +128,12 @@ function exportICS() {
   <PageHeading title="考试查询"
     ><div class="filter-field" style="margin: 0; min-width: 200px">
       <label for="exam-semester">查询学期</label
-      ><select id="exam-semester" v-model="semester">
+      ><UiSelect id="exam-semester" v-model="semester">
         <option v-if="!semesterQuery.data.value" value="">正在读取学期</option>
         <option v-for="s in semesterQuery.data.value" :key="s.id" :value="s.id">
           {{ s.name }}
         </option>
-      </select>
+      </UiSelect>
     </div></PageHeading
   >
   <div class="notice warning">
@@ -145,19 +145,19 @@ function exportICS() {
     @retry="semesterQuery.reload"
   />
   <nav class="tabs" aria-label="考试类型">
-    <button
+    <UiButton
       :class="{ active: kind === 'course' }"
       :aria-pressed="kind === 'course'"
       @click="kind = 'course'"
     >
-      课程考试</button
-    ><button
+      课程考试</UiButton
+    ><UiButton
       :class="{ active: kind === 'general' }"
       :aria-pressed="kind === 'general'"
       @click="kind = 'general'"
     >
       通识类考试
-    </button>
+    </UiButton>
   </nav>
   <FilterPanel
     layout="inline"
@@ -167,27 +167,32 @@ function exportICS() {
   >
     <div class="filter-field">
       <label for="exam-q">课程名称或编号</label
-      ><input id="exam-q" v-model="q" type="search" placeholder="课程关键词" />
+      ><UiInput
+        id="exam-q"
+        v-model="q"
+        type="search"
+        placeholder="课程关键词"
+      />
     </div>
     <div class="filter-field">
       <label for="exam-date">考试日期</label
-      ><input id="exam-date" v-model="date" type="date" />
+      ><UiInput id="exam-date" v-model="date" type="date" />
     </div>
     <div class="filter-field">
       <label for="exam-dept">院系</label
-      ><select id="exam-dept" v-model="dept">
+      ><UiSelect id="exam-dept" v-model="dept">
         <option value="">全部院系</option>
         <option v-for="d in departments" :key="d">{{ d }}</option>
-      </select>
+      </UiSelect>
     </div>
     <div class="filter-field">
       <label for="exam-room">考场</label
-      ><input id="exam-room" v-model="room" placeholder="教室编号" />
+      ><UiInput id="exam-room" v-model="room" placeholder="教室编号" />
     </div>
-    <button class="text-button" @click="reset">清除筛选</button>
+    <UiButton class="text-button" @click="reset">清除筛选</UiButton>
   </FilterPanel>
   <label class="checkbox-label"
-    ><input
+    ><UiCheckbox
       type="checkbox"
       :checked="savedOnly === '1'"
       @change="
@@ -214,32 +219,32 @@ function exportICS() {
         }}</span></strong
       >
       <div class="flex-actions">
-        <button
+        <UiButton
           class="text-button"
           :disabled="!filtered.length"
           @click="exportExams(filtered)"
         >
           导出 CSV
-        </button>
-        <button
+        </UiButton>
+        <UiButton
           class="text-button"
           :aria-pressed="view === 'list'"
           @click="view = 'list'"
         >
-          列表</button
-        ><button
+          列表</UiButton
+        ><UiButton
           class="text-button"
           :aria-pressed="view === 'week'"
           @click="view = 'week'"
         >
-          周历</button
-        ><button
+          周历</UiButton
+        ><UiButton
           class="text-button"
           :disabled="!filtered.length"
           @click="exportICS"
         >
           <Download :size="15" />导出 ICS
-        </button>
+        </UiButton>
       </div>
     </div>
     <template v-if="view === 'list'"
@@ -288,7 +293,7 @@ function exportICS() {
     ><template v-else
       ><div class="week-controls">
         <label for="exam-week">查看日期所在周</label
-        ><input
+        ><UiInput
           id="exam-week"
           v-model="weekDate"
           class="field-input"
@@ -319,9 +324,9 @@ function exportICS() {
         data.length ? '没有符合筛选条件的考试' : '该学期暂无此类公开考试记录'
       "
       message="未公布记录不表示没有考试。可切换考试类型、学期或访问综合教务系统。"
-      ><button class="button secondary" @click="reset">
+      ><UiButton class="button secondary" @click="reset">
         清除筛选
-      </button></EmptyState
+      </UiButton></EmptyState
     >
   </div>
   <p v-if="exportMessage" class="notice" role="status" style="margin-top: 20px">

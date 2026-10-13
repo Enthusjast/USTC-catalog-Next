@@ -33,13 +33,13 @@ const comparison = computed(() =>
 </script>
 <template>
   <PageHeading title="培养计划对比"
-    ><button
+    ><UiButton
       class="button secondary"
       :disabled="!comparison"
       @click="exportProgramComparison(before.data.value!, after.data.value!)"
     >
       导出 CSV
-    </button></PageHeading
+    </UiButton></PageHeading
   ><QueryState
     :loading="tree.loading.value"
     :error="tree.error.value"
@@ -111,8 +111,8 @@ const comparison = computed(() =>
         class="compare-row"
       >
         <span class="mono">{{ row.entry.course.code }}</span
-        ><button class="course-name" @click="course = row.entry.course.code">
-          {{ row.entry.course.name }}</button
+        ><UiButton class="course-name" @click="course = row.entry.course.code">
+          {{ row.entry.course.name }}</UiButton
         ><span class="muted">{{ row.module }}</span>
       </div>
       <p v-if="!section.rows.length" class="muted">没有此类变化。</p>
@@ -127,14 +127,16 @@ const comparison = computed(() =>
         :key="change.code"
         class="compare-row"
       >
-        <button class="course-name mono" @click="course = change.code">
+        <UiButton class="course-name mono" @click="course = change.code">
           {{ change.code }}
-        </button>
+        </UiButton>
         <div
           v-for="(rows, index) in [change.before, change.after]"
           :key="index"
         >
-          <span class="tag">{{ index ? "目标计划" : "原计划" }}</span>
+          <VarChip size="small" :elevation="false" class="tag">{{
+            index ? "目标计划" : "原计划"
+          }}</VarChip>
           <p v-for="(row, i) in rows" :key="i">
             {{ row.entry.course.name }} ·
             {{ row.entry.course.credits ?? "未提供" }} 学分 ·
@@ -165,7 +167,9 @@ const comparison = computed(() =>
           v-for="(module, index) in [change.before, change.after]"
           :key="index"
         >
-          <span class="tag">{{ index ? "目标计划" : "原计划" }}</span>
+          <VarChip size="small" :elevation="false" class="tag">{{
+            index ? "目标计划" : "原计划"
+          }}</VarChip>
           <p>
             要求 {{ module.requiredCredits ?? "未提供" }} 学分 /
             {{ module.requiredCourses ?? "未提供" }} 门课程

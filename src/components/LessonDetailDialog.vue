@@ -133,13 +133,13 @@ const detailCourse = computed(() =>
       />
       <div class="flex-actions">
         <IcourseLink :lesson="detail" variant="button" />
-        <button
+        <UiButton
           class="button"
           :disabled="workspaceBusy"
           :aria-pressed="selected"
           @click="$emit('candidate', detail, selectionIntent($event))"
         >
-          {{ selected ? "移除候选" : "加入候选清单" }}</button
+          {{ selected ? "移除候选" : "加入候选清单" }}</UiButton
         ><RouterLink
           class="button secondary"
           :to="{

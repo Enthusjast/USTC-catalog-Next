@@ -39,7 +39,7 @@ watch(filtered, (options) => {
   >
     <header class="program-compare-selector-heading">
       <h2 :id="`${id}-heading`">{{ title }}</h2>
-      <button
+      <UiButton
         type="button"
         class="text-button"
         :disabled="!active"
@@ -47,12 +47,12 @@ watch(filtered, (options) => {
         @click="clear"
       >
         清除全部筛选
-      </button>
+      </UiButton>
     </header>
     <div class="program-compare-fields">
       <div class="filter-field">
         <label :for="`${id}-q`">专业或计划名称</label>
-        <input
+        <UiInput
           :id="`${id}-q`"
           v-model="q"
           type="search"
@@ -61,28 +61,28 @@ watch(filtered, (options) => {
       </div>
       <div class="filter-field">
         <label :for="`${id}-type`">培养类型</label>
-        <select :id="`${id}-type`" v-model="type">
+        <UiSelect :id="`${id}-type`" v-model="type">
           <option value="">全部培养类型</option>
           <option v-for="t in types" :key="t">{{ t }}</option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field">
         <label :for="`${id}-dept`">院系</label>
-        <select :id="`${id}-dept`" v-model="dept">
+        <UiSelect :id="`${id}-dept`" v-model="dept">
           <option value="">全部院系</option>
           <option v-for="d in departments" :key="d">{{ d }}</option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field">
         <label :for="`${id}-grade`">入学年级</label>
-        <select :id="`${id}-grade`" v-model="grade">
+        <UiSelect :id="`${id}-grade`" v-model="grade">
           <option value="">全部年级</option>
           <option v-for="g in grades" :key="g">{{ g }}</option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field program-compare-plan-field">
         <label :for="`${id}-plan`">选择计划</label>
-        <select
+        <UiSelect
           :id="`${id}-plan`"
           v-model="selected"
           :disabled="!programs || !filtered.length"
@@ -95,7 +95,7 @@ watch(filtered, (options) => {
             {{ p.grade }} 级 · {{ p.name }} · {{ p.trainType }} ·
             {{ p.department }}
           </option>
-        </select>
+        </UiSelect>
       </div>
     </div>
     <p

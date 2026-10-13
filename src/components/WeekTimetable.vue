@@ -98,6 +98,7 @@ function position(
       </div>
       <template v-for="cluster in clusters" :key="cluster.key">
         <button
+          v-ripple
           v-if="cluster.lanes > 3"
           class="tt-block tt-dense"
           :style="position(cluster.day, cluster.start, cluster.end)"
@@ -108,6 +109,7 @@ function position(
           ><span>展开全部</span>
         </button>
         <button
+          v-ripple
           v-for="block in cluster.lanes <= 3 ? cluster.blocks : []"
           :key="block.key"
           class="tt-block"
@@ -141,9 +143,9 @@ function position(
   <details v-if="unknown.length" class="unknown-schedules">
     <summary>无法完整定位的安排 {{ unknown.length }}</summary>
     <div v-for="lesson in unknown" :key="lesson.id">
-      <button class="course-name" @click="$emit('select', lesson.code)">
+      <UiButton class="course-name" @click="$emit('select', lesson.code)">
         {{ lesson.course.name }} · {{ lesson.code }}
-      </button>
+      </UiButton>
       <p>{{ lesson.schedule.text || "未提供安排" }}</p>
     </div>
   </details>
@@ -156,9 +158,9 @@ function position(
       :key="block.key"
       class="dense-schedule-row"
     >
-      <button class="course-name" @click="select(block.lesson.code)">
+      <UiButton class="course-name" @click="select(block.lesson.code)">
         {{ block.lesson.course.name }} · {{ block.lesson.code }}
-      </button>
+      </UiButton>
       <p>
         周{{ weekdays[block.day - 1] }} 第 {{ block.start }}–{{
           block.end - 1

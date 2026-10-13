@@ -94,9 +94,13 @@ const lessonResults = computed(() =>
           }"
           ><span class="mono muted">{{ course.code }}</span
           ><strong>{{ course.name }}</strong
-          ><span class="tag" :class="course.valid ? 'valid' : 'warning'">{{
-            course.valid ? "有效" : "历史"
-          }}</span></RouterLink
+          ><VarChip
+            size="small"
+            :elevation="false"
+            class="tag"
+            :class="course.valid ? 'valid' : 'warning'"
+            >{{ course.valid ? "有效" : "历史" }}</VarChip
+          ></RouterLink
         ><EmptyState
           v-if="courses.data.value && !courses.data.value.length"
           message="尝试课程编号、简称或英文名称。"
@@ -169,7 +173,8 @@ const lessonResults = computed(() =>
           :key="plan.id"
           class="search-result-item"
           :to="`/programs/${plan.id}`"
-          ><span class="tag">{{ plan.grade }} 级</span
+          ><VarChip size="small" :elevation="false" class="tag"
+            >{{ plan.grade }} 级</VarChip
           ><strong>{{ plan.name }}</strong
           ><span class="muted">{{ plan.trainType }}</span></RouterLink
         ><EmptyState

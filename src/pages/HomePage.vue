@@ -90,6 +90,7 @@ const tasks = [
     </div>
     <div class="task-grid">
       <RouterLink
+        v-ripple
         v-for="task in tasks"
         :key="task.path"
         :to="

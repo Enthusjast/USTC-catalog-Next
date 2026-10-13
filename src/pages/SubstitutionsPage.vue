@@ -48,7 +48,7 @@ const { page, visible, change } = usePagination(filtered, 20);
     <div class="panel inline-filters substitution-filters">
       <div class="filter-field">
         <label for="sub-q">课程名称或编号</label
-        ><input
+        ><UiInput
           id="sub-q"
           v-model="q"
           type="search"
@@ -57,13 +57,13 @@ const { page, visible, change } = usePagination(filtered, 20);
       </div>
       <div class="filter-field">
         <label for="sub-side">匹配关系哪一方</label
-        ><select id="sub-side" v-model="side">
+        ><UiSelect id="sub-side" v-model="side">
           <option value="both">关系双方</option>
           <option value="substitute">替代课程</option>
           <option value="original">原课程</option>
-        </select>
+        </UiSelect>
       </div>
-      <button
+      <UiButton
         type="button"
         class="text-button"
         :disabled="!q && side === 'both'"
@@ -73,7 +73,7 @@ const { page, visible, change } = usePagination(filtered, 20);
         "
       >
         清除筛选
-      </button>
+      </UiButton>
     </div>
     <QueryState
       :loading="loading"
@@ -109,7 +109,7 @@ const { page, visible, change } = usePagination(filtered, 20);
     <EmptyState
       v-if="data && !filtered.length"
       message="尝试课程编号、名称或改为匹配关系双方。"
-      ><button
+      ><UiButton
         class="button secondary"
         @click="
           q = '';
@@ -117,7 +117,7 @@ const { page, visible, change } = usePagination(filtered, 20);
         "
       >
         清除筛选
-      </button></EmptyState
+      </UiButton></EmptyState
     >
     <Pagination
       :total="filtered.length"

@@ -12,12 +12,16 @@ const dismissed = ref(false);
     class="pwa-update"
     aria-label="应用更新"
   >
-    <button class="button secondary" :disabled="updating" @click="update">
+    <UiButton class="button secondary" :disabled="updating" @click="update">
       <RefreshCw :size="16" />{{ updating ? "正在更新…" : "更新应用" }}
-    </button>
-    <button class="icon-button" aria-label="稍后更新" @click="dismissed = true">
+    </UiButton>
+    <UiButton
+      class="icon-button"
+      aria-label="稍后更新"
+      @click="dismissed = true"
+    >
       <X :size="16" />
-    </button>
+    </UiButton>
     <p v-if="message" role="status">{{ message }}</p>
   </aside>
 </template>

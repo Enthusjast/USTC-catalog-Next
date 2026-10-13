@@ -48,7 +48,13 @@ function ranges(values: number[]) {
         </div>
       </li>
     </ul>
-    <span v-if="schedule.unknown" class="tag warning">部分时间无法判断</span>
+    <VarChip
+      size="small"
+      :elevation="false"
+      v-if="schedule.unknown"
+      class="tag warning"
+      >部分时间无法判断</VarChip
+    >
     <p v-if="!schedule.slots.length || schedule.unknown" class="schedule-text">
       {{ schedule.text || "未提供安排" }}
     </p>

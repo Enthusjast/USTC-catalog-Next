@@ -7,7 +7,7 @@ import {
   onMounted,
   onBeforeUnmount,
 } from "vue";
-import { LoaderCircle, ChevronLeft, ChevronRight } from "@lucide/vue";
+import { ChevronLeft, ChevronRight } from "@lucide/vue";
 import { useRouter } from "vue-router";
 import { catalog } from "../api/catalog";
 import { useQuery } from "../features/useQuery";
@@ -253,24 +253,24 @@ useClassroomPositions(
     />
     <div ref="dateControls" class="room-date-controls panel">
       <label for="room-date" class="sr-only">查询日期</label
-      ><input id="room-date" v-model="date" type="date" />
+      ><UiInput id="room-date" v-model="date" type="date" />
       <div class="flex-actions">
-        <button
+        <UiButton
           class="icon-button"
           :disabled="!validDate"
           aria-label="前一天"
           @click="date = addISODate(date, -1)"
         >
-          <ChevronLeft :size="18" /></button
-        ><button class="text-button" @click="date = today">今天</button
-        ><button
+          <ChevronLeft :size="18" /></UiButton
+        ><UiButton class="text-button" @click="date = today">今天</UiButton
+        ><UiButton
           class="icon-button"
           :disabled="!validDate"
           aria-label="后一天"
           @click="date = addISODate(date, 1)"
         >
           <ChevronRight :size="18" />
-        </button>
+        </UiButton>
       </div>
     </div>
     <FilterPanel
@@ -281,17 +281,17 @@ useClassroomPositions(
     >
       <div class="filter-field">
         <label for="room-building">楼宇编号</label
-        ><select id="room-building" v-model="building">
+        ><UiSelect id="room-building" v-model="building">
           <option value="">全部楼宇</option>
           <option v-if="building === '3'" value="3">第三教学楼（全部）</option>
           <option v-for="b in buildings" :key="b" :value="b">
             {{ buildingLabel(b) }}
           </option>
-        </select>
+        </UiSelect>
       </div>
       <div class="filter-field">
         <label for="room-q">教室</label
-        ><input
+        ><UiInput
           id="room-q"
           v-model="room"
           type="search"
@@ -300,12 +300,12 @@ useClassroomPositions(
       </div>
       <div class="filter-field">
         <label for="room-type">显示记录类型</label
-        ><select id="room-type" v-model="type">
+        ><UiSelect id="room-type" v-model="type">
           <option value="">全部类型</option>
           <option v-for="(name, key) in usageTypes" :key="key" :value="key">
             {{ name }}
           </option>
-        </select>
+        </UiSelect>
       </div>
       <details
         v-if="hasCapacity || campuses.length"
@@ -321,7 +321,7 @@ useClassroomPositions(
         <div class="room-advanced-fields">
           <div v-if="hasCapacity" class="filter-field">
             <label for="room-capacity">最低容量</label
-            ><input
+            ><UiInput
               id="room-capacity"
               v-model="capacity"
               type="number"
@@ -331,14 +331,16 @@ useClassroomPositions(
           </div>
           <div v-if="campuses.length" class="filter-field">
             <label for="room-campus">校区</label
-            ><select id="room-campus" v-model="campus">
+            ><UiSelect id="room-campus" v-model="campus">
               <option value="">全部校区</option>
               <option v-for="c in campuses" :key="c">{{ c }}</option>
-            </select>
+            </UiSelect>
           </div>
         </div>
       </details>
-      <button type="button" class="text-button" @click="reset">清除筛选</button>
+      <UiButton type="button" class="text-button" @click="reset"
+        >清除筛选</UiButton
+      >
     </FilterPanel>
     <div
       v-if="loading"
@@ -346,7 +348,7 @@ useClassroomPositions(
       role="status"
       aria-label="正在加载教室使用情况"
     >
-      <LoaderCircle class="spin" :size="18" aria-hidden="true" />
+      <VarLoading type="circle" size="small" aria-hidden="true" />
     </div>
     <FilterSummary
       :filters="filterSummary.filters.value"
@@ -359,7 +361,7 @@ useClassroomPositions(
       class="room-building-controls panel"
     >
       <label for="room-building-jump">跳转楼栋</label>
-      <select
+      <UiSelect
         id="room-building-jump"
         v-model="buildingJump"
         class="field-input"
@@ -373,7 +375,7 @@ useClassroomPositions(
         >
           {{ group.title }}
         </option>
-      </select>
+      </UiSelect>
       <div class="room-usage-legend" aria-label="记录类型图例">
         <span><i class="usage-swatch teaching" />上课使用</span
         ><span><i class="usage-swatch occupation" />临时借用</span
@@ -413,7 +415,7 @@ useClassroomPositions(
       title="没有符合条件的教室"
       message="请调整楼宇或教室筛选。"
     >
-      <button class="button secondary" @click="reset">清除筛选</button>
+      <UiButton class="button secondary" @click="reset">清除筛选</UiButton>
     </EmptyState>
     <DisclosureDialog
       :open="!!selectedRoom"
@@ -422,20 +424,20 @@ useClassroomPositions(
     >
       <template v-if="selectedRoom"
         ><div class="flex-actions">
-          <button
+          <UiButton
             class="text-button"
             :aria-pressed="roomView !== 'week'"
             @click="roomView = 'day'"
           >
-            单日记录</button
-          ><button
+            单日记录</UiButton
+          ><UiButton
             class="text-button"
             :aria-pressed="roomView === 'week'"
             @click="roomView = 'week'"
           >
             本周使用
-          </button>
-          <button
+          </UiButton>
+          <UiButton
             v-if="selectedRoom.directoryId !== undefined"
             class="text-button"
             :disabled="workspaceBusy"
@@ -447,7 +449,7 @@ useClassroomPositions(
                 ? "已收藏教室"
                 : "收藏教室"
             }}
-          </button>
+          </UiButton>
         </div>
         <RoomWeekView
           v-if="roomView === 'week'"
@@ -498,7 +500,7 @@ useClassroomPositions(
   z-index: 5;
   margin-bottom: 12px;
 }
-.room-date-controls input {
+.room-date-controls .ui-native-field {
   width: 170px;
   min-height: 44px;
   max-width: 100%;

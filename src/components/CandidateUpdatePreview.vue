@@ -87,13 +87,13 @@ async function apply() {
 }
 </script>
 <template>
-  <button
+  <UiButton
     class="text-button"
     :disabled="workspaceBusy || !planner.lessons.value.length"
     @click="begin"
   >
     检查候选安排更新
-  </button>
+  </UiButton>
   <p v-if="message" role="status">{{ message }}</p>
   <DisclosureDialog
     :open="!!run"
@@ -108,9 +108,9 @@ async function apply() {
     <template v-if="query.data.value">
       <div class="flex-actions">
         <span>{{ changed.length }} 项有变化</span
-        ><button v-if="stale" class="text-button" @click="begin">
+        ><UiButton v-if="stale" class="text-button" @click="begin">
           方案已变化，重新比较
-        </button>
+        </UiButton>
       </div>
       <article
         v-for="row in rows"
@@ -118,10 +118,11 @@ async function apply() {
         class="update-preview-row"
       >
         <label v-if="row.status === 'changed'"
-          ><input v-model="selected" type="checkbox" :value="row.before.id" />{{
-            row.before.course.name
-          }}
-          · {{ row.before.code }}</label
+          ><UiCheckbox
+            v-model="selected"
+            type="checkbox"
+            :value="row.before.id"
+          />{{ row.before.course.name }} · {{ row.before.code }}</label
         >
         <strong v-else
           >{{ row.before.course.name }} · {{ row.before.code }}</strong
@@ -136,13 +137,13 @@ async function apply() {
           </div>
         </dl>
       </article>
-      <button
+      <UiButton
         class="button"
         :disabled="workspaceBusy || stale || !selected.length"
         @click="apply"
       >
         确认更新所选项
-      </button>
+      </UiButton>
     </template>
   </DisclosureDialog>
 </template>

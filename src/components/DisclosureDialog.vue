@@ -56,12 +56,18 @@ onBeforeUnmount(() => {
     @pointercancel="pressedOutside = false"
     @click="click"
   >
-    <header>
-      <h2 :id="titleId">{{ title }}</h2>
-      <button class="icon-button" aria-label="关闭详情" @click="emit('close')">
-        <X :size="20" />
-      </button>
-    </header>
-    <div class="dialog-content"><slot /></div>
+    <VarPaper class="dialog-paper" :elevation="false">
+      <header>
+        <h2 :id="titleId">{{ title }}</h2>
+        <UiButton
+          class="icon-button"
+          aria-label="关闭详情"
+          @click="emit('close')"
+        >
+          <X :size="20" />
+        </UiButton>
+      </header>
+      <div class="dialog-content"><slot /></div>
+    </VarPaper>
   </dialog>
 </template>

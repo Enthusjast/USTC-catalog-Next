@@ -35,7 +35,7 @@ const overlaps = computed(
   <section v-if="lessons.length" class="panel lesson-comparison">
     <div class="results-toolbar">
       <h2>同课程教学班对比</h2>
-      <button class="text-button" @click="$emit('close')">清空对比</button>
+      <UiButton class="text-button" @click="$emit('close')">清空对比</UiButton>
     </div>
     <div class="table-scroll">
       <table>
@@ -43,16 +43,19 @@ const overlaps = computed(
           <tr>
             <th>项目</th>
             <th v-for="lesson in lessons" :key="lesson.id">
-              <button class="course-name" @click="$emit('detail', lesson.code)">
-                {{ lesson.course.name }}</button
+              <UiButton
+                class="course-name"
+                @click="$emit('detail', lesson.code)"
+              >
+                {{ lesson.course.name }}</UiButton
               ><span class="mono">{{ lesson.code }}</span
-              ><button
+              ><UiButton
                 class="text-button"
                 :aria-label="`移除对比 ${lesson.code}`"
                 @click="$emit('remove', lesson.code)"
               >
                 移除
-              </button>
+              </UiButton>
             </th>
           </tr>
         </thead>

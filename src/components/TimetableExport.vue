@@ -56,29 +56,29 @@ function print() {
 </script>
 <template>
   <div class="timetable-export flex-actions">
-    <button
+    <UiButton
       class="text-button"
       :disabled="!data.lessons.length"
       @click="preview"
     >
-      导出 PNG</button
-    ><button
+      导出 PNG</UiButton
+    ><UiButton
       class="text-button"
       :disabled="!data.lessons.length"
       @click="print"
     >
       打印 / PDF
-    </button>
+    </UiButton>
     <p v-if="message" role="status">{{ message }}</p>
   </div>
   <DisclosureDialog :open="open" title="课表图片导出" @close="open = false"
     ><div class="flex-actions">
       <label for="timetable-image-page">图片</label
-      ><select id="timetable-image-page" v-model="selected">
+      ><UiSelect id="timetable-image-page" v-model="selected">
         <option v-for="(_, i) in pages" :key="i" :value="i">
           {{ i + 1 }} / {{ pages.length }}
-        </option></select
-      ><button class="button small" @click="save">保存此张 PNG</button>
+        </option></UiSelect
+      ><UiButton class="button small" @click="save">保存此张 PNG</UiButton>
     </div>
     <img
       class="timetable-export-preview"
@@ -96,7 +96,7 @@ function print() {
   margin-top: 16px;
   border: 1px solid var(--border);
 }
-.timetable-export select {
+.timetable-export .ui-select {
   width: auto;
 }
 </style>

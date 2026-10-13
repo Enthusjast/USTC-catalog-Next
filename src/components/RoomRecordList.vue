@@ -46,14 +46,20 @@ function inRange(record: RoomUsage) {
               >{{ formatClock(record.start) }}–{{
                 formatClock(record.end)
               }}</span
-            ><span v-if="!hasUsageTime(record)" class="tag warning">{{
-              record.start !== undefined && record.end !== undefined
-                ? "起止时刻无效"
-                : "时刻未知"
-            }}</span>
+            ><VarChip
+              size="small"
+              :elevation="false"
+              v-if="!hasUsageTime(record)"
+              class="tag warning"
+              >{{
+                record.start !== undefined && record.end !== undefined
+                  ? "起止时刻无效"
+                  : "时刻未知"
+              }}</VarChip
+            >
           </td>
           <td>
-            <button
+            <UiButton
               type="button"
               class="room-record-detail-button"
               aria-haspopup="dialog"
@@ -69,7 +75,7 @@ function inRange(record: RoomUsage) {
             >
               <strong>{{ record.title }}</strong
               ><span>查看占用详情</span>
-            </button>
+            </UiButton>
           </td>
           <td>
             <span class="room-usage-type" :class="usageCategory(record.type)">{{

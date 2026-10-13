@@ -76,8 +76,8 @@ async function share() {
         : `正在读取计划 #${id}`
     "
     eyebrow="ACADEMIC PROGRAM / 计划详情"
-    ><button class="button secondary" @click="share">
-      <Link :size="16" />复制分享链接</button
+    ><UiButton class="button secondary" @click="share">
+      <Link :size="16" />复制分享链接</UiButton
     ><RouterLink
       class="button secondary"
       :to="{ path: '/program-compare', query: { left: id } }"
@@ -105,40 +105,40 @@ async function share() {
     </div>
     <div class="flex-actions program-view-controls">
       <label for="program-module-q" class="sr-only">查找模块或课程</label
-      ><input
+      ><UiInput
         id="program-module-q"
         v-model="q"
         type="search"
         placeholder="查找模块、课程或编号"
-      /><button
+      /><UiButton
         class="text-button"
         :aria-pressed="view !== 'terms' && view !== 'offerings'"
         @click="view = 'modules'"
       >
-        按模块</button
-      ><button
+        按模块</UiButton
+      ><UiButton
         class="text-button"
         :aria-pressed="view === 'terms'"
         @click="view = 'terms'"
       >
-        按建议学期</button
-      ><button
+        按建议学期</UiButton
+      ><UiButton
         class="text-button"
         :aria-pressed="view === 'offerings'"
         @click="view = 'offerings'"
       >
-        本学期开课</button
-      ><button
+        本学期开课</UiButton
+      ><UiButton
         class="text-button"
         @click="exportProgram(data, filteredModules, view)"
       >
-        导出 CSV</button
-      ><button
+        导出 CSV</UiButton
+      ><UiButton
         class="text-button"
         @click="printProgram(data, filteredModules, view)"
       >
         打印 / PDF
-      </button>
+      </UiButton>
     </div>
     <div
       v-if="view !== 'terms' && view !== 'offerings'"
@@ -146,7 +146,7 @@ async function share() {
     >
       <h2>课程模块</h2>
       <div class="flex-actions">
-        <button
+        <UiButton
           class="text-button"
           @click="
             q.trim()
@@ -156,8 +156,8 @@ async function share() {
               : (expandedParam = all(data.modules).join(','))
           "
         >
-          全部展开</button
-        ><button
+          全部展开</UiButton
+        ><UiButton
           class="text-button"
           @click="
             q.trim()
@@ -168,7 +168,7 @@ async function share() {
           "
         >
           全部收起
-        </button>
+        </UiButton>
       </div>
     </div>
     <div
@@ -205,7 +205,7 @@ async function share() {
 .program-view-controls {
   margin: 16px 0;
 }
-.program-view-controls input {
+.program-view-controls .ui-input {
   width: 260px;
   max-width: 100%;
 }

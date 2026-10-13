@@ -208,25 +208,25 @@ function startLessons() {
         <div class="relation-controls">
           <div class="filter-field">
             <label for="related-years">查询范围</label
-            ><select id="related-years" v-model="years">
+            ><UiSelect id="related-years" v-model="years">
               <option value="1">近 1 年</option>
               <option value="2">近 2 年</option>
               <option value="3">近 3 年</option>
-            </select>
+            </UiSelect>
           </div>
-          <button
+          <UiButton
             class="button secondary"
             :disabled="!terms.length || lessonResults.loading.value"
             @click="startLessons"
           >
-            读取 {{ terms.length }} 个学期</button
-          ><button
+            读取 {{ terms.length }} 个学期</UiButton
+          ><UiButton
             v-if="lessonResults.loading.value"
             class="text-button"
             @click="lessonRun = undefined"
           >
             取消
-          </button>
+          </UiButton>
         </div>
         <p class="muted">
           按课程编号 {{ code }} 精确匹配；仅在开始查询后读取所选范围的公开安排。
@@ -313,25 +313,25 @@ function startLessons() {
         <div class="relation-controls">
           <div class="filter-field">
             <label for="related-grade">入学年级</label
-            ><select id="related-grade" v-model="grade">
+            ><UiSelect id="related-grade" v-model="grade">
               <option v-for="value in grades" :key="value">{{ value }}</option>
-            </select>
+            </UiSelect>
           </div>
           <div class="filter-field">
             <label for="related-department">计划院系</label
-            ><select id="related-department" v-model="selectedDept">
+            ><UiSelect id="related-department" v-model="selectedDept">
               <option value="">全部院系</option>
               <option v-for="value in departments" :key="value">
                 {{ value }}
               </option>
-            </select>
+            </UiSelect>
           </div>
           <div class="filter-field">
             <label for="related-type">培养类型</label
-            ><select id="related-type" v-model="selectedType">
+            ><UiSelect id="related-type" v-model="selectedType">
               <option value="">全部类型</option>
               <option v-for="value in types" :key="value">{{ value }}</option>
-            </select>
+            </UiSelect>
           </div>
         </div>
         <p class="muted">
@@ -339,25 +339,25 @@ function startLessons() {
           {{ code }} 精确匹配。课程开课院系不限制计划所属院系。
         </p>
         <div class="flex-actions">
-          <button
+          <UiButton
             class="button secondary"
             :disabled="!scope.length || planResults.loading.value"
             @click="startPlans"
           >
-            查找包含本课程的计划</button
-          ><button
+            查找包含本课程的计划</UiButton
+          ><UiButton
             v-if="department && departments.includes(department)"
             class="text-button"
             @click="selectedDept = department"
           >
-            仅选课程所属院系</button
-          ><button
+            仅选课程所属院系</UiButton
+          ><UiButton
             v-if="planResults.loading.value"
             class="text-button"
             @click="planRun = undefined"
           >
             取消
-          </button>
+          </UiButton>
         </div>
         <p v-if="planResults.loading.value" role="status">
           已核对 {{ planProgress }} / {{ planRun?.items.length }} 份计划…

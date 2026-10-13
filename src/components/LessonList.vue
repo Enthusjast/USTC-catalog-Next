@@ -42,9 +42,12 @@ defineEmits<{
         >
           <td>
             <span class="course-code mono">{{ lesson.code }}</span
-            ><button class="course-name" @click="$emit('detail', lesson.code)">
+            ><UiButton
+              class="course-name"
+              @click="$emit('detail', lesson.code)"
+            >
               {{ lesson.course.name }}
-            </button>
+            </UiButton>
             <IcourseLink :lesson="lesson" />
             <p class="course-en">
               {{ lesson.credits ?? "未提供" }} 学分 ·
@@ -80,7 +83,7 @@ defineEmits<{
             {{ lesson.capacity ?? "未提供" }}
           </td>
           <td>
-            <button
+            <UiButton
               class="button secondary small candidate-button"
               :disabled="workspaceBusy"
               :class="{ 'is-selected': candidateIds.has(lesson.id) }"
@@ -92,15 +95,15 @@ defineEmits<{
                 v-else
                 :size="18"
               />{{ candidateIds.has(lesson.id) ? "已加入" : "候选" }}
-            </button>
-            <button
+            </UiButton>
+            <UiButton
               v-if="showCompare"
               class="text-button"
               :aria-pressed="compareCodes.includes(lesson.code)"
               @click="$emit('compare', lesson)"
             >
               {{ compareCodes.includes(lesson.code) ? "已对比" : "对比" }}
-            </button>
+            </UiButton>
           </td>
         </tr>
       </tbody>

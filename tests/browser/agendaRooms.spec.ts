@@ -1,3 +1,4 @@
+import { selectOption } from "./ui";
 import { test, expect } from "@playwright/test";
 import { fixturePayload } from "../../src/api/fixtures";
 test("home agenda loads exams on expansion and room favorites open weekly records", async ({
@@ -35,9 +36,15 @@ test("home agenda loads exams on expansion and room favorites open weekly record
   await page.locator("#planner-start").fill("2026-08-31");
   await page.getByRole("button", { name: "周课表", exact: true }).click();
   await page.getByRole("button", { name: "跳到本周", exact: true }).click();
-  await expect(page.locator("#planner-week")).toHaveValue("7");
+  await expect(page.locator("#planner-week")).toHaveAttribute(
+    "data-value",
+    "7",
+  );
   await page.getByRole("button", { name: "今天", exact: true }).click();
-  await expect(page.locator("#timetable-mode")).toHaveValue("day");
+  await expect(page.locator("#timetable-mode")).toHaveAttribute(
+    "data-value",
+    "day",
+  );
   await page.goto("/");
   await page.locator(".home-agenda").waitFor();
   expect(examRequests).toBe(0);
@@ -52,7 +59,7 @@ test("home agenda loads exams on expansion and room favorites open weekly record
     page.getByRole("button", { name: "已收藏教室", exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.locator("#favorite-room-jump").selectOption({ index: 1 });
+  await selectOption(page.locator("#favorite-room-jump"), { index: 1 });
   await expect(
     page.getByRole("button", { name: "本周使用", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");

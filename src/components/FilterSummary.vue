@@ -10,7 +10,7 @@ const active = computed(() => props.filters.filter((filter) => !!filter.value));
 <template>
   <div v-if="active.length" class="filter-summary" aria-label="已选筛选条件">
     <span class="filter-summary-label">已选 {{ active.length }} 项</span>
-    <button
+    <UiButton
       v-for="filter in active"
       :key="filter.key"
       type="button"
@@ -22,9 +22,9 @@ const active = computed(() => props.filters.filter((filter) => !!filter.value));
         >{{ filter.label
         }}<strong>{{ filter.display ?? filter.value }}</strong></span
       ><X :size="13" />
-    </button>
-    <button type="button" class="text-button" @click="$emit('clear')">
+    </UiButton>
+    <UiButton type="button" class="text-button" @click="$emit('clear')">
       清除全部
-    </button>
+    </UiButton>
   </div>
 </template>

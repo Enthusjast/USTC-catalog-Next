@@ -1,3 +1,4 @@
+import { selectOption } from "./ui";
 import { test, expect } from "@playwright/test";
 import { fixturePayload } from "../../src/api/fixtures";
 test("favorite groups and notes, scheme comparison and private single export", async ({
@@ -36,17 +37,17 @@ test("favorite groups and notes, scheme comparison and private single export", a
   await page
     .getByRole("button", { name: "编辑 DEMO101 收藏分组与备注", exact: true })
     .click();
-  await page
-    .locator("dialog[open]")
-    .getByLabel("分组", { exact: true })
-    .selectOption({ label: "选修" });
+  await selectOption(
+    page.locator("dialog[open]").getByLabel("分组", { exact: true }),
+    { label: "选修" },
+  );
   await page.getByLabel("个人备注", { exact: true }).fill("计划选修\n个人备注");
   await page
     .locator("dialog[open]")
     .getByRole("button", { name: "保存", exact: true })
     .click();
   await expect(page.locator(".favorite-note")).toContainText("个人备注");
-  await page.locator("#favorite-group-filter").selectOption({ label: "选修" });
+  await selectOption(page.locator("#favorite-group-filter"), { label: "选修" });
   await expect(page.locator(".course-name").first()).toContainText(
     "演示数学基础",
   );

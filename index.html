@@ -3,7 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1b4f7e" />
+    <meta name="theme-color" content="#f9f9ff" />
+    <script>
+      // Set the theme before styles load to avoid a light flash on dark startup.
+      (() => {
+        let saved;
+        try {
+          saved = localStorage.getItem("catalog:theme");
+        } catch {}
+        const dark =
+          saved === "dark" ||
+          (!saved && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document.querySelector('meta[name="theme-color"]').content = dark
+          ? "#111318"
+          : "#f9f9ff";
+      })();
+    </script>
     <meta
       name="description"
       content="USTC-catalog-Next：独立公共查询工具，检索科大公开课程、培养计划、教学班、考试与教室安排。"

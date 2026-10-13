@@ -74,9 +74,9 @@ test("two tabs merge candidates, synchronize and reject stale scheme drafts", as
     .locator(".scheme-name-form")
     .getByRole("button", { name: "保存", exact: true })
     .click();
-  await expect(left.locator(".scheme-selector option").first()).toHaveText(
-    "另一页名称",
-  );
+  await expect(
+    left.locator(".scheme-selector .var-option__text").first(),
+  ).toHaveText("另一页名称");
   await left
     .locator(".scheme-name-form")
     .getByRole("button", { name: "保存", exact: true })

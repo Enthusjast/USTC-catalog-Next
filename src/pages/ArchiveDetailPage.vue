@@ -39,8 +39,8 @@ async function share() {
         : `读取历史文档 ${code}`
     "
     eyebrow="HISTORICAL DOCUMENT / 历史文档"
-    ><button class="button secondary" @click="share">
-      <Link :size="16" />复制分享链接</button
+    ><UiButton class="button secondary" @click="share">
+      <Link :size="16" />复制分享链接</UiButton
     ><a
       v-if="data"
       class="button secondary"
@@ -60,19 +60,19 @@ async function share() {
     @retry="reload"
   /><template v-if="data"
     ><nav class="tabs" aria-label="历史文档视图">
-      <button
+      <UiButton
         :class="{ active: view === 'text' }"
         :aria-pressed="view === 'text'"
         @click="view = 'text'"
       >
-        官方正文阅读区</button
-      ><button
+        官方正文阅读区</UiButton
+      ><UiButton
         :class="{ active: view === 'tables' }"
         :aria-pressed="view === 'tables'"
         @click="view = 'tables'"
       >
         归档课程表（{{ tables.length }}）
-      </button>
+      </UiButton>
     </nav>
     <section v-if="view === 'text'" class="panel archive-reader">
       <h2>原始历史正文</h2>

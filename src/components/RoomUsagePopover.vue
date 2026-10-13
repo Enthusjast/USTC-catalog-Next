@@ -196,14 +196,14 @@ onBeforeUnmount(() => {
     >
       <header class="room-usage-popover-header">
         <h3 :id="titleId">占用详情</h3>
-        <button
+        <UiButton
           type="button"
           class="icon-button"
           aria-label="关闭占用详情"
           @click="close(true)"
         >
           <X :size="18" />
-        </button>
+        </UiButton>
       </header>
       <div class="room-usage-popover-body">
         <h4 class="usage-detail-title">{{ selection.record.title }}</h4>

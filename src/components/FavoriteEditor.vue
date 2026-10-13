@@ -43,21 +43,21 @@ async function save() {
 }
 </script>
 <template>
-  <button
+  <UiButton
     class="text-button"
     :disabled="workspaceBusy"
     :aria-label="`编辑 ${code} 收藏分组与备注`"
     @click="begin"
   >
     分组与备注
-  </button>
+  </UiButton>
   <DisclosureDialog
     :open="open"
     :title="`${code} · 收藏分组与备注`"
     @close="open = false"
     ><form class="favorite-editor" @submit.prevent="save">
       <label :for="`${id}-group`">分组</label
-      ><select ref="input" :id="`${id}-group`" v-model="group">
+      ><UiSelect ref="input" :id="`${id}-group`" v-model="group">
         <option value="">未分组</option>
         <option
           v-for="entry in favorites.groups.value"
@@ -66,9 +66,15 @@ async function save() {
         >
           {{ entry.name }}
         </option>
-      </select>
+      </UiSelect>
       <label :for="`${id}-note`">个人备注</label
-      ><textarea :id="`${id}-note`" v-model="note" maxlength="1000" rows="6" />
+      ><UiInput
+        textarea
+        :id="`${id}-note`"
+        v-model="note"
+        maxlength="1000"
+        rows="6"
+      />
       <p
         v-if="favorites.storageError.value"
         class="notice warning"
@@ -77,10 +83,11 @@ async function save() {
         {{ favorites.storageError.value }}
       </p>
       <div class="flex-actions">
-        <button class="button" :disabled="workspaceBusy">保存</button
-        ><button type="button" class="button secondary" @click="open = false">
+        <UiButton type="submit" class="button" :disabled="workspaceBusy"
+          >保存</UiButton
+        ><UiButton type="button" class="button secondary" @click="open = false">
           取消
-        </button>
+        </UiButton>
       </div>
     </form></DisclosureDialog
   >
@@ -89,15 +96,5 @@ async function save() {
 .favorite-editor {
   display: grid;
   gap: 10px;
-}
-.favorite-editor textarea {
-  width: 100%;
-  min-width: 0;
-  resize: vertical;
-  padding: 10px;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
 }
 </style>

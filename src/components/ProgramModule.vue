@@ -110,12 +110,12 @@ function toggle(event: Event) {
             >
               <td>
                 <span class="course-code mono">{{ entry.course.code }}</span
-                ><button
+                ><UiButton
                   class="course-name"
                   @click="emit('course', entry.course.code)"
                 >
                   {{ entry.course.name }}
-                </button>
+                </UiButton>
                 <p v-if="entry.remark" class="course-en">{{ entry.remark }}</p>
               </td>
               <td>{{ entry.course.credits ?? "未提供" }}</td>

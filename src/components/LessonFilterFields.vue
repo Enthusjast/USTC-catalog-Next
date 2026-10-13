@@ -14,7 +14,7 @@ defineProps<{
 <template>
   <div v-for="field in fields" :key="field.key" class="filter-field">
     <label :for="`lesson-${field.key}`">{{ field.label }}</label
-    ><select
+    ><UiSelect
       :id="`lesson-${field.key}`"
       :value="field.model.value"
       :disabled="disabled"
@@ -25,6 +25,6 @@ defineProps<{
       <option v-for="value in field.values" :key="value" :value="value">
         {{ value === "__missing__" ? "未提供" : value }}
       </option>
-    </select>
+    </UiSelect>
   </div>
 </template>

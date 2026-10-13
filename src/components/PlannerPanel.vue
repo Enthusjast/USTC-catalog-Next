@@ -55,15 +55,17 @@ function exportICS() {
         <span class="muted">{{ planner.lessons.value.length }}</span>
       </h2>
       <div class="flex-actions">
-        <button class="text-button" @click="$emit('results')">继续查找</button>
-        <button
+        <UiButton class="text-button" @click="$emit('results')"
+          >继续查找</UiButton
+        >
+        <UiButton
           v-if="planner.lessons.value.length"
           class="text-button"
           @click="planner.clear"
           :disabled="workspaceBusy"
         >
           <Trash2 :size="15" />清空当前方案
-        </button>
+        </UiButton>
       </div>
     </div>
     <SchemeSelector :planner="planner" />
@@ -76,17 +78,17 @@ function exportICS() {
       :key="lesson.id"
       class="candidate-row"
     >
-      <button class="course-name" @click="$emit('detail', lesson.code)">
+      <UiButton class="course-name" @click="$emit('detail', lesson.code)">
         {{ lesson.course.name
-        }}<span class="mono">{{ lesson.code }}</span></button
+        }}<span class="mono">{{ lesson.code }}</span></UiButton
       ><span class="muted">{{ lesson.teachers.join("、") }}</span
-      ><button
+      ><UiButton
         class="icon-button"
         :aria-label="`移除候选 ${lesson.course.name}`"
         @click="$emit('candidate', lesson, false)"
       >
         <Trash2 :size="16" />
-      </button>
+      </UiButton>
     </div>
     <p v-if="!planner.lessons.value.length" class="muted planner-note">
       点击教学班旁的“候选”按钮，开始整理清单；加入后可在结果上方直接进入管理。
@@ -118,13 +120,13 @@ function exportICS() {
       </p>
       <div class="ics-settings">
         <CalendarSettings :planner="planner" prefix="planner" />
-        <button
+        <UiButton
           class="button secondary"
           :disabled="!firstMonday"
           @click="exportICS"
         >
           <Download :size="16" />导出 ICS
-        </button>
+        </UiButton>
       </div>
       <details v-if="layout" class="period-preview">
         <summary>核对所选课节表</summary>

@@ -19,7 +19,7 @@ function link(path: string) {
   <aside class="semester-card" aria-label="当前学期与查询入口">
     <div class="semester-card-heading">
       <CalendarDays :size="18" /><span>当前学期</span
-      ><span class="tag">公开安排</span>
+      ><VarChip size="small" :elevation="false" class="tag">公开安排</VarChip>
     </div>
     <h2>
       {{ semester?.name ?? (loading ? "正在读取学期…" : "暂无学期资料") }}

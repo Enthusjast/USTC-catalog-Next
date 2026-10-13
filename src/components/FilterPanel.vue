@@ -72,7 +72,7 @@ onBeforeUnmount(() => {
   <div v-if="mobile && $slots.primary" class="filter-primary panel">
     <slot name="primary" />
   </div>
-  <button
+  <UiButton
     ref="toggle"
     type="button"
     class="button secondary filter-toggle"
@@ -86,7 +86,7 @@ onBeforeUnmount(() => {
       class="filter-count"
       >{{ activeCount }}</span
     >
-  </button>
+  </UiButton>
   <component
     :is="mobile ? 'dialog' : 'aside'"
     :id="`${headingId}-panel`"
@@ -104,27 +104,27 @@ onBeforeUnmount(() => {
           class="filter-count"
           >{{ activeCount }}</span
         ></span
-      ><button
+      ><UiButton
         type="button"
         class="icon-button filter-close"
         aria-label="关闭筛选"
         @click="close"
       >
         <X :size="20" />
-      </button>
+      </UiButton>
     </h2>
     <div class="filter-panel-body">
       <slot v-if="!mobile" name="primary" />
       <slot />
     </div>
     <div class="filter-panel-footer">
-      <button type="button" class="button" @click="close">
+      <UiButton type="button" class="button" @click="close">
         {{
           resultCount === undefined
             ? "查看查询结果"
             : `查看 ${resultCount} ${resultLabel}`
         }}
-      </button>
+      </UiButton>
     </div>
   </component>
 </template>

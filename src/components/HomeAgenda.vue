@@ -93,19 +93,19 @@ function time(start: number, end: number) {
       今天／本周安排 <span class="muted">{{ planner.active.value?.name }}</span>
     </summary>
     <div class="flex-actions">
-      <button
+      <UiButton
         class="text-button"
         :aria-pressed="mode === 'day'"
         @click="mode = 'day'"
       >
-        今天</button
-      ><button
+        今天</UiButton
+      ><UiButton
         class="text-button"
         :aria-pressed="mode === 'week'"
         @click="mode = 'week'"
       >
         本周
-      </button>
+      </UiButton>
     </div>
     <CalendarSettings
       v-if="!isFirstMonday(planner.firstMonday.value)"

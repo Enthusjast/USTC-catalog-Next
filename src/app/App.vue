@@ -18,6 +18,8 @@ import {
   ArrowUpRight,
   ChevronDown,
 } from "@lucide/vue";
+import { AppBar as VarAppBar, Menu as VarMenu } from "@varlet/ui";
+import "@varlet/ui/es/app-bar/style/index.mjs";
 import { usePreferences } from "../features/usePreferences";
 import { filterStorageError } from "../features/filterPreferences";
 import { DEMO_MODE } from "../api/environment";
@@ -32,12 +34,11 @@ const menuOpen = ref(false),
   header = ref<HTMLElement>(),
   mobileMenuButton = ref<HTMLButtonElement>(),
   mobileNavigation = ref<HTMLElement>(),
-  moreMenu = ref<HTMLDetailsElement>();
+  moreOpen = ref(false),
+  moreButton = ref<HTMLButtonElement>();
 function closeMenus(event: PointerEvent) {
   const target = event.target as Node;
   if (!header.value?.contains(target)) menuOpen.value = false;
-  if (!moreMenu.value?.contains(target))
-    moreMenu.value?.removeAttribute("open");
 }
 function escapeMenus(event: KeyboardEvent) {
   if (event.key !== "Escape") return;
@@ -45,9 +46,9 @@ function escapeMenus(event: KeyboardEvent) {
     menuOpen.value = false;
     mobileMenuButton.value?.focus();
   }
-  if (moreMenu.value?.open) {
-    moreMenu.value.open = false;
-    moreMenu.value.querySelector<HTMLElement>("summary")?.focus();
+  if (moreOpen.value) {
+    moreOpen.value = false;
+    moreButton.value?.focus();
   }
 }
 let navigationReady = false;
@@ -89,7 +90,7 @@ watch(
   () => route.fullPath,
   () => {
     menuOpen.value = false;
-    if (moreMenu.value) moreMenu.value.open = false;
+    moreOpen.value = false;
     renderError.value = false;
   },
 );
@@ -115,15 +116,24 @@ function skipToMain() {
 <template>
   <a class="skip-link" href="#main" @click.prevent="skipToMain">跳到主要内容</a>
   <header ref="header" class="site-header">
-    <div class="header-inner">
-      <RouterLink to="/" class="brand" aria-label="USTC-catalog-Next 首页"
-        ><span class="brand-icon"><BookOpen :size="23" /></span
-        ><span
-          ><strong>USTC-catalog-Next</strong><small>新一代公共查询</small></span
-        ></RouterLink
-      >
+    <VarAppBar
+      class="header-inner site-app-bar"
+      type="surface"
+      title-position="center"
+      :elevation="false"
+    >
+      <template #left>
+        <RouterLink to="/" class="brand" aria-label="USTC-catalog-Next 首页"
+          ><span class="brand-icon"><BookOpen :size="23" /></span
+          ><span
+            ><strong>USTC-catalog-Next</strong
+            ><small>新一代公共查询</small></span
+          ></RouterLink
+        >
+      </template>
       <nav class="desktop-nav" aria-label="主要导航">
         <RouterLink
+          v-ripple
           v-for="item in navigation"
           :key="item.path"
           :to="item.path"
@@ -132,55 +142,76 @@ function skipToMain() {
           >{{ item.name }}</RouterLink
         >
       </nav>
-      <div class="header-actions">
-        <RouterLink to="/search" class="header-search" aria-label="全站搜索"
-          ><Search :size="17" /><span>搜索课程、教师…</span></RouterLink
+      <template #right
+        ><div class="header-actions">
+          <RouterLink to="/search" class="header-search" aria-label="全站搜索"
+            ><Search :size="17" /><span>搜索课程、教师…</span></RouterLink
+          >
+          <UiButton
+            class="icon-button"
+            :aria-label="theme === 'dark' ? '切换浅色主题' : '切换深色主题'"
+            @click="toggleTheme"
+          >
+            <Sun v-if="theme === 'dark'" :size="19" /><Moon v-else :size="19" />
+          </UiButton>
+          <VarMenu
+            v-model:show="moreOpen"
+            class="more-menu"
+            placement="bottom-end"
+          >
+            <UiButton
+              ref="moreButton"
+              class="text-button"
+              :aria-expanded="moreOpen"
+              aria-controls="more-navigation"
+              aria-haspopup="true"
+              >更多<ChevronDown :size="14"
+            /></UiButton>
+            <template #menu
+              ><nav
+                id="more-navigation"
+                class="more-navigation"
+                aria-label="更多导航"
+              >
+                <RouterLink to="/archives">历史归档</RouterLink
+                ><RouterLink to="/program-compare">计划对比</RouterLink
+                ><RouterLink to="/about/data">站点说明</RouterLink>
+              </nav></template
+            >
+          </VarMenu>
+          <UiButton
+            ref="mobileMenuButton"
+            class="icon-button mobile-menu-button"
+            :aria-expanded="menuOpen"
+            aria-controls="mobile-navigation"
+            :aria-label="menuOpen ? '关闭导航' : '打开导航'"
+            @click="menuOpen = !menuOpen"
+          >
+            <X v-if="menuOpen" :size="22" /><Menu v-else :size="22" />
+          </UiButton></div
+      ></template>
+      <template #content
+        ><nav
+          v-if="menuOpen"
+          ref="mobileNavigation"
+          id="mobile-navigation"
+          class="mobile-nav"
+          aria-label="移动端导航"
         >
-        <button
-          class="icon-button"
-          :aria-label="theme === 'dark' ? '切换浅色主题' : '切换深色主题'"
-          @click="toggleTheme"
-        >
-          <Sun v-if="theme === 'dark'" :size="19" /><Moon v-else :size="19" />
-        </button>
-        <details ref="moreMenu" class="more-menu">
-          <summary>更多<ChevronDown :size="14" /></summary>
-          <div>
-            <RouterLink to="/archives">历史归档</RouterLink
-            ><RouterLink to="/program-compare">计划对比</RouterLink
-            ><RouterLink to="/about/data">站点说明</RouterLink>
-          </div>
-        </details>
-        <button
-          ref="mobileMenuButton"
-          class="icon-button mobile-menu-button"
-          :aria-expanded="menuOpen"
-          aria-controls="mobile-navigation"
-          :aria-label="menuOpen ? '关闭导航' : '打开导航'"
-          @click="menuOpen = !menuOpen"
-        >
-          <X v-if="menuOpen" :size="22" /><Menu v-else :size="22" />
-        </button>
-      </div>
-    </div>
-    <nav
-      v-if="menuOpen"
-      ref="mobileNavigation"
-      id="mobile-navigation"
-      class="mobile-nav"
-      aria-label="移动端导航"
-    >
-      <RouterLink
-        v-for="item in navigation"
-        :key="item.path"
-        :to="item.path"
-        :class="{ 'is-current': isCurrent(item.path) }"
-        :aria-current="isCurrent(item.path) ? 'page' : undefined"
-        >{{ item.name }}</RouterLink
-      ><RouterLink to="/archives">历史归档</RouterLink
-      ><RouterLink to="/program-compare">计划对比</RouterLink
-      ><RouterLink to="/about/data">站点说明</RouterLink>
-    </nav>
+          <RouterLink
+            v-ripple
+            v-for="item in navigation"
+            :key="item.path"
+            :to="item.path"
+            :class="{ 'is-current': isCurrent(item.path) }"
+            :aria-current="isCurrent(item.path) ? 'page' : undefined"
+            >{{ item.name }}</RouterLink
+          ><RouterLink to="/archives">历史归档</RouterLink
+          ><RouterLink to="/program-compare">计划对比</RouterLink
+          ><RouterLink to="/about/data">站点说明</RouterLink>
+        </nav></template
+      >
+    </VarAppBar>
   </header>
   <main id="main" class="main-container" tabindex="-1">
     <p v-if="DEMO_MODE" class="notice warning" role="status">

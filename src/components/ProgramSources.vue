@@ -17,9 +17,9 @@ defineEmits<{ refresh: [] }>();
       >
         {{ issue.name }} (#{{ issue.publicId }})：{{ issue.message }}
       </p>
-      <button class="text-button" @click="$emit('refresh')">
+      <UiButton class="text-button" @click="$emit('refresh')">
         重试计划与公共模块
-      </button>
+      </UiButton>
     </div>
   </div>
 </template>

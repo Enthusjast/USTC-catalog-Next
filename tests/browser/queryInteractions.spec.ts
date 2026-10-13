@@ -126,7 +126,10 @@ test("invalid shared filters are normalized without losing semester or class ide
   await page.goto(
     "/#/lessons?semester=demo-current&week=1.5&ttDay=Infinity&view=week&source=results",
   );
-  await expect(page.locator("#planner-week")).toHaveValue("1");
+  await expect(page.locator("#planner-week")).toHaveAttribute(
+    "data-value",
+    "1",
+  );
   await expect(page.locator(".tt-block")).toHaveCount(2);
   expect(page.url()).not.toContain("1.5");
   expect(page.url()).not.toContain("Infinity");
