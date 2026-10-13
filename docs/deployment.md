@@ -59,7 +59,7 @@ https://catalog.enthusjast.cc/manifest.webmanifest
 5. 未知 API 路径应为 JSON 404。确认 HTML/空响应不会渲染为空列表。
 6. 如需本地开发访问，由 API 服务加入 localhost 与 127.0.0.1 的明确来源；修改来源后重查 POST 预检。
 
-工作流在发布前执行 `npm run check:api`；它检查 HTTP、schema、精确生产 Origin、两种 POST 预检、未知路径 JSON 404 与错误响应 CORS，并检查未授权 Origin 的 GET/OPTIONS 不获准跨域读取，将结果写入 Actions 摘要。HTTP 检查不会替代上述正式页面浏览器验收，运行环境的网络失败也会阻止发布，需要结合浏览器记录诊断。
+工作流在发布前执行 `pnpm run check:api`；它检查 HTTP、schema、精确生产 Origin、两种 POST 预检、未知路径 JSON 404 与错误响应 CORS，并检查未授权 Origin 的 GET/OPTIONS 不获准跨域读取，将结果写入 Actions 摘要。HTTP 检查不会替代上述正式页面浏览器验收，运行环境的网络失败也会阻止发布，需要结合浏览器记录诊断。
 
 ## API 服务器配置与复查
 
@@ -147,7 +147,7 @@ curl -i --max-time 10 -X OPTIONS \
 
 ## 自动回归与离线发布验收
 
-CI 使用 Node.js 24，依次执行 `npm ci`、`npm test`、`npm run build`、`npm run check:pwa`、Chromium 安装与 `npm run test:browser`。浏览器套件在独立生产预览上检查断网启动、未缓存资料、两种清除操作、提示更新和数据保留，以及主要页面在五种宽度与深浅主题下的布局。额外回归包括缓存基础记录保护、数据库升级及受阻恢复、跨标签页清除与旧请求回填、非法链接规范化、弹窗内外点击和拖动、开课折叠分页与搜索恢复、跨标签页事务、首次迁移、过期编辑、撤销、更新预览、收藏分组、方案对比、计划开课、1200 个教学班的完整 CSV/课表/PNG/打印，以及教室星期标题、六种来源配色、详情跳转和楼栋卡片正常滚动。它只在隔离浏览器中拦截开发样本，不依赖真实接口；deploy job 仍保留独立 API 发布门槛。
+CI 使用 Node.js 24 与 `packageManager` 固定的 pnpm 12.3.4，缓存 pnpm store，依次执行 `pnpm install --frozen-lockfile`、`pnpm test`、`pnpm run build`、`pnpm run check:pwa`、Chromium 安装与 `pnpm run test:browser`。浏览器套件在独立生产预览上检查断网启动、未缓存资料、两种清除操作、提示更新和数据保留，以及主要页面在五种宽度与深浅主题下的布局。额外回归包括缓存基础记录保护、数据库升级及受阻恢复、跨标签页清除与旧请求回填、非法链接规范化、弹窗内外点击和拖动、开课折叠分页与搜索恢复、跨标签页事务、首次迁移、过期编辑、撤销、更新预览、收藏分组、方案对比、计划开课、1200 个教学班的完整 CSV/课表/PNG/打印，以及教室星期标题、六种来源配色、详情跳转和楼栋卡片正常滚动。它只在隔离浏览器中拦截开发样本，不依赖真实接口；deploy job 仍保留独立 API 发布门槛。
 
 1. 正式页面首次联网加载后，等待 Service Worker 激活；确认 manifest 名称为 `USTC-catalog-Next`、根 scope、192/512px 图标。
 2. 查询课程和教学班，保存一个方案及收藏；断网后刷新、关闭标签页再直接打开 hash 深链，应能启动并读取已查询资料。

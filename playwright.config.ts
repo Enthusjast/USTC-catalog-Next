@@ -14,7 +14,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "npm run preview -- --port 4175 --strictPort",
+    command: "pnpm run preview --port 4175 --strictPort",
     url: "http://127.0.0.1:4175",
     reuseExistingServer: false,
   },

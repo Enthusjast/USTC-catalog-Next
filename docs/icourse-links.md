@@ -15,15 +15,15 @@
 使用 Node.js 24，默认读取 `~/reference/class-arrange/icourse_spider/course_rating.json`：
 
 ```sh
-npm run icourse:check
-npm run icourse:sync
+pnpm run icourse:check
+pnpm run icourse:sync
 ```
 
 也可指定同格式快照：
 
 ```sh
-npm run icourse:check -- --source /absolute/path/course_rating.json
-npm run icourse:sync -- --source /absolute/path/course_rating.json
+pnpm run icourse:check --source /absolute/path/course_rating.json
+pnpm run icourse:sync --source /absolute/path/course_rating.json
 ```
 
 检查比较源文件哈希、字典结构与完整解码的匹配结果；同步验证完整快照后原子替换生成文件。重复同步保留原导入日期。读取、解析或字段验证失败时原索引保持不变。同步不联网抓取评分，构建与 CI 使用已经提交的索引，不依赖本机参考仓库。

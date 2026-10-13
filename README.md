@@ -6,31 +6,34 @@
 
 ## 本地运行
 
-使用 Node.js 24 与 npm：
+使用 Node.js 24 与 pnpm 12.3.4（版本固定在 `package.json` 的 `packageManager`）：
 
 ```sh
-npm ci
-npm run dev
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run dev
 ```
+
+已安装 pnpm 的环境可以直接执行安装命令。依赖由 `pnpm-lock.yaml` 锁定，安装脚本许可在 `pnpm-workspace.yaml` 中管理；当前仅允许 esbuild 与 macOS 可选依赖 fsevents 的构建脚本。
 
 开发地址为 `http://127.0.0.1:5173`。API 默认直连 `https://api.catalog.enthusjast.cc`，路径不包含原站的 `/api` 前缀。可复制 `.env.example` 到 `.env.local` 修改公开配置。
 
-**本地 API 访问取决于 API 服务的 CORS 配置**。规格要求放行明确的开发 Origin：`http://127.0.0.1:5173` 或 `http://localhost:5173`，生产来源为 `https://catalog.enthusjast.cc`。接口可用性以本次 `npm run check:api` 与正式浏览器检查为准，历史记录见 [验证记录](docs/verification.md)。被拒绝时查询页展示请求错误与重试入口；教室页按界面约定隐藏查询提示。
+**本地 API 访问取决于 API 服务的 CORS 配置**。规格要求放行明确的开发 Origin：`http://127.0.0.1:5173` 或 `http://localhost:5173`，生产来源为 `https://catalog.enthusjast.cc`。接口可用性以本次 `pnpm run check:api` 与正式浏览器检查为准，历史记录见 [验证记录](docs/verification.md)。被拒绝时查询页展示请求错误与重试入口；教室页按界面约定隐藏查询提示。
 
 ```sh
-npm test
-npm run test:browser
-npm run typecheck
-npm run build
-npm run check:pwa
-npm run preview
-npm run format
-npm run check:api
+pnpm test
+pnpm run test:browser
+pnpm run typecheck
+pnpm run build
+pnpm run check:pwa
+pnpm run preview
+pnpm run format
+pnpm run check:api
 ```
 
 构建产物为 `dist`，Vue Router 使用 hash history，支持直接打开和刷新 `/#/programs/3430` 等链接。TypeScript 固定为 5.9 系列，以兼容当前 `vue-tsc`。
 
-没有可用接口时，可用 `npm run dev:fixtures` 启动开发演示模式。示例课程、计划与安排均为虚构，页面显示“演示数据”，其收藏、候选清单和筛选使用独立存储。历史归档仍读取已标明来源的静态资料。发布构建拒绝 fixtures 模式，并将开发样例模块替换为不含样例记录的占位模块。
+没有可用接口时，可用 `pnpm run dev:fixtures` 启动开发演示模式。示例课程、计划与安排均为虚构，页面显示“演示数据”，其收藏、候选清单和筛选使用独立存储。历史归档仍读取已标明来源的静态资料。发布构建拒绝 fixtures 模式，并将开发样例模块替换为不含样例记录的占位模块。
 
 ## 当前功能
 
@@ -73,7 +76,7 @@ npm run check:api
 
 ## GitHub Pages
 
-`.github/workflows/pages.yml` 在 PR 上测试和构建，在 main 推送或手动触发时运行相同检查，在 API 发布检查通过后发布。单元回归、离线产物检查和浏览器离线启动/更新回归均为发布门槛。检查包括精确 Origin、JSON/schema、POST/OPTIONS 和未知路径 JSON 404；失败时写入 Actions 摘要并阻止该次发布。锁文件通过 `npm ci` 安装；自定义域名由 `public/CNAME` 声明，Vite base 为 `/`。
+`.github/workflows/pages.yml` 在 PR 上测试和构建，在 main 推送或手动触发时运行相同检查，在 API 发布检查通过后发布。单元回归、离线产物检查和浏览器离线启动/更新回归均为发布门槛。检查包括精确 Origin、JSON/schema、POST/OPTIONS 和未知路径 JSON 404；失败时写入 Actions 摘要并阻止该次发布。锁文件通过 `pnpm install --frozen-lockfile` 安装；自定义域名由 `public/CNAME` 声明，Vite base 为 `/`。
 
 仓库管理员需在 Settings → Pages 选择 GitHub Actions，并确认 `catalog.enthusjast.cc` 的 DNS 指向 `Enthusjast.github.io` 及 HTTPS 可用。API 子域名继续指向 API 服务。
 
@@ -88,13 +91,13 @@ npm run check:api
 
 “站点说明”提供安装、JSON 备份以及两种清除操作。完整备份包含本机方案、收藏分组与备注、常用教室及方案日历设置；单方案文件只包含所选方案和所属学期。格式标识为 `USTC-catalog-Next-backup`、`version: 2`（兼容导入版本 1）。完整规则见 [数据管理说明](docs/data-management.md)。
 
-浏览器回归先执行生产构建，再由 Playwright 启动预览；首次运行执行 `npx playwright install chromium`。可用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指定已有 Chromium。测试使用隔离浏览器和开发样本拦截 API，不写入发布资料。
+浏览器回归先执行生产构建，再由 Playwright 启动预览；首次运行执行 `pnpm exec playwright install chromium`。可用 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指定已有 Chromium。测试使用隔离浏览器和开发样本拦截 API，不写入发布资料。
 
 ## 教室目录同步
 
 ```sh
-npm run rooms:check
-npm run rooms:sync
+pnpm run rooms:check
+pnpm run rooms:sync
 ```
 
 同步自动定位原站脚本、静态解析真实目录字段；无法识别或网络失败时保留原目录，不推测楼层。来源、差异检查和核实快照用法见 [目录同步说明](docs/room-directory-sync.md)。
@@ -104,14 +107,14 @@ npm run rooms:sync
 `public/data/archives` 保存版本明确的历史目录、课程表和官方附件链接。构建不依赖临时网络抓取；一次只加载当前目录或所选文档，完整正文直接在隔离的官方文档阅读区加载。网络不可用时仍可阅读已保存的表格。
 
 ```sh
-npm run archives:sync
+pnpm run archives:sync
 ```
 
 更新脚本沿用已核对的文档编号，最多同时读取 3 个官方文档。全部来源解析成功后才替换本机归档；记录的是采集时间，不能作为教务资料的更新时间。新增文档须先从官方目录核对编号与版本。
 
 ## 数据与许可
 
-教学班评课社区索引的更新命令为 `npm run icourse:check` / `npm run icourse:sync`，默认读取本机参考项目快照；支持 `--source` 指定来源。详情与许可边界见 [评课链接维护](docs/icourse-links.md)。
+教学班评课社区索引的更新命令为 `pnpm run icourse:check` / `pnpm run icourse:sync`，默认读取本机参考项目快照；支持 `--source` 指定来源。详情与许可边界见 [评课链接维护](docs/icourse-links.md)。
 
 公开资料来自 [官方教务目录](https://catalog.ustc.edu.cn/)，实际安排以 [综合教务系统](https://jw.ustc.edu.cn/) 为准。本站不提供账号、个人成绩、选课或教务写入功能，不发送 API Cookie，不引入统计追踪脚本。
 

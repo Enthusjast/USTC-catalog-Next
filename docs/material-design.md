@@ -32,10 +32,10 @@
 ## 回归入口
 
 ```sh
-npm test
-npm run build
-npm run check:pwa
-npm run test:browser
+pnpm test
+pnpm run build
+pnpm run check:pwa
+pnpm run test:browser
 ```
 
 浏览器回归使用生产构建和隔离样例查询。`material.spec.ts` 覆盖五种宽度与深浅主题下的控件操作、菜单边界、导航、主题切换、输入与复选框状态，以及详情内菜单 Escape 和焦点恢复。
